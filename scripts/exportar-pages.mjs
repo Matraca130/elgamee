@@ -15,7 +15,7 @@ for (const entry of await readdir(dist, { withFileTypes: true })) {
   if (!entry.isFile() || !extensions.has(extname(entry.name))) continue;
   const from = join(dist, entry.name);
   const to = join(output, entry.name);
-  if (entry.name === 'index.html') {
+  if (extname(entry.name) === '.html') {
     const page = await readFile(from, 'utf8');
     await writeFile(to, page.replace('</head>', '<meta name="atlas-progresso-local">\n</head>'));
   } else {

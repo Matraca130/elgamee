@@ -8,6 +8,8 @@ Com Node.js instalado, execute `npm run dev` e abra a URL exibida. Na prévia lo
 
 Abra `/estudio-influenza.html` na prévia para testar a versão articulada da influenza. O [guia de animação](docs/prototipo-influenza.md) explica como adaptar as peças e os movimentos para outro personagem.
 
+Em **Meus cursos**, abra **Parasitos zoonóticos** para jogar a rota inicial de *Toxocara canis*. São duas arenas de solo e uma passagem intestinal com evolução visual, companheiro e perguntas de epidemiologia.
+
 Para continuar em outro chat ou editor, abra o repositório na raiz e consulte as [instruções do projeto](AGENTS.md). O [registro de decisões](docs/decisoes/README.md) explica as escolhas que ainda orientam o código.
 
 ## Recuperar contexto

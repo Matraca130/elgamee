@@ -405,13 +405,15 @@ label.talent-item{cursor:pointer}
 .courses-head h2{margin:0}
 .courses-head p,.courses-head a{margin:0;font-size:.79rem;color:var(--mut)}
 .courses-head a{color:var(--ink);font-weight:800}
-.course-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
-.course-choices button{
+.course-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.course-choices :is(button,a){
  display:grid;gap:1px;min-height:54px;align-content:center;padding:8px 10px;text-align:left;
- color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:9px;font:inherit;cursor:pointer
+ color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:9px;font:inherit;cursor:pointer;text-decoration:none
 }
-.course-choices button strong{font-size:.87rem;line-height:1.25}
-.course-choices button span{font-size:.74rem;color:var(--mut)}
+.course-choices strong{font-size:.87rem;line-height:1.25}
+.course-choices span{font-size:.74rem;color:var(--mut)}
+.course-choices a:hover{border-color:var(--teal)}
+@media(max-width:32rem){.course-choices{grid-template-columns:repeat(2,minmax(0,1fr))}.course-choices a{grid-column:1/-1}}
 .course-choices button[aria-pressed=true]{
  border-color:var(--teal);background:color-mix(in srgb,var(--teal) 11%,var(--card))
 }

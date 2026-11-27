@@ -1,4 +1,4 @@
-const allowedCourses={influenza:4,vsr:2};
+const allowedCourses={influenza:4,vsr:2,toxocara:3};
 const progressHeaders={'Cache-Control':'private, no-store','Content-Type':'application/json; charset=utf-8'};
 
 function progressResponse(body,status=200){

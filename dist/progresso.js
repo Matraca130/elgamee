@@ -1,3 +1,4 @@
+const atlasCourseLimits={influenza:4,vsr:2,toxocara:3};
 const atlasProgress=(()=>{
  const key='atlas-viral-cursos-v1';
  const localOnly=Boolean(document.querySelector('meta[name="atlas-progresso-local"]'));

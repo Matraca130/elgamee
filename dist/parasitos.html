@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Parasitos zoonóticos · Atlas Viral</title>
+  <link rel="stylesheet" href="./parasitos.css">
+</head>
+<body>
+  <main class="rota">
+    <header class="cabecalho">
+      <a href="./">← Cursos do Atlas</a>
+      <h1>Parasitos zoonóticos</h1>
+      <p><i>Toxocara canis</i> · Cão como hospedeiro definitivo</p>
+      <p id="historico"></p>
+    </header>
+    <ol id="etapas" class="etapas" aria-label="Etapas da rota"></ol>
+
+    <section id="transicao" class="transicao" aria-labelledby="passo">
+      <h2 id="passo" tabindex="-1">Do solo ao hospedeiro</h2>
+      <p id="explicacao">Colete os marcos de cada arena. Entre as fases, responda sobre o ciclo e escolha uma melhoria para esta partida.</p>
+      <div id="opcoes" class="opcoes">
+        <button id="comecar" type="button" class="primario">Começar rota</button>
+      </div>
+      <p id="resposta" role="status" hidden></p>
+    </section>
+
+    <section class="jogo" aria-label="Rota jogável de Toxocara">
+      <div class="painel-jogo">
+        <div>
+          <h2 id="regiao"></h2>
+          <p id="forma"></p>
+        </div>
+        <div class="medidas">
+          <label>Integridade <meter id="integridade" min="0" max="100" value="100"></meter><span id="pontos-vida"></span></label>
+          <span id="marcos"></span>
+        </div>
+      </div>
+      <div class="controles">
+        <p id="controles">WASD ou setas para mover. No toque, arraste na arena.</p>
+        <button id="esquivar" type="button" disabled>Esquivar <kbd>Espaço</kbd></button>
+        <button id="pulso" type="button" hidden disabled>Pulso de fuga <kbd>J</kbd></button>
+        <button id="pausar" type="button" hidden>Pausar <kbd>Esc</kbd></button>
+      </div>
+      <div class="campo">
+        <canvas id="arena" width="840" height="480" tabindex="0" aria-label="Arena de Toxocara" aria-describedby="controles objetivo"></canvas>
+        <span id="amparo" class="amparo" hidden></span>
+      </div>
+      <p id="objetivo" role="status"></p>
+      <p id="equipamento" hidden></p>
+    </section>
+
+    <details class="ficha">
+      <summary>Ciclo de <i>Toxocara canis</i></summary>
+      <p>O cão é o hospedeiro definitivo. Nesta rota, o humano ingere um ovo infectante e se torna hospedeiro acidental. As larvas podem migrar para diferentes tecidos e não amadurecem em vermes adultos no humano. O ciclo dispensa vetor.</p>
+      <p>A passagem entre arenas comprime o tempo. Os marcos, as adaptações e o mascote são recursos de jogo.</p>
+      <p><a href="https://www.cdc.gov/dpdx/toxocariasis/index.html">Ficha e ciclo do CDC</a></p>
+    </details>
+  </main>
+  <script defer src="./progresso.js"></script>
+  <script type="module" src="./parasitos.js"></script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+:root{color-scheme:light;font:16px/1.45 system-ui,sans-serif;color:#302632;background:#f5ead7}
+*{box-sizing:border-box}
+body{margin:0;min-width:300px}
+a{color:#306759;text-underline-offset:3px}
+h1,h2,p{margin:0}
+[hidden]{display:none!important}
+.rota{width:min(100%,65rem);margin:auto;padding:clamp(1rem,3vw,2rem)}
+.cabecalho h1{font-size:clamp(1.9rem,5vw,3.15rem);line-height:1.08;letter-spacing:-.035em;margin:.55rem 0 .22rem}
+.cabecalho p{color:#594853}
+#historico{margin-top:.35rem;font-size:.84rem}
+.etapas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem;list-style:none;padding:0;margin:1rem 0 .65rem}
+.etapas li{min-width:0;border:1px solid #bcb19a;border-radius:.65rem;background:#fbf5e8;padding:.42rem .65rem;font-size:.84rem;font-weight:700}
+.etapas li[aria-current=step]{color:#fffdf1;background:#2c695c;border-color:#2c695c}
+.jogo,.transicao,.ficha{border:1px solid #c9b9a4;border-radius:1rem;background:#fff8eb}
+.painel-jogo,.controles{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem 1rem;padding:.65rem .85rem}
+.painel-jogo h2{font-size:1.24rem}
+#forma,#equipamento,.controles p{color:#594853;font-size:.85rem}
+.medidas{display:flex;align-items:center;flex-wrap:wrap;gap:.5rem .9rem;font-weight:700;font-size:.82rem}
+.medidas label{display:flex;gap:.42rem;align-items:center}
+meter{width:5.5rem;accent-color:#2c695c}
+.campo{position:relative;background:#62483a}
+canvas{display:block;width:100%;height:auto;aspect-ratio:7/4;touch-action:none;cursor:crosshair}
+.amparo{position:absolute;top:.6rem;left:.6rem;max-width:calc(100% - 1.2rem);border-radius:.5rem;background:#392839;color:#fff7db;font-size:.79rem;padding:.3rem .55rem;pointer-events:none}
+#objetivo,#equipamento{padding:.55rem .85rem}
+#objetivo{font-weight:700;font-size:.88rem;min-height:2.35rem}
+.controles{justify-content:flex-start;border-top:1px solid #e6d7bf}
+.controles p{flex-basis:100%}
+button{min-height:44px;border:1px solid #baa78f;border-radius:.65rem;background:#faf0dd;color:#332735;padding:.48rem .72rem;font:inherit;font-weight:700;cursor:pointer}
+button:not(:disabled):hover{background:#ede3c9}
+button:disabled{opacity:.58;cursor:default}
+button.primario{background:#2c695c;border-color:#2c695c;color:#fffdf1}
+button.primario:hover{background:#215446}
+kbd{font:inherit;font-size:.7em;color:#5f4a52;margin-left:.21rem}
+:focus-visible{outline:3px solid #16796a;outline-offset:3px}
+.transicao,.ficha{margin-top:.8rem;padding:.9rem}
+.transicao{margin-bottom:.65rem}
+.transicao h2{font-size:1.24rem}
+.transicao p,.ficha p{margin-top:.4rem}
+.opcoes{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.65rem}
+.opcoes button{text-align:left}
+.opcoes button span{display:block;font-weight:400;font-size:.87rem;max-width:24rem}
+.ficha summary{font-weight:700;cursor:pointer}
+@media(max-width:38rem){.etapas li{padding:.35rem .4rem}.controles button{flex:1 1 auto}kbd{display:none}}

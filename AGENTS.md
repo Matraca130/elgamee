@@ -1,6 +1,7 @@
 # Atlas Viral
 
-- O jogador é sempre um vírus. Ele atravessa regiões do corpo, enfrenta defesas do hospedeiro e evolui com habilidades inspiradas nos vírus estudados. O linfócito é uma defesa do hospedeiro.
+- O jogador escolhe uma rota de vírus ou parasito. Os vírus atravessam arenas do corpo e evoluem a partir das características de cada capítulo. O linfócito é uma defesa do hospedeiro.
+- Nas rotas de parasitos, mostre cada forma e o hospedeiro de acordo com o ciclo da espécie. Na rota de Toxocara canis, use duas arenas ambientais com o ovo, depois uma arena com a larva no humano acidental. O cão definitivo tem um bônus fixo de jogo. Equipe um companheiro de batalha por vez e apresente vetores apenas nos ciclos em que eles participam.
 - Use a fluidez de Vampire Survivors como referência de jogabilidade: movimento direto com teclado ou toque, ataques em tempo real e um dash. Use Kingdom Rush como referência visual para arte cartunesca original, silhuetas legíveis, contorno forte, cenário ilustrado e golpes com antecipação e impacto. Use Hades como referência para escolhas e sinergias. Crie personagens, mapas, animações e efeitos próprios.
 - Use Comum, Super-rara, Épica, Lendária e Especial. A raridade das habilidades regulares acompanha o nível. Reserve roxo para Especial, incluindo fusões e poderes desbloqueados por desafios. Na fase da influenza, garanta hemaglutinina e neuraminidase durante a progressão, com melhorias nas ofertas seguintes.
 - O envoltório tem até quatro espaços funcionais: ataque, pulso, defesa e apoio. Nucleocapsídeo, movimento e status têm um espaço cada. Cada espaço aceita uma habilidade por partida, com melhorias de nível. Uma fusão pode acrescentar um terceiro poder sem ocupar o espaço de suas duas habilidades de origem. Mostre as escolhas no visual do vírus.
@@ -35,6 +36,7 @@
 
 - Defina as arenas, os pontos de saída, os chefes e as perguntas em `dist/fase-influenza.js`.
 - Defina as arenas e os casos do VSR em `dist/capitulo-vsr.js`. Registre novos capítulos no seletor em `dist/jogo.js` e na validação de progresso em `worker/index.js`.
+- Defina a rota zoonótica em `dist/toxocara.js`, as formas articuladas em `dist/arte-toxocara.js` e a arena em `dist/parasitos.js`.
 - Configure perfis e atributos em `dist/morfologia.js`, as camadas e poses da influenza em `dist/influenza-2d.js` e a arte dos outros personagens em `dist/arte-jogo.js`.
 - Configure segmentos, perfis, poderes, perguntas do núcleo e chances das formas em `dist/nucleo-influenza.js`.
 - Configure perfis, limite e duração de ecos em `dist/replicacao.js`.
