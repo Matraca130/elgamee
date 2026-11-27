@@ -18,6 +18,12 @@
     "arquivos": ["docs/decisoes/capitulos-respiratorios.md", "docs/decisoes/animacao-influenza.md", "dist/morfologia.js", "dist/influenza-2d.js", "dist/arte-jogo.js", "dist/jogo.js"]
   },
   {
+    "tema": "parasitos",
+    "busca": ["zoonose", "toxocara", "toxocariase", "hospedeiro", "hospedador", "vetor", "larva", "proglote"],
+    "resumo": "Rota de Toxocara canis do solo à fase larval no hospedeiro humano acidental.",
+    "arquivos": ["docs/decisoes/rotas-de-parasitos.md", "dist/toxocara.js", "dist/jogo.js", "dist/arte-toxocara.js"]
+  },
+  {
     "tema": "combate",
     "busca": ["mira", "ataque", "dash", "super", "raridade", "patogenia", "eco inflamatório", "replicação", "replicación", "ecos", "aliados"],
     "resumo": "Disparos, defesas, fusões e aliados temporários.",
