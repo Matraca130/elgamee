@@ -24,6 +24,10 @@
 - Mantenha o jogo acessível no celular e com teclado. Preserve a base dos auxiliares e seus dados salvos. Audite controles, objetivos e progressão ao mexer na arena.
 - Quando o usuário firmar uma nova regra permanente de jogabilidade, arte ou conteúdo, atualize este arquivo junto com a mudança. Use a instrução mais recente do usuário para resolver divergências.
 
+## Criação de personagens
+
+- Para criar ou revisar um personagem jogável, siga o [padrão de criação de personagens](docs/decisoes/criacao-de-personagens.md). Organize as características em uma ficha, reutilize `Personagem2D` e valide as formas e os movimentos na arena.
+
 ## Continuidade do projeto
 
 - Use o [README](README.md) para retomar o projeto e consulte o [registro de decisões](docs/decisoes/README.md) antes de mudar uma área já documentada.
