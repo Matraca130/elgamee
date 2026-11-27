@@ -14,6 +14,8 @@ Manter as instruções vigentes em `AGENTS.md` e registrar o motivo das decisõe
 
 O contexto acompanha o código e pode ser revisado no Git. Uma conversa nova começa pelas instruções e pelas decisões relacionadas à área que vai mudar.
 
+O [Matraca130/elgamee](https://github.com/Matraca130/elgamee) é o repositório público de colaboração. As propostas de mudança podem ser revisadas por pull request. A versão online do jogo é publicada no Site com as mudanças aprovadas.
+
 ## Consultas
 
 O comando `retomar` reúne o estado atual, as decisões e os commits recentes de um tema. A busca textual encontra trechos em decisões e código. A busca por significado usa um índice MemPalace gerado localmente a partir dos documentos versionados.

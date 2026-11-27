@@ -33,7 +33,7 @@ O comando `npm run contexto -- exportar-mempalace` gera a seleção de documento
 
 ## Editar em dupla
 
-Quando os dois têm edição no mesmo Site, cada pessoa pode abrir o Atlas em Sites e revisar sua mudança na prévia. Para colaboração em um Git privado, os dois abrem o mesmo repositório e podem usar uma branch por tarefa para revisar as mudanças antes de reunir o código na branch principal.
+O código e a memória compartilhados estão no [Matraca130/elgamee](https://github.com/Matraca130/elgamee). Abra esse repositório no Codex ou no editor para continuar o projeto. Use uma branch por tarefa e proponha as mudanças por pull request. É possível criar um fork para enviar uma proposta a partir da sua conta.
 
 Se você recebeu o pacote Git do Atlas, rode `git clone atlas-viral.bundle atlas-viral` e abra a pasta `atlas-viral` no editor. O pacote traz o histórico e os arquivos de contexto da versão em que foi criado.
 
