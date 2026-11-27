@@ -30,13 +30,15 @@ O Atlas Viral explora dois pares de arenas para introduzir a epidemiologia e o c
 
 ## Direção de arte
 
-O usuário pediu arte arcade mais agressiva, com câmera quase de cima, contornos fortes, silhuetas compactas, cores contrastantes e chão amplo e contínuo. O centro de cada arena fica aberto em todas as direções. As casas, as luzes, os chinelos e as texturas do ambiente dão identidade a cada cena. As pranchas mostram a arte de cenário e usam códigos para a escolha.
+O usuário escolheu a personalidade da primeira rodada ilustrada para o cenário inicial. Usar a pintura de cores quentes e as silhuetas expressivas das casinhas, com menos elementos, contraste legível e chão contínuo e aberto em todas as direções. A imagem serve como arte de cenário.
 
-| Fase | Opção de arte A | Opção de arte B |
-| --- | --- | --- |
-| Chagas ao entardecer | C5 · Terra ocre | C6 · Barro vermelho |
-| Chagas à noite | C7 · Noite cobalto | C8 · Noite verde-petróleo |
-| Toxo no ambiente | T5 · Quintal seco | T6 · Quintal úmido |
-| Intestino felino | T7 · Coral e laranja | T8 · Violeta e magenta |
+O **rancho inicial ao entardecer** combina o ocre e o espaço amplo de C1 com as casas de adobe expressivas de C2. Duas casinhas de cura ficam em bordas diferentes, com luz verde na porta e lampiões âmbar. Uma senhora de xale índigo guarda uma das casas com o chinelo na mão. Duas armadilhas de chinelo têm iscas marcadas por gotas vermelhas. Um pequeno trecho de cerca, pedras e vegetação seca dão escala à clareira.
 
-A escolha pendente é uma opção por fase. Os códigos identificam a rodada de arte arcade.
+| Fase | Referências da primeira rodada |
+| --- | --- |
+| Chagas ao entardecer | C1 · Rancho aberto e C2 · Viela de adobe |
+| Chagas à noite | C3 · Rancho ao luar e C4 · Corrais na sombra |
+| Toxo no ambiente | T1 · Jardim aberto e T2 · Quintal em terraços |
+| Intestino felino | T3 · Túnel sinuoso e T4 · Câmaras conectadas |
+
+O rancho ao entardecer é a primeira arte solicitada com essa direção. As próximas escolhas de arte incluem o rancho noturno, o ambiente do gato e o intestino felino.
