@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Atlas Viral · Cursos respiratórios</title>
+<link rel="stylesheet" href="./jogo.css">
+<meta name="atlas-progresso-local">
+</head>
+<body>
+<section id="lobulo-game" lang="pt-BR">
+<div id="app">
+<header id="hud" hidden>
+ <div class="day"><small>Região</small><span id="regionNow">Orofaringe</span></div>
+ <div class="bars">
+  <div class="row"><span>Integridade viral</span><span id="hpt">100/100</span></div>
+  <div class="bar"><i id="hpb"></i></div>
+  <div class="row"><span id="lvt">Nível 1</span><span id="fbt">Mal-estar 0%</span></div>
+  <div class="bar"><i id="xpb"></i></div>
+ </div>
+ <div class="arena-tools">
+  <button class="arena-base-button" id="crewHud">Base <i class="base-ready" id="crewHudReady" hidden></i></button>
+  <button class="icon" id="pauseBtn" aria-label="Pausar">II</button>
+ </div>
+ <div class="arena-roster">
+  <ol class="region-track" id="regionTrack" aria-label="Percurso da fase"></ol>
+  <p class="round-objective" id="arenaTissue"></p>
+  <span id="echoStatus" class="echo-status"></span>
+  <span id="mucusStatus" hidden>Muco · movimento mais lento</span>
+  <span id="pressureStatus" hidden>Campo dourado · movimento mais lento</span>
+  <span id="studyHint" hidden>Posto de profilaxia · à direita da entrada</span>
+ </div>
+ <div class="core-hud" id="coreHud" hidden>
+  <strong id="coreHudTitle"></strong><span id="coreHudStats"></span><span id="coreForm" hidden></span>
+ </div>
+</header>
+<main id="stage" data-phase="intro" aria-label="Arena respiratória da influenza">
+ <canvas id="cv" width="1" height="1" tabindex="0" role="img" aria-label="Arena do Atlas Viral, com quatro regiões respiratórias ligadas por correntes de ar"></canvas>
+ <img id="roomAtlas" src="./arenas-respiratorias.webp" alt="" hidden>
+ <div id="toast" role="status" aria-live="polite"></div>
+ <p id="travelNote" role="status" class="travel-note" hidden></p>
+ <div class="touch-legend" id="touchLegend" aria-hidden="true" hidden><span>Mover</span><span id="aimLegend">Mirar e atacar</span></div>
+ <div id="bossBar" class="boss-meter" hidden><strong id="bossName"></strong><div class="bar"><i id="bossFill"></i></div></div>
+ <div class="arena-actions" id="arenaActions" role="group" aria-label="Habilidades da arena" hidden>
+  <button id="superBtn" type="button" hidden>Super <small id="superStatus">Faça um dash no anel</small></button>
+  <button id="dashBtn" type="button">Dash <small id="dashTime">Pronto</small></button>
+ </div>
+ <div class="ov" id="intro">
+  <div class="arena-card campaign-card">
+   <section class="courses" aria-labelledby="courseHeading">
+    <div class="courses-head">
+     <h2 id="courseHeading">Meus cursos</h2>
+     <p id="courseStatus" role="status">Consultando o progresso…</p>
+     <a href="/signin-with-chatgpt?return_to=%2F" id="courseSignIn" target="_top" hidden>Entrar com ChatGPT</a>
+    </div>
+    <div id="courseChoices" class="course-choices" role="group" aria-label="Escolher curso"></div>
+   </section>
+   <div class="campaign-layout">
+    <div class="campaign-copy">
+     <div class="arena-intro">
+      <div class="hero-portrait"><canvas id="virusPortrait" width="112" height="112" aria-hidden="true"></canvas></div>
+      <div><p class="hero-name">Atlas Viral · Fase respiratória</p><h1 id="chapterTitle">Influenza</h1></div>
+     </div>
+     <p class="lead" id="chapterLead">Monte seu vírus e passe por quatro arenas do aparelho respiratório.</p>
+     <fieldset class="morph-options" id="morphOptions">
+      <legend>Morfologia e controles</legend>
+      <label id="genomeOption">Genoma<select id="genomeSelect"></select></label>
+      <label>Corpo<select id="bodySelect"></select></label>
+      <label>Expressão<select id="faceSelect"></select></label>
+      <label>Superfície<select id="surfaceSelect"></select></label>
+      <label>Replicação<select id="replicationSelect" aria-describedby="replicationNote"></select></label>
+      <label>Controle de ataque<select id="controlSelect"></select></label>
+      <p id="morphStats" aria-live="polite"></p>
+      <p id="replicationNote" aria-live="polite"></p>
+     </fieldset>
+     <p class="mut" id="controlsHelp">Arraste à esquerda para andar e à direita para mirar e atacar. No teclado, use WASD ou setas para andar e segure o mouse para atacar. Espaço ou Dash desvia.</p>
+     <p class="areanotice" id="arenaNotice" role="status" hidden></p>
+     <div class="btns"><button class="arena-button" id="startBtn">Começar fase</button><button class="arena-button ghost" id="crewIntro">Base dos auxiliares</button></div>
+     <ol class="campaign-route" id="campaignRoute" aria-label="Objetivos da fase"></ol>
+    </div>
+    <figure class="route-preview">
+     <img id="arenaTerrain" src="./terreno-respiratorio.webp" width="863" height="1164" alt="Orofaringe no alto, traqueia larga no centro e brônquios que se dividem em direção aos pulmões">
+     <figcaption>Mapa das vias respiratórias</figcaption>
+    </figure>
+   </div>
+   <details class="arena-help">
+    <summary>Espaços e raridades</summary>
+    <p>O envoltório tem espaços de ataque, pulso, defesa e apoio. Morfologia interna, reforço do nucleocapsídeo, acessório de movimento, status e patogenia também têm seus espaços. As ofertas aparecem depois de vencer a arena.</p>
+    <p><span class="rarity-badge" data-rarity="common">Comum</span> e <span class="rarity-badge" data-rarity="rare">Super-rara</span> aparecem nas primeiras ofertas. Habilidades de nível alto podem chegar a <span class="rarity-badge" data-rarity="epic">Épica</span> ou <span class="rarity-badge" data-rarity="legendary">Lendária</span>. Fusões e poderes desbloqueados por desafios usam <span class="rarity-badge" data-rarity="special">Especial</span>.</p>
+   </details>
+   <details class="arena-help"><summary id="fusionCount">Fusões descobertas</summary><ul id="fusionRecipes"></ul></details>
+   <details class="arena-help" id="influenzaDefenses">
+    <summary>Replicação, defesa e profilaxia</summary>
+    <p>Os fragmentos convocam ecos temporários que acompanham seus disparos. O Anel coletor aumenta o alcance da coleta. Nos brônquios, acerte uma pergunta no posto de profilaxia para ganhar um aliado de estudo por 14 s.</p>
+    <p>Nos pulmões, o pulso violeta causa dano no impacto. O campo dourado reduz a velocidade enquanto o personagem estiver dentro dele. São padrões de combate da arena.</p>
+    <p>Na influenza, anticorpos contra a hemaglutinina podem impedir a entrada do vírus na célula. Anticorpos contra a neuraminidase também podem proteger e limitar a liberação de partículas virais.</p>
+    <p class="study-source"><a href="https://www.cdc.gov/flu/php/viruses/human-serology.html" target="_blank" rel="noopener noreferrer">Anticorpos na influenza · CDC</a> · <a href="https://www.cdc.gov/flu/vaccines/index.htm" target="_blank" rel="noopener noreferrer">Tipos de vacina · CDC</a></p>
+   </details>
+   <details class="arena-help" id="influenzaPathogenesis">
+    <summary>Antena de patogenia</summary>
+    <p>Membrana firme e Impulso nível 2 podem abrir um desafio após a traqueia ou os brônquios. Acerte a pergunta para ganhar a antena do Eco inflamatório.</p>
+    <p>Na arena, o dash no instante do impacto de uma onda carrega o Super. Toque em Super ou pressione E para transformar o próximo disparo em um leque de três raios.</p>
+    <p>Na gripe, a lesão das células que revestem as vias aéreas e a inflamação ajudam a explicar a doença. Tosse e mal-estar estão entre os sintomas.</p>
+    <p class="study-source"><a href="https://www.cdc.gov/flu/signs-symptoms/index.html" target="_blank" rel="noopener noreferrer">Sinais e sintomas · CDC</a></p>
+   </details>
+   <details class="arena-help" id="influenzaCoreHelp">
+    <summary>Área do núcleo</summary>
+    <p>Ao vencer a orofaringe, responda a um desafio de morfologia para equipar um núcleo segmentado. Uma pergunta bônus dá acesso ao perfil de influenza e ao desafio do poder exclusivo.</p>
+    <p>Na arena, detectabilidade indica a distância a que a patrulha começa a perseguir o jogador. Variabilidade é a chance de sortear uma forma temporária ao chegar a outra arena. Essa forma muda o disparo ou a recarga do dash durante a sala.</p>
+    <p>Na virologia, os tipos A e B têm oito segmentos e causam epidemias sazonais. O tipo C tem sete segmentos e geralmente causa doença leve. Deriva antigênica é uma mudança gradual. Salto antigênico descreve uma mudança abrupta no tipo A.</p>
+    <p class="study-source"><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC7119911/" target="_blank" rel="noopener noreferrer">Genomas segmentados</a> · <a href="https://www.cdc.gov/flu/about/viruses-types.html" target="_blank" rel="noopener noreferrer">Tipos de influenza · CDC</a> · <a href="https://www.cdc.gov/flu/php/viruses/change.html" target="_blank" rel="noopener noreferrer">Deriva e salto · CDC</a></p>
+   </details>
+   <details class="arena-help" id="vsrHelp" hidden>
+    <summary>VSR, sincícios e bronquiolite</summary>
+    <p>O vírus sincicial respiratório pertence ao gênero <i>Orthopneumovirus</i>, família <i>Pneumoviridae</i>. Tem envoltório e RNA de fita simples negativa, não segmentado. Pode apresentar partículas arredondadas e filamentosas.</p>
+    <p>A proteína G participa da ligação à célula. A proteína F promove fusão de membranas e pode fazer células se fundirem, formando um sincício com vários núcleos.</p>
+    <p>O VSR pode causar sintomas de resfriado e também bronquiolite. Lactentes e idosos estão entre os grupos com maior risco de doença grave. As fichas da fase trazem um caso de bronquiolite e uma situação de prevenção para a equipe de saúde.</p>
+    <p class="study-source"><a href="https://ictv.global/report/chapter/pneumoviridae/pneumoviridae" target="_blank" rel="noopener noreferrer">Família Pneumoviridae · ICTV</a> · <a href="https://www.who.int/news-room/fact-sheets/detail/respiratory-syncytial-virus-%28RSV%29" target="_blank" rel="noopener noreferrer">Quadro clínico do VSR · OMS</a></p>
+   </details>
+   <details class="arena-help">
+    <summary>Genoma, capsídeo e envoltório</summary>
+    <p>O influenza A tem RNA de fita simples negativa, segmentado. O VSR tem RNA de fita simples negativa, não segmentado.</p>
+    <p>O capsídeo é proteico e o envoltório é uma camada lipídica externa. Na arte do Atlas, o vírus flutua e pode ter fibras finas na superfície, inspiradas em estruturas de adesão.</p>
+    <p>Tropismo descreve quais células ou tecidos um vírus consegue infectar. A ligação à célula faz parte disso. A patogênese inclui o que a infecção e a resposta do hospedeiro provocam no organismo.</p>
+    <p>Os perfis selecionáveis são fictícios. A cor e o número de traços distinguem RNA e DNA. Os benefícios de dano, cadência e resistência servem ao equilíbrio da arena.</p>
+    <p class="study-source"><a href="https://www.ncbi.nlm.nih.gov/books/NBK559437/figure/F3/" target="_blank" rel="noopener noreferrer">Classificação de Baltimore · NCBI</a></p>
+   </details>
+   <details class="arena-help">
+    <summary>Revisão da fase</summary>
+    <p>As perguntas trazem o tema e a dificuldade. As fichas ensinam virologia. Os poderes e as fusões fazem parte da ficção do jogo.</p>
+    <button class="arena-button ghost" id="practiceBtn" type="button">Questão fácil de epidemiologia</button>
+    <p class="study-source" id="influenzaLink"><a href="https://www.cdc.gov/flu/php/viruses/antigenic.html" target="_blank" rel="noopener noreferrer">Antígenos da influenza · CDC</a></p>
+   </details>
+   <details class="arena-help study-guide">
+    <summary>43 perguntas do Taller 14</summary>
+    <p>Enunciados em espanhol para rever os temas da guia.</p>
+    <label for="guideTopic">Tema</label>
+    <select id="guideTopic" aria-controls="guideQuestions"></select>
+    <ol id="guideQuestions" class="guide-questions"></ol>
+   </details>
+  </div>
+ </div>
+ <div class="ov dim" id="lv" hidden>
+  <div class="arena-card" role="dialog" aria-modal="true" aria-labelledby="qText">
+   <p class="mut" id="lvTag"></p><h2 id="qText"></h2>
+   <p class="mut" id="draftHint" hidden></p>
+   <div id="opts"></div><div class="fb" id="fb" role="status" hidden></div>
+   <figure id="evolutionPreview" class="evolution-preview" hidden>
+    <canvas id="evolutionPortrait" width="116" height="116" aria-hidden="true"></canvas>
+    <figcaption id="evolutionCaption"></figcaption>
+   </figure>
+   <div id="ups" class="build-choices" hidden></div>
+   <button class="arena-button ghost arena-lesson" id="reviewBtn" type="button" hidden>Revisar esta característica</button>
+   <div class="btns stick"><button class="arena-button" id="contBtn" hidden>Continuar</button></div>
+  </div>
+ </div>
+ <div class="ov dim" id="pause" hidden>
+  <div class="arena-card">
+   <h2>Pausa</h2>
+   <label class="pause-control">Controle de ataque<select id="pauseControl"></select></label>
+   <p class="mut">Seus espaços nesta partida</p><ul class="codex" id="ctr"></ul>
+   <div class="btns"><button class="arena-button" id="resumeBtn">Continuar</button><button class="arena-button ghost" id="crewPause">Base dos auxiliares</button><button class="arena-button ghost" id="restartBtn">Nova partida</button></div>
+  </div>
+ </div>
+ <div class="ov dim" id="end" hidden>
+  <div class="arena-card">
+   <h2 id="endH"></h2><p class="lead" id="endP"></p>
+   <div class="stats"><div><b id="sInf">0</b>células enfrentadas</div><div><b id="sBoss">0/4</b>arenas concluídas</div><div><b id="sF">0%</b>mal-estar no jogo</div></div>
+   <h3>Sua combinação</h3><ul class="codex" id="loadoutEnd"></ul>
+   <div id="runQuizLog" hidden><p class="mut">Perguntas desta partida</p><ul class="codex" id="codex"></ul></div>
+   <div class="btns"><button class="arena-button" id="againBtn">Nova partida</button><button class="arena-button ghost" id="crewEnd">Base dos auxiliares</button></div>
+  </div>
+ </div>
+</main>
+</div>
+<section id="crewHub" aria-labelledby="crewTitle" hidden>
+  <header class="crew-top">
+    <div class="crew-frame crew-top-inner">
+      <div class="crew-brand"><span class="brand-stamp" aria-hidden="true"><i></i></span><span>Atlas Viral</span></div>
+      <div class="crew-nav-actions">
+        <span class="crew-wallet" title="Moedas da equipe"><span class="coin-mark" aria-hidden="true"></span><strong id="crewCoins">20</strong><span class="wallet-word">moedas</span></span>
+        <button type="button" class="crew-arena" id="crewReturn"><span id="crewReturnLabel">Ir para a arena</span><span class="crew-arena-short" id="crewReturnShort" aria-hidden="true">Arena</span></button>
+      </div>
+    </div>
+  </header>
+  <div class="crew-frame crew-body">
+    <section class="crew-hero" id="crewHero">
+      <div class="crew-hero-copy">
+        <h1 id="crewTitle">Base dos auxiliares</h1>
+        <p id="crewLead">Escolha um mascote viral para acompanhar você na arena ou sair em missões por moedas e experiência.</p>
+      </div>
+      <canvas id="crewChart" width="420" height="254" aria-hidden="true"></canvas>
+    </section>
+    <nav class="crew-tabs" aria-label="Seções da base">
+      <button type="button" data-view="team">Minha equipe <span id="crewSize">0</span></button>
+      <button type="button" data-view="missions">Missões <span id="crewJobs" hidden>0</span></button>
+      <button type="button" data-view="catalog">Recrutar</button>
+    </nav>
+    <p id="crewSaveNote" class="crew-saving" hidden>O navegador bloqueou o salvamento. O progresso da equipe dura enquanto esta página ficar aberta.</p>
+    <div id="crewFlash" role="status" aria-live="polite" hidden></div>
+    <div id="crewBody"></div>
+  </div>
+</section>
+
+</section>
+<script defer src="./morfologia.js"></script>
+<script defer src="./replicacao.js"></script>
+<script defer src="./nucleo-influenza.js"></script>
+<script defer src="./arte-jogo.js"></script>
+<script defer src="./fase-influenza.js"></script>
+<script defer src="./capitulo-vsr.js"></script>
+<script defer src="./guia-respiratoria.js"></script>
+<script defer src="./progresso.js"></script>
+<script type="module" src="./jogo.js"></script>
+</body>
+</html>
