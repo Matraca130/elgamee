@@ -8,6 +8,7 @@ Revisado em 27 de novembro de 2026.
 - **Meus cursos** mostra os melhores resultados por capítulo. O servidor usa a identidade do Site para guardar o progresso da conta. A prévia guarda os resultados no navegador.
 - **Memória** tem busca por texto, busca por significado com MemPalace e um resumo por tema com decisões, arquivos e histórico. O comando `npm run contexto -- preparar` configura a busca por significado em outra cópia do código.
 - **Coedição** usa o [Matraca130/elgamee](https://github.com/Matraca130/elgamee), repositório público com o jogo e a memória. O GitHub recebe propostas por pull request, e a versão jogável é publicada no Site.
+- **Prévia jogável** tem um [endereço fixo no GitHub Pages](https://matraca130.github.io/elgamee/) e publica a revisão registrada em `gh-pages/versao.json`.
 
 ## Verificação recente
 

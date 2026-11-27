@@ -43,6 +43,6 @@ A URL do Atlas é publicada a partir do repositório vinculado ao Site. Se a equ
 
 ## Jogar pela prévia do GitHub
 
-Depois de ativar o GitHub Pages, use o [link fixo da prévia jogável](https://matraca130.github.io/elgamee/). O progresso nessa prévia fica no navegador.
+Use o [link fixo para jogar Atlas Viral](https://matraca130.github.io/elgamee/). O progresso nessa prévia fica no navegador.
 
 A branch `gh-pages` guarda o jogo pronto para abrir. O código e as decisões continuam no fluxo de pull requests para `main`. Consulte a [decisão da prévia pública](docs/decisoes/previa-github-pages.md) para ativar o endereço e atualizar a versão jogável.
