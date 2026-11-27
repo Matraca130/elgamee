@@ -1,0 +1,11 @@
+# Registro de decisões
+
+Use este índice para saber por que o Atlas Viral funciona do jeito atual. As regras em vigor para o trabalho estão no [AGENTS.md](../../AGENTS.md).
+
+| Decisão | Estado | Área |
+| --- | --- | --- |
+| [Salvar o progresso por conta e por curso](progresso-por-conta.md) | Aceita | Login e armazenamento |
+| [Separar os capítulos respiratórios](capitulos-respiratorios.md) | Aceita | Jogo e conteúdo |
+| [Versionar a memória com o código](memoria-no-repositorio.md) | Aceita | Colaboração |
+
+Para registrar uma escolha importante, crie um arquivo com título curto, data e estado. Descreva o contexto, a decisão, suas consequências e os arquivos envolvidos. Acrescente o link ao índice junto com a mudança. Use **Proposta**, **Aceita** ou **Substituída**. Uma decisão substituída aponta para a que passou a valer.

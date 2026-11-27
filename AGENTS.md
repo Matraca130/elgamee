@@ -21,6 +21,12 @@
 - Mantenha o jogo acessível no celular e com teclado. Preserve a base dos auxiliares e seus dados salvos. Audite controles, objetivos e progressão ao mexer na arena.
 - Quando o usuário firmar uma nova regra permanente de jogabilidade, arte ou conteúdo, atualize este arquivo junto com a mudança. Use a instrução mais recente do usuário para resolver divergências.
 
+## Continuidade do projeto
+
+- Use o [README](README.md) para retomar o projeto e consulte o [registro de decisões](docs/decisoes/README.md) antes de mudar uma área já documentada.
+- Registre decisões que mudem as regras do jogo, os cursos, o armazenamento ou a publicação junto com a alteração que as aplica. Anote o contexto, o que foi decidido e as consequências.
+- Identifique ideias em discussão como propostas. Quando uma decisão mudar, vincule a anterior à nova e atualize as instruções vigentes aqui.
+
 ## Onde acrescentar conteúdo
 
 - Defina as arenas, os pontos de saída, os chefes e as perguntas em `dist/fase-influenza.js`.
