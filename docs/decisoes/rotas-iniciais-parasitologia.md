@@ -30,15 +30,8 @@ O Atlas Viral explora dois pares de arenas para introduzir a epidemiologia e o c
 
 ## Direção de arte
 
-O usuário escolheu a personalidade da primeira rodada ilustrada para o cenário inicial. Usar a pintura de cores quentes e as silhuetas expressivas das casinhas, com menos elementos, contraste legível e chão contínuo e aberto em todas as direções. A imagem serve como arte de cenário.
+A referência escolhida é a prancha de arenas arcade **T5–T8**. Os cenários usam câmera alta, chão contínuo e aberto em todas as direções, contornos escuros, sombras marcadas e poucos adereços nas bordas. A ilustração de cenário usa textura e cor para dar personalidade ao espaço.
 
-O **rancho inicial ao entardecer** combina o ocre e o espaço amplo de C1 com as casas de adobe expressivas de C2. Duas casinhas de cura ficam em bordas diferentes, com luz verde na porta e lampiões âmbar. Uma senhora de xale índigo guarda uma das casas com o chinelo na mão. Duas armadilhas de chinelo têm iscas marcadas por gotas vermelhas. Um pequeno trecho de cerca, pedras e vegetação seca dão escala à clareira.
+O **rancho inicial ao entardecer** usa **T5** como referência de traço e paleta. O chão amplo em laranja queimado recebe duas casinhas angulares de adobe em bordas diferentes. Cada uma tem uma cruz verde e um lampião âmbar. Uma senhora com xale índigo fica junto de uma das portas com um chinelo na mão. Duas armadilhas de chinelo têm iscas marcadas por gotas vermelhas. Galhos secos, pedras e pequenas rachaduras dão escala à arena.
 
-| Fase | Referências da primeira rodada |
-| --- | --- |
-| Chagas ao entardecer | C1 · Rancho aberto e C2 · Viela de adobe |
-| Chagas à noite | C3 · Rancho ao luar e C4 · Corrais na sombra |
-| Toxo no ambiente | T1 · Jardim aberto e T2 · Quintal em terraços |
-| Intestino felino | T3 · Túnel sinuoso e T4 · Câmaras conectadas |
-
-O rancho ao entardecer é a primeira arte solicitada com essa direção. As próximas escolhas de arte incluem o rancho noturno, o ambiente do gato e o intestino felino.
+Na mesma prancha, T6 mostra um quintal úmido em verde escuro. T7 e T8 mostram duas referências de interior orgânico, em vermelho alaranjado e violeta. A escolha dos cenários seguintes segue em discussão.
