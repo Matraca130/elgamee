@@ -8,6 +8,8 @@ Com Node.js instalado, execute `npm run dev` e abra a URL exibida. Na prévia lo
 
 Para continuar em outro chat ou editor, abra o repositório na raiz e consulte as [instruções do projeto](AGENTS.md). O [registro de decisões](docs/decisoes/README.md) explica as escolhas que ainda orientam o código.
 
+Para editar biologia em qualquer IA, use a mesma edição da [guia de microbiologia](dist/guia.html#documento) e indique a página em cada ficha. Em **Meus cursos → Guia de microbiologia** há uma instrução para copiar para outro editor.
+
 ## Recuperar contexto
 
 Abra o projeto na raiz em qualquer editor ou assistente com acesso ao código. Para preparar a busca por significado, instale o [uv](https://docs.astral.sh/uv/getting-started/installation/) e execute uma vez:

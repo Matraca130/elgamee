@@ -1,7 +1,8 @@
 # Estado do Atlas Viral
 
-Revisado em 26 de novembro de 2026.
+Revisado em 27 de novembro de 2026.
 
+- **Guia de microbiologia** é a referência para a biologia nova ou revisada. Em Meus cursos, a guia tem uma ficha de Chagas com referências por página, um treino curto e instruções para continuar em outra IA.
 - **Influenza** tem quatro arenas, evolução do núcleo, HA, NA e posto de profilaxia.
 - **VSR** tem duas arenas, casos de lactente e equipe de saúde e Confluência como recompensa do desafio do sincício.
 - **Meus cursos** mostra os melhores resultados por capítulo. O servidor usa a identidade do Site para guardar o progresso da conta. A prévia guarda os resultados no navegador.
