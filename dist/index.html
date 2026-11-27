@@ -26,7 +26,10 @@
    <li aria-current="step">Orofaringe</li><li>Traqueia</li><li>Brônquios</li><li>Pulmões</li>
   </ol>
   <p class="round-objective" id="arenaTissue"></p>
+  <span id="echoStatus" class="echo-status"></span>
   <span id="mucusStatus" hidden>Muco · movimento mais lento</span>
+  <span id="pressureStatus" hidden>Campo dourado · movimento mais lento</span>
+  <span id="studyHint" hidden>Posto de profilaxia · à direita da entrada</span>
  </div>
  <div class="core-hud" id="coreHud" hidden>
   <strong id="coreHudTitle"></strong><span id="coreHudStats"></span><span id="coreForm" hidden></span>
@@ -57,9 +60,11 @@
       <label>Genoma<select id="genomeSelect"></select></label>
       <label>Corpo<select id="bodySelect"></select></label>
       <label>Expressão<select id="faceSelect"></select></label>
-      <label>Pés<select id="feetSelect"></select></label>
+      <label>Patas e flutuação<select id="feetSelect"></select></label>
+      <label>Replicação<select id="replicationSelect" aria-describedby="replicationNote"></select></label>
       <label>Controle de ataque<select id="controlSelect"></select></label>
       <p id="morphStats" aria-live="polite"></p>
+      <p id="replicationNote" aria-live="polite"></p>
      </fieldset>
      <p class="mut" id="controlsHelp">Arraste à esquerda para andar e à direita para mirar e atacar. No teclado, use WASD ou setas para andar e segure o mouse para atacar. Espaço ou Dash desvia.</p>
      <p class="areanotice" id="arenaNotice" role="status" hidden></p>
@@ -67,8 +72,8 @@
      <ol class="campaign-route" aria-label="Objetivos da fase">
       <li><b>Orofaringe</b><span>Derrote o primeiro chefe, ganhe hemaglutinina e explore a Área do núcleo.</span></li>
       <li><b>Traqueia</b><span>Passe pela mucosa e desbloqueie neuraminidase.</span></li>
-      <li><b>Brônquios</b><span>Enfrente a defesa ciliar na bifurcação.</span></li>
-      <li><b>Pulmões</b><span>Desvie dos anticorpos e vença o macrófago alveolar.</span></li>
+      <li><b>Brônquios</b><span>Enfrente a defesa ciliar e encontre o posto de profilaxia.</span></li>
+      <li><b>Pulmões</b><span>Desvie dos pulsos e saia dos campos dourados para vencer o macrófago.</span></li>
      </ol>
     </div>
     <figure class="route-preview">
@@ -82,6 +87,13 @@
     <p><span class="rarity-badge" data-rarity="common">Comum</span> e <span class="rarity-badge" data-rarity="rare">Super-rara</span> aparecem nas primeiras ofertas. Habilidades de nível alto podem chegar a <span class="rarity-badge" data-rarity="epic">Épica</span> ou <span class="rarity-badge" data-rarity="legendary">Lendária</span>. Fusões e poderes desbloqueados por desafios usam <span class="rarity-badge" data-rarity="special">Especial</span>.</p>
    </details>
    <details class="arena-help"><summary id="fusionCount">Fusões descobertas</summary><ul id="fusionRecipes"></ul></details>
+   <details class="arena-help">
+    <summary>Replicação, defesa e profilaxia</summary>
+    <p>Os fragmentos convocam ecos temporários que acompanham seus disparos. O Anel coletor aumenta o alcance da coleta. Nos brônquios, acerte uma pergunta no posto de profilaxia para ganhar um aliado de estudo por 14 s.</p>
+    <p>Nos pulmões, o pulso violeta causa dano no impacto. O campo dourado reduz a velocidade enquanto o personagem estiver dentro dele. São padrões de combate da arena.</p>
+    <p>Na influenza, anticorpos contra a hemaglutinina podem impedir a entrada do vírus na célula. Anticorpos contra a neuraminidase também podem proteger e limitar a liberação de partículas virais.</p>
+    <p class="study-source"><a href="https://www.cdc.gov/flu/php/viruses/human-serology.html" target="_blank" rel="noopener noreferrer">Anticorpos na influenza · CDC</a> · <a href="https://www.cdc.gov/flu/vaccines/index.htm" target="_blank" rel="noopener noreferrer">Tipos de vacina · CDC</a></p>
+   </details>
    <details class="arena-help">
     <summary>Antena de patogenia</summary>
     <p>Membrana firme e Impulso nível 2 podem abrir um desafio após a traqueia ou os brônquios. Acerte a pergunta para ganhar a antena do Eco inflamatório.</p>
@@ -100,6 +112,7 @@
     <summary>Genoma, capsídeo e envoltório</summary>
     <p>O influenza A tem RNA segmentado de fita simples (−). A polimerase viral produz o RNA mensageiro que os ribossomos leem. Em muitos vírus de RNA (+), o próprio RNA que entra na célula já pode servir como mensageiro.</p>
     <p>O capsídeo é proteico e o envoltório é uma camada lipídica externa. Nas influenzas A e B, a hemaglutinina e a neuraminidase ficam no envoltório. Na arte do jogo, os ramos verdes indicam NA e os pinos dourados indicam HA.</p>
+    <p>O envoltório lipídico torna muitos vírus envelopados sensíveis a detergentes. As patas articuladas e a flutuação fazem parte da arte do Atlas.</p>
     <p>Tropismo descreve quais células ou tecidos um vírus consegue infectar. A ligação à célula faz parte disso. A patogênese inclui o que a infecção e a resposta do hospedeiro provocam no organismo.</p>
     <p>Os perfis selecionáveis são fictícios. A cor e o número de traços distinguem RNA e DNA. Os benefícios de dano, cadência e resistência servem ao equilíbrio da arena.</p>
     <p class="study-source"><a href="https://www.ncbi.nlm.nih.gov/books/NBK559437/figure/F3/" target="_blank" rel="noopener noreferrer">Classificação de Baltimore · NCBI</a></p>
@@ -183,6 +196,7 @@
 
 </section>
 <script defer src="./morfologia.js"></script>
+<script defer src="./replicacao.js"></script>
 <script defer src="./nucleo-influenza.js"></script>
 <script defer src="./arte-jogo.js"></script>
 <script defer src="./fase-influenza.js"></script>

@@ -144,12 +144,19 @@ const arenaArt = (() => {
   oval(g,0,-2,23,22,fill,rim,2.8);
  }
 
- function feetArt(g,wide,stride,tint) {
-  const width=wide?10:8;
-  oval(g,-12+stride,18+Math.max(0,stride),width,5,'#54688c',ink,2.3);
-  oval(g,12-stride,18+Math.max(0,-stride),width,5,'#748bb2',ink,2.3);
-  oval(g,-14+stride,16+Math.max(0,stride),4,1.8,tint??'#a5ccd4');
-  oval(g,10-stride,16+Math.max(0,-stride),4,1.8,tint??'#badbdc');
+ function articulatedLegs(g,wide,stride,tint) {
+  const bases=[[-6,24,-12,28,-1],[2,27,2,34,10],[9,24,14,29,23]];
+  for(const side of [-1,1]){
+   for(const [index,[anchor,kneeX,kneeY,tipX,tipY]] of bases.entries()){
+    const swing=stride*side*(index%2?-1:1);
+    const knee=kneeY+swing*.6,tip=tipY+swing;
+    g.beginPath();g.moveTo(side*16,anchor);g.lineTo(side*kneeX,knee);
+    g.quadraticCurveTo(side*(tipX+1),tip-3,side*tipX,tip);
+    g.lineWidth=wide?6.2:4.5;g.strokeStyle=ink;g.stroke();
+    g.lineWidth=wide?3.7:2.45;g.strokeStyle=tint??(wide?'#7792aa':'#9bcdcd');g.stroke();
+    oval(g,side*kneeX,knee,wide?2.2:1.5,wide?2.2:1.5,tint??'#d4e8e7');
+   }
+  }
  }
 
  function neuraminidase(g,clock,rank,fused) {
@@ -253,8 +260,10 @@ const arenaArt = (() => {
    oval(g,0,1,36,32,aura);
    oval(g,0,18,27,8,null,'#e8b9ff',1.6);
   }
-  g.translate(0,-lift);g.scale(facing*(1+streak),1-streak*.55);g.rotate(stride*.022);
-  feetArt(g,morph.feet==='strong',stride,variation?.cooldownFactor?variation.color:null);
+  const floating=morph.feet==='float';
+  const hover=floating?4+Math.sin(clock*2.7)*1.5:0;
+  g.translate(0,-lift-hover);g.scale(facing*(1+streak),1-streak*.55);g.rotate(stride*.022);
+  if(!floating)articulatedLegs(g,morph.feet==='strong',stride,variation?.cooldownFactor?variation.color:null);
   if(na)neuraminidase(g,clock,na,fused);
   if(ha)hemagglutinin(g,ha);
   if(antenna)spiralAntenna(g,clock,antennaLit);

@@ -40,7 +40,7 @@ const TRAITS={
  veil:{slot:'defesa',name:'Véu cintilante',icon:'✧',color:'#7a4793',rarity:'common',
   desc:'Aumenta a integridade máxima e recupera parte dela ao subir de nível.'},
  magnet:{slot:'apoio',name:'Anel coletor',icon:'∪',color:'#8c621e',rarity:'common',
-  desc:'Atrai fragmentos de mais longe.'},
+  desc:'Atrai fragmentos de mais longe e facilita a convocação de ecos.'},
  core:{slot:'nucleo',name:'Núcleo estável',icon:'◇',color:'#705196',rarity:'rare',
   desc:'Aumenta o dano dos disparos e dos pulsos.'},
  dash:{slot:'movimento',name:'Impulso',icon:'»',color:'#3f658a',rarity:'common',
@@ -63,6 +63,7 @@ const defenseArt={
  airway:{look:'spark',colors:['#79b2d6','#4d5d98','#deefff']},
  lungs:{look:'scallop',colors:['#bb7ec2','#663b87','#f8cae8']}
 };
+const companionLook={morph:{...viralMorphology.defaults,feet:'float',face:'calm'}};
 const bodyCache=new Map();
 const mapCache=document.createElement('canvas');
 mapCache.width=mapCache.height=respiratory.size;
@@ -165,6 +166,7 @@ function createState() {
   p:{...first.spawn,r:15,hp:stats.hp,max:stats.hp,fx:0,fy:1,facing:1,walk:0,stride:0,dash:0,cooldown:0,hitAt:-2,castAt:-1},
   slots:{movimento:{id:'dash',rank:1}},fusions:new Set(),enemies:[],orbs:[],effects:[],
   segmented:null,variation:null,pathogenesisOffered:false,superState:'empty',
+  replication:arenaReplication.create(morph.replication),pressure:null,studySeen:false,
   nextAttack:stats.delay,casts:0,nextPatrol:5.5,encounter:null,round:null,history:[],
   mucus:-1,mucusTime:0,mucusAnswered:false,roomCleared:false,wind:null,arrivedAt:-5,tapUntil:-1
  };
@@ -199,6 +201,11 @@ function armSuper() {
  announce('Eco armado. Mire para lançar o próximo disparo em leque.');
 }
 
+function pressureAtPlayer() {
+ const field=S.pressure;
+ return field&&field.until>S.clock&&distance(field,S.p)<field.r?field:null;
+}
+
 function move(dt) {
  const p=S.p;
  let x=0,y=0;
@@ -212,7 +219,8 @@ function move(dt) {
  p.walk=Math.hypot(x,y);
  if(p.walk>.1){p.fx=x/p.walk;p.fy=y/p.walk;}
  if(Math.abs(x)>.08)p.facing=Math.sign(x);
- const speed=S.stats.speed*(S.mucus===-1?1:.51);
+ const surface=S.mucus<0?(pressureAtPlayer()?.speedFactor??1):.51;
+ const speed=S.stats.speed*surface;
  const dashing=p.dash>0;
  p.x+=(dashing?p.fx*speed*2.85:x*speed)*dt;
  p.y+=(dashing?p.fy*speed*2.85:y*speed)*dt;
@@ -284,6 +292,16 @@ function fireEcho(p,aim,nearby,reach,damage) {
  S.superState='empty';
 }
 
+function assistShots(nearby,aim) {
+ for(const ally of S.replication.allies){
+  const target=nearby.find(enemy=>enemy.hp>0&&distance(enemy,ally)<=142+enemy.r&&aimedAt(enemy,ally,aim,142,17));
+  if(!target)continue;
+  addEffect({type:'assist',x:ally.x,y:ally.y,x2:target.x,y2:target.y,
+   color:ally.study?'#ffdc9c':'#aef7eb',life:.21});
+  hit(target,ally.study?6:4);
+ }
+}
+
 function attack(dt) {
  S.nextAttack-=dt;
  if(S.nextAttack>0||S.roomCleared)return;
@@ -325,6 +343,11 @@ function attack(dt) {
    for(const enemy of S.enemies)if(aimedAt(enemy,p,ray,length,24))hit(enemy,17+na*3);
   }
  }
+ assistShots(nearby,ray);
+}
+
+function pressurePattern(enemy) {
+ return enemy.waves%2===1?respiratory.bosses[enemy.type]?.pressure:null;
 }
 
 function moveDefenses(dt) {
@@ -356,16 +379,21 @@ function moveDefenses(dt) {
   if(enemy.windup>0) {
    enemy.windup=Math.max(0,enemy.windup-dt);
    if(enemy.windup===0) {
-    const antibody=enemy.type==='lungs'&&enemy.waves%2===0;
+    const pressure=pressurePattern(enemy),antibody=enemy.type==='lungs'&&!pressure;
     enemy.waves++;
-    addEffect({type:'pulse',x:enemy.x,y:enemy.y,r:boss.wave,
-     color:antibody?'#e2c4ff':'#ff8e9e',antibody,life:.36});
-    if(d<boss.wave+p.r){
-     if(p.dash>0&&S.fusions.has('eco')&&S.superState==='empty'){
-      S.superState='ready';
-      announce('Eco inflamatório carregado. Toque em Super ou pressione E.');
+    if(pressure){
+     S.pressure={x:enemy.x,y:enemy.y,r:boss.wave,until:S.clock+pressure.duration,speedFactor:pressure.speedFactor};
+     announce('Campo dourado · saia do círculo para recuperar a velocidade.');
+    }else{
+     addEffect({type:'pulse',x:enemy.x,y:enemy.y,r:boss.wave,
+      color:antibody?'#e2c4ff':'#ff8e9e',antibody,life:.36});
+     if(d<boss.wave+p.r){
+      if(p.dash>0&&S.fusions.has('eco')&&S.superState==='empty'){
+       S.superState='ready';
+       announce('Eco inflamatório carregado. Toque em Super ou pressione E.');
+      }
+      harm(S.step===0?14:19);
      }
-     harm(S.step===0?14:19);
     }
     enemy.charge=2.65;
    }
@@ -389,7 +417,7 @@ function collect(dt) {
  for(let i=S.orbs.length-1;i>=0;i--) {
   const orb=S.orbs[i],d=distance(orb,p);
   if(d>reach)continue;
-  if(d<20){S.orbs.splice(i,1);S.xp++;continue;}
+  if(d<20){S.orbs.splice(i,1);S.xp++;arenaReplication.fragment(S.replication);continue;}
   const move=Math.min(1,(78+(1-d/reach)*185)*dt/d);
   orb.x+=(p.x-orb.x)*move;orb.y+=(p.y-orb.y)*move;
  }
@@ -399,7 +427,7 @@ function spawnBoss(id) {
  const {x,y,name}=respiratory.bosses[id];
  S.enemies.push(actor(id,x,y,true));
  S.encounter=id;
- const cue=id==='lungs'?'Pulmões · macrófago alveolar e ondas de anticorpos anti-HA. Desvie dos anéis.':
+ const cue=id==='lungs'?'Pulmões · desvie do pulso violeta e saia do campo dourado.':
   name+' entrou na arena. Saia do anel quando ele se acender.';
  announce(cue);
 }
@@ -417,7 +445,7 @@ function arenaReward() {
  S.roomCleared=true;
  S.regions=S.step+1;
  S.enemies.length=0;S.effects.length=0;
- S.mucus=-1;S.p.dash=0;
+ S.mucus=-1;S.p.dash=0;S.pressure=null;
  S.impact=Math.min(96,S.impact+12);
  S.p.hp=Math.min(S.p.max,S.p.hp+14);
  if(reward)equip(reward);
@@ -447,6 +475,8 @@ function enterArena(step) {
  S.enemies.length=0;S.orbs.length=0;S.effects.length=0;
  S.variation=influenzaCore.roll(S.segmented);
  Object.assign(S.p,{...room().spawn,walk:0,dash:0});
+ S.pressure=null;S.studySeen=false;
+ arenaReplication.update(S.replication,S.p,S.clock,1,false);
  S.mucus=-1;S.mucusTime=0;S.mucusAnswered=false;S.nextPatrol=4.8;S.nextAttack=S.stats.delay;
  addTargets();makeRoom();
 }
@@ -457,6 +487,7 @@ function travel(dt) {
  const t=Math.min(1,wind.time/duration), progress=t*t;
  S.p.x=wind.x+(reduce?0:Math.sin(t*Math.PI*2)*22*progress);
  S.p.y=wind.y+progress*157;
+ arenaReplication.update(S.replication,S.p,S.clock,dt,false);
  if(t<1)return;
  enterArena(S.step+1);
  S.wind=null;S.arrivedAt=S.clock;S.phase='play';
@@ -489,15 +520,31 @@ function mucusCheck(dt) {
  return true;
 }
 
+function studyCheckpoint() {
+ const post=room().study;
+ if(!post||S.studySeen||distance(post,S.p)>34)return false;
+ S.studySeen=true;
+ const pool=respiratory.prophylaxis;
+ const question=pool[Math.floor(Math.random()*pool.length)];
+ openQuiz(question,'study',correct=>{
+  if(correct)arenaReplication.studyReward(S.replication,S.p,S.clock);
+  S.round=null;
+  continueRun();
+  if(correct&&S.phase==='play')announce('Aliado de estudo por '+arenaReplication.studyDuration+' s.');
+ },'Acerte para ganhar um aliado temporário.');
+ return true;
+}
+
 function update(dt) {
  S.clock+=dt;
  move(dt);
  collect(dt);
+ arenaReplication.update(S.replication,S.p,S.clock,dt,!S.roomCleared);
  if(S.roomCleared){
   if(room().exit&&distance(room().exit,S.p)<45)leaveArena();
   return;
  }
- if(mucusCheck(dt))return;
+ if(mucusCheck(dt)||studyCheckpoint())return;
  attack(dt);
  moveDefenses(dt);
  const regeneration=traitRank('reserve')*.76;
@@ -804,6 +851,9 @@ function describeBuild(list) {
   if(held)item.append(' ',rarityBadge(UPGRADE_RARITIES[TRAITS[held.id].rarity][held.rank-1]));
   list.append(item);
  }
+ const replication=document.createElement('li');replication.className='none';
+ replication.textContent='Replicação · '+S.replication.profile.name;
+ list.append(replication);
  for(const id of S.fusions){
   const item=document.createElement('li');item.className='none';
   item.append((FUSIONS[id].kicker?FUSIONS[id].kicker+' · ':'')+FUSIONS[id].name+' ',rarityBadge('special'));list.append(item);
@@ -857,10 +907,12 @@ function finish(won) {
 
 function hud() {
  const p=S.p,area=room(),boss=currentBoss();
+ const {profile,charge,allies}=S.replication;
+ const underPressure=Boolean(pressureAtPlayer());
  const hp=Math.ceil(p.hp),dashSeconds=Math.ceil(p.cooldown);
  const key=[hp,p.max,S.step,S.level,S.xp,S.impact,S.mucus,boss?.type,boss?.hp,dashSeconds,
   S.roomCleared,S.phase,S.control,touchLayout,S.segmented?.segments,S.segmented?.profile,S.segmented?.signature,
-  S.fusions.has('eco'),S.superState].join('|');
+  S.fusions.has('eco'),S.superState,charge,allies.length,underPressure,S.studySeen].join('|');
  if(key===lastHud)return;
  lastHud=key;
  $('regionNow').textContent=area.name;$('hpt').textContent=hp+'/'+p.max;
@@ -876,6 +928,9 @@ function hud() {
   el.classList.toggle('done',index<S.regions);
  }
  $('mucusStatus').hidden=S.mucus<0||S.roomCleared;
+ $('pressureStatus').hidden=!underPressure;
+ $('echoStatus').textContent='Ecos '+allies.length+'/'+profile.capacity+' · '+charge+'/'+arenaReplication.cost+' fragmentos';
+ $('studyHint').hidden=!area.study||S.studySeen||S.roomCleared;
  $('coreHud').hidden=!S.segmented;
  if(S.segmented){
   const {segments,profile}=S.segmented, {chance,patrolRange}=influenzaCore.stats(S.segmented);
@@ -957,10 +1012,13 @@ function drawDefense(e) {
  const boss=respiratory.bosses[e.type];
  if(boss&&e.windup>0){
   const progress=1-e.windup/.85;
-  oval(ctx,e.x,e.y,boss.wave,boss.wave,'rgba(252,92,117,.17)','#ffcab7');
+  const pressure=Boolean(pressurePattern(e)),antibody=e.type==='lungs'&&!pressure;
+  const fill=pressure?'rgba(255,181,93,.23)':antibody?'rgba(207,149,251,.21)':'rgba(252,92,117,.17)';
+  const edge=pressure?'#ffe194':antibody?'#edc9ff':'#ffcab7';
+  oval(ctx,e.x,e.y,boss.wave,boss.wave,fill,edge);
   ctx.beginPath();ctx.arc(e.x,e.y,boss.wave,-Math.PI/2,-Math.PI/2+TAU*progress);
   ctx.strokeStyle='#fff1d0';ctx.lineWidth=4;ctx.stroke();
-  if(e.type==='lungs'&&e.waves%2===0)drawAntibodies(e.x,e.y,boss.wave);
+  if(antibody)drawAntibodies(e.x,e.y,boss.wave);
  }
  const motion=reduce?0:Math.sin(S.clock*8+e.phase)*e.r*.095;
  arenaArt.drawActor(ctx,sprite(e.type,boss?.rank),e.x,e.y,e.r,motion,S.clock-e.hitAt<.13);
@@ -1015,6 +1073,18 @@ function drawPlayer() {
  arenaArt.drawVirus(ctx,p.x-p.facing*recoil,p.y,24,look,pose);
 }
 
+function drawReplicas() {
+ for(const ally of S.replication.allies){
+  const remaining=ally.until-S.clock;
+  const lift=reduce?0:Math.sin(S.clock*5+ally.side)*1.9;
+  ctx.save();
+  ctx.globalAlpha=.82*Math.min(1,remaining/.55);
+  oval(ctx,ally.x,ally.y+8,15,5,null,ally.study?'#ffdb9c':'#a9e9d8');
+  arenaArt.drawVirus(ctx,ally.x,ally.y,ally.study?12:10.5,companionLook,{lift,clock:reduce?0:S.clock});
+  ctx.restore();
+ }
+}
+
 function drawEffects() {
  for(const effect of S.effects) {
   const t=(S.clock-effect.born)/effect.life;
@@ -1031,11 +1101,12 @@ function drawEffects() {
    ctx.lineWidth=echo?1.7:2.6;ctx.strokeStyle=echo?'#ffe8d4':'#fff0ff';ctx.stroke();
   }else{
    const dx=effect.x2-effect.x,dy=effect.y2-effect.y;
+   const assistance=effect.type==='assist';
    const end=reduce ? .96 : .45+.55*t;
    ctx.beginPath();ctx.moveTo(effect.x+dx*Math.max(0,end-.38),effect.y+dy*Math.max(0,end-.38));
    ctx.lineTo(effect.x+dx*end,effect.y+dy*end);
-   ctx.lineCap='round';ctx.lineWidth=6;ctx.strokeStyle='#693150';ctx.stroke();
-   ctx.lineWidth=3;ctx.strokeStyle=effect.color;ctx.stroke();
+   ctx.lineCap='round';ctx.lineWidth=assistance?4:6;ctx.strokeStyle=assistance?'#3f576b':'#693150';ctx.stroke();
+   ctx.lineWidth=assistance?2:3;ctx.strokeStyle=effect.color;ctx.stroke();
   }
  }
  ctx.globalAlpha=1;
@@ -1085,14 +1156,23 @@ function draw() {
  ctx.drawImage(mapCache,-respiratory.size/2,0);
  const area=room();
  respiratory.drawMucus(ctx,area,S.clock,S.mucus,reduce);
+ const field=S.pressure;
+ if(field&&field.until>S.clock){
+  oval(ctx,field.x,field.y,field.r,field.r,'rgba(231,164,75,.22)','#ffdf93');
+  oval(ctx,field.x,field.y,field.r*.91,field.r*.91,null,'rgba(255,225,156,.65)');
+ }
  if(S.roomCleared&&area.exit&&S.phase==='play'){
   respiratory.marker(ctx,{...area.exit,tone:'#c7f8f7'},'Corrente de ar',true,S.clock,reduce);
  }else if(!S.roomCleared&&!currentBoss()){
   respiratory.marker(ctx,area,area.label,S.enemies.every(e=>!e.required),S.clock,reduce);
  }
+ if(area.study&&!S.studySeen&&!S.roomCleared){
+  respiratory.marker(ctx,area.study,area.study.label,true,S.clock,reduce);
+ }
  for(const orb of S.orbs)arenaArt.drawFragment(ctx,orb,reduce);
  for(const enemy of S.enemies)drawDefense(enemy);
  crew.drawEscort();
+ drawReplicas();
  const aim=S.control==='manual'&&S.phase==='play'&&!S.roomCleared?aimDirection():null;
  if(aim){
   ctx.beginPath();ctx.moveTo(S.p.x+aim.x*24,S.p.y+aim.y*24);
@@ -1877,6 +1957,10 @@ function updateKit() {
  const armor=stats.damageTaken<1?' · recebe 6% menos dano':'';
  $('morphStats').textContent=stats.note+' '+stats.hp+' de integridade · '+stats.attack+
   ' de dano · velocidade '+stats.speed+' · recarga do dash '+stats.cooldown.toLocaleString('pt-BR')+' s'+armor;
+ const profile=arenaReplication.profiles[startingMorph.replication];
+ const count=profile.capacity===1?'1 eco por '+profile.duration+' s':
+  'Até '+profile.capacity+' ecos por '+profile.duration+' s cada';
+ $('replicationNote').textContent=count+'. Um aliado a cada '+arenaReplication.cost+' fragmentos.';
  $('controlsHelp').textContent=startingMorph.control==='manual'?
   'Arraste à esquerda para andar e à direita para mirar e atacar. No computador, use WASD ou setas e segure o mouse ou J para atacar. Espaço ou Dash desvia.':
   'Arraste ou use WASD e setas para andar. O ataque mira no alvo mais próximo. Use Espaço ou Dash para desviar.';
@@ -1893,7 +1977,8 @@ function setupMorphology() {
  try{saved=JSON.parse(localStorage.getItem(MORPH_SAVE));}catch{}
  const fields=[
   ['genome','genomeSelect',viralMorphology.genomes],['body','bodySelect',viralMorphology.bodies],
-  ['face','faceSelect',viralMorphology.faces],['feet','feetSelect',viralMorphology.feet],
+  ['face','faceSelect',viralMorphology.faces],['feet','feetSelect',viralMorphology.appendages],
+  ['replication','replicationSelect',arenaReplication.profiles],
   ['control','controlSelect',viralMorphology.controls]
  ];
  for(const [key,id,choices] of fields){

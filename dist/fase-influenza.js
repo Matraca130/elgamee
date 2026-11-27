@@ -10,6 +10,7 @@ const respiratory = (() => {
    task:'Atravesse a traqueia larga e chegue ao marco da neuraminidase.'},
   {name:'Brônquios',art:2,rx:317,ry:279,spawn:{x:0,y:166},x:0,y:435,exit:{x:122,y:574},tone:'#edb4ff',
    label:'Bifurcação',targets:[[-156,300],[158,302],[0,478]],boss:'airway',
+   study:{x:173,y:236,tone:'#ffda95',label:'Posto de profilaxia'},
    mucus:[{x:-111,y:417,rx:67,ry:30},{x:160,y:458,rx:57,ry:23}],
    task:'Passe pela bifurcação e enfrente a defesa ciliar.'},
   {name:'Pulmões',art:3,rx:311,ry:291,spawn:{x:0,y:165},x:0,y:430,tone:'#f9adba',
@@ -20,7 +21,8 @@ const respiratory = (() => {
  const bosses={
   watch:{name:'Vigia da mucosa',x:0,y:473,health:106,r:27,speed:45,wave:89,rank:1},
   airway:{name:'Defesa da traqueia',x:0,y:494,health:167,r:31,speed:49,wave:105,rank:2},
-  lungs:{name:'Macrófago alveolar ativado',x:34,y:502,health:242,r:39,speed:53,wave:125,rank:3}
+  lungs:{name:'Macrófago alveolar ativado',x:34,y:502,health:242,r:39,speed:53,wave:125,rank:3,
+   pressure:{duration:2.6,speedFactor:.74}}
  };
  const questions = [
   {level:'Fácil', topic:'Mucosa', q:'Qual é a função do muco nas vias aéreas?',
@@ -32,6 +34,14 @@ const respiratory = (() => {
   {level:'Difícil', topic:'Defesas respiratórias', q:'Se o muco continuar retendo partículas, mas os cílios pararem de bater, o que ocorre com essa defesa?',
    answers:['A retenção ainda pode ocorrer, mas a remoção fica prejudicada.','A remoção continua normalmente só pela presença de muco.','Os anticorpos passam a mover mecanicamente o muco.'],
    note:'Reter e transportar são funções complementares. Sem o batimento ciliar, o transporte de muco pelo epitélio perde eficiência.'}
+ ];
+ const prophylaxis=[
+  {level:'Fácil',topic:'Calendário vacinal',q:'O que um calendário de vacinação orienta?',
+   answers:['Quais vacinas são indicadas em cada idade ou grupo, de acordo com a autoridade local.','Quais sintomas cada pessoa terá durante uma infecção.','Como identificar um vírus pela forma de seu capsídeo.'],
+   note:'Os calendários organizam as indicações por faixa etária, grupos e situações específicas. As recomendações variam entre países.'},
+  {level:'Intermediária',topic:'Tipos de vacina',q:'Qual a diferença entre uma vacina viva atenuada e uma inativada?',
+   answers:['Uma usa vírus vivo enfraquecido. A outra contém vírus inativado ou componentes dele.','As duas contêm vírus vivo. A diferença é só o lugar da aplicação.','O nome indica apenas a idade de quem recebe a vacina.'],
+   note:'Existem vacinas contra influenza inativadas, recombinantes e vivas atenuadas. A indicação depende da formulação e das orientações locais.'}
  ];
  const review = {
   ha:{level:'Fácil',topic:'Hemaglutinina',q:'Qual proteína do envoltório ajuda o influenza a se ligar à célula?',
@@ -152,5 +162,5 @@ const respiratory = (() => {
   g.fillStyle='#fff7e7';g.fillText(title,area.x,area.y+33);
  }
 
- return {size,mapWidth,mapHeight,stages,bosses,questions,review,influenzaBank,confine,mucusAt,paintRoom,drawMucus,marker};
+ return {size,mapWidth,mapHeight,stages,bosses,questions,prophylaxis,review,influenzaBank,confine,mucusAt,paintRoom,drawMucus,marker};
 })();

@@ -419,6 +419,9 @@ label.talent-item{cursor:pointer}
 .region-track li[aria-current=step]{border-color:var(--line);background:color-mix(in srgb,var(--line) 63%,transparent);color:var(--ink);font-weight:850}
 .region-track li.done{color:var(--good);font-weight:750}
 .round-objective{flex:1;min-width:min(100%,270px);margin:0;padding:.1rem 0;font-size:.88rem}
+.echo-status{font-size:.78rem;font-weight:850;color:var(--ink)}
+#studyHint{font-size:.78rem}
+#pressureStatus{font-size:.78rem;color:light-dark(#805016,#ffe0a1);font-weight:850}
 .core-hud{
  grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;padding:4px 8px;
  border:1px solid var(--line);border-radius:7px;color:var(--mut);font-size:.79rem;line-height:1.35;
@@ -473,8 +476,7 @@ body #stage[data-phase=play]{height:auto;min-height:0}
  min-height:44px;width:100%;border:1px solid var(--line);border-radius:8px;
  color:var(--ink);background:var(--card);font:inherit;padding:4px 7px
 }
-.morph-options label:last-of-type,#morphStats{grid-column:1/-1}
-#morphStats{margin:1px 0 0;font-size:.82rem;color:var(--mut)}
+#morphStats,#replicationNote{grid-column:1/-1;margin:1px 0 0;font-size:.82rem;color:var(--mut)}
 .pause-control{margin:10px 0;max-width:250px}
 .campaign-card .arena-intro{grid-template-columns:clamp(4.6rem,10vw,7.1rem) minmax(0,1fr)}
 .campaign-card .hero-portrait,.evolution-preview{
