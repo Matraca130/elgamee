@@ -1,3 +1,6 @@
+import { carregarInfluenza, poseInfluenza } from './influenza-2d.js';
+import { Personagem2D } from './personagem-2d.js';
+
 {
 const root=document.getElementById('lobulo-game');
 const $=id=>root.querySelector('#'+id);
@@ -17,6 +20,7 @@ let selectedChapter=chapters.influenza;
 const courseButtons=new Map();
 const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TAU=Math.PI*2, FRAME_MS=1000/30;
+const SHOT_ANIMATION_SPEED=1.4;
 const keys=new Set();
 const moveStick={id:null,ox:0,oy:0,x:0,y:0};
 const aimStick={id:null,ox:0,oy:0,x:0,y:0,mouse:false};
@@ -86,6 +90,8 @@ const mapCache=document.createElement('canvas');
 mapCache.width=mapCache.height=respiratory.size;
 
 let S=null, ctx=null, frameId=null, observer=null;
+let influenzaRig=null;
+const pendingPortraits=new Map();
 let W=1,H=1,dpr=1,scale=1,ox=0,oy=0,lastFrame=0,lastHud='';
 let toastUntil=0;
 
@@ -185,7 +191,8 @@ function createState() {
  const first=chapter.stages[0];
  return {
   phase:'play',clock:0,step:0,regions:0,impact:0,cells:0,level:1,xp:0,chapter,morph,stats,control:morph.control,
-  p:{...first.spawn,r:15,hp:stats.hp,max:stats.hp,fx:0,fy:1,facing:1,walk:0,stride:0,dash:0,cooldown:0,hitAt:-2,castAt:-1},
+  p:{...first.spawn,r:15,hp:stats.hp,max:stats.hp,fx:0,fy:1,facing:1,walk:0,stride:0,dash:0,dashAt:-1,
+   cooldown:0,hitAt:-2,castAt:-1,shot:null},
   slots:{movimento:{id:'dash',rank:1}},fusions:new Set(),enemies:[],orbs:[],effects:[],
   segmented:null,variation:null,pathogenesisOffered:false,superState:'empty',
   replication:arenaReplication.create(morph.replication),pressure:null,studySeen:false,
@@ -213,6 +220,7 @@ function clearInput() {
 function dash() {
  if(S?.phase!=='play'||S.p.cooldown>0)return;
  S.p.dash=S.stats.dash;
+ S.p.dashAt=S.clock;
  const recharge=S.stats.cooldown-(traitRank('dash')-1)*.42;
  S.p.cooldown=recharge*(S.variation?.cooldownFactor??1);
 }
@@ -297,16 +305,16 @@ function aimedAt(enemy,p,aim,reach,width) {
  return along>=-enemy.r&&along<=reach+enemy.r&&Math.abs(x*aim.y-y*aim.x)<width+enemy.r+Math.max(0,along)*.07;
 }
 
-function fireLine(p,aim,reach,color,type='strike',life=.18) {
- addEffect({type,x:p.x,y:p.y,x2:p.x+aim.x*reach,y2:p.y+aim.y*reach,color,life});
+function fireLine(p,aim,reach,color,type='strike',life=.18,origin=p) {
+ addEffect({type,x:origin.x,y:origin.y,x2:p.x+aim.x*reach,y2:p.y+aim.y*reach,color,life});
 }
 
-function fireEcho(p,aim,nearby,reach,damage) {
+function fireEcho(p,aim,nearby,reach,damage,origin) {
  const rays=[-.32,0,.32].map(angle=>{
   const c=Math.cos(angle),s=Math.sin(angle);
   return {x:aim.x*c-aim.y*s,y:aim.x*s+aim.y*c};
  });
- for(const ray of rays)fireLine(p,ray,reach,'#ffb09d','echo',.3);
+ for(const ray of rays)fireLine(p,ray,reach,'#ffb09d','echo',.3,origin);
  const bonusDamage=Math.round(damage*1.3);
  for(const enemy of nearby){
   if(rays.some(ray=>aimedAt(enemy,p,ray,reach,14)))hit(enemy,bonusDamage);
@@ -331,34 +339,33 @@ function assistShots(nearby,aim) {
  }
 }
 
-function attack(dt) {
- S.nextAttack-=dt;
- if(S.nextAttack>0||S.roomCleared)return;
- const p=S.p,ha=traitRank('ha'),na=traitRank('na'),core=traitRank('core');
- const reach=175+ha*14;
- const aim=S.control==='manual'?aimDirection():null;
- const auto=S.control==='auto'||keys.has('j')||S.tapUntil>=S.clock;
- if(!aim&&!auto)return;
- const nearby=S.enemies.filter(enemy=>enemy.hp>0&&distance(p,enemy)<reach+enemy.r)
+function attackTargets(p,reach) {
+ return S.enemies.filter(enemy=>enemy.hp>0&&distance(p,enemy)<reach+enemy.r)
   .sort((a,b)=>distance(p,a)-distance(p,b));
+}
+
+function releaseAttack(shot,releasePose,nearby=attackTargets(S.p,shot.reach)) {
+ const p=S.p,{reach,ha,na,core}=shot;
+ const aim=shot.manual?(aimDirection()??shot.ray):null;
+ const primary=nearby[0];
+ const ray=aim??(primary&&unit(primary.x-p.x,primary.y-p.y))??shot.ray;
+ if(Math.abs(ray.x)>.08)shot.side=Math.sign(ray.x);
  const targets=aim?nearby.filter(enemy=>aimedAt(enemy,p,aim,reach,14)):nearby;
- const primary=targets[0];
- if(!aim&&!primary)return;
- const ray=aim??unit(primary.x-p.x,primary.y-p.y)??{x:p.fx,y:p.fy};
- S.nextAttack=S.stats.interval-ha*.025;
- S.tapUntil=-1;
+ const origin=releasePose?influenzaRig.ponto('disparo',influenzaPosition(p.x,p.y,24,shot.side),
+  influenzaModelPose(releasePose,S.morph.body)):p;
  S.casts++;
  p.castAt=S.clock;
- if(p.walk<.18&&Math.abs(ray.x)>.08)p.facing=Math.sign(ray.x);
+ if(p.walk<.18)p.facing=shot.side;
  const color=ha?'#ffe5a5':'#b8f8fd';
+ const effectType=releasePose?'pellet':'strike';
  const shapeDamage=influenzaCore.stats(S.segmented).attackOffset+(S.variation?.attackOffset??0);
  const damage=S.stats.attack+ha*4+core*4+shapeDamage;
  if(S.superState==='armed'){
-  fireEcho(p,ray,nearby,reach,damage);
+  fireEcho(p,ray,nearby,reach,damage,origin);
  }else{
-  if(aim)fireLine(p,ray,reach,color);
+  if(aim||!primary)fireLine(p,ray,reach,color,effectType,.18,origin);
   for(const target of targets.slice(0,ha>=2?2:1)){
-   if(!aim)addEffect({type:'strike',x:p.x,y:p.y,x2:target.x,y2:target.y,color,life:.18});
+   if(!aim)addEffect({type:effectType,x:origin.x,y:origin.y,x2:target.x,y2:target.y,color,life:.18});
    hit(target,damage);
   }
  }
@@ -368,11 +375,41 @@ function attack(dt) {
   for(const enemy of nearby)if(distance(enemy,p)<range+enemy.r)hit(enemy,9+na*4+core*4);
   if(S.fusions.has('resonancia')){
    const length=reach+66;
-   fireLine(p,ray,length,'#eeb8ff','beam',.35);
+   fireLine(p,ray,length,'#eeb8ff','beam',.35,origin);
    for(const enemy of S.enemies)if(aimedAt(enemy,p,ray,length,24))hit(enemy,17+na*3);
   }
  }
  assistShots(nearby,ray);
+}
+
+function attack(dt) {
+ const p=S.p;
+ S.nextAttack-=dt;
+ if(S.roomCleared)return;
+ if(p.shot){
+  const shot=p.shot;
+  if(shot.animation.avancar(dt*SHOT_ANIMATION_SPEED,(event,pose)=>{
+   if(event==='disparo')releaseAttack(shot,pose);
+  }))p.shot=null;
+ }
+ if(S.nextAttack>0||p.shot)return;
+ const aim=S.control==='manual'?aimDirection():null;
+ const auto=S.control==='auto'||keys.has('j')||S.tapUntil>=S.clock;
+ if(!aim&&!auto)return;
+ const ha=traitRank('ha'),reach=175+ha*14;
+ const nearby=attackTargets(p,reach);
+ const primary=nearby[0];
+ if(!aim&&!primary)return;
+ const ray=aim??unit(primary.x-p.x,primary.y-p.y)??{x:p.fx,y:p.fy};
+ const shot={manual:Boolean(aim),ray,side:Math.abs(ray.x)>.08?Math.sign(ray.x):p.facing,
+  reach,ha,na:traitRank('na'),core:traitRank('core')};
+ S.nextAttack=S.stats.interval-ha*.025;
+ S.tapUntil=-1;
+ if(influenzaRig&&S.chapter.id==='influenza'){
+  shot.animation=new Personagem2D(influenzaRig.modelo);
+  shot.animation.tocar('shoot');
+  p.shot=shot;
+ }else releaseAttack(shot,undefined,nearby);
 }
 
 function pressurePattern(enemy) {
@@ -506,7 +543,7 @@ function enterArena(step) {
  S.step=step;S.roomCleared=false;S.encounter=null;
  S.enemies.length=0;S.orbs.length=0;S.effects.length=0;
  S.variation=influenzaCore.roll(S.segmented);
- Object.assign(S.p,{...room().spawn,walk:0,dash:0});
+ Object.assign(S.p,{...room().spawn,walk:0,dash:0,dashAt:-1,castAt:-1,shot:null});
  S.pressure=null;S.studySeen=false;
  arenaReplication.update(S.replication,S.p,S.clock,1,false);
  S.mucus=-1;S.mucusTime=0;S.mucusAnswered=false;S.nextPatrol=4.8;S.nextAttack=S.stats.delay;
@@ -746,6 +783,7 @@ function startRun() {
 }
 
 function setupChoice(title,label,note) {
+ S.p.shot=null;
  S.phase='level';clearInput();setPanel('level');syncArena();
  $('qText').textContent=title;$('lvTag').textContent=label;
  $('draftHint').hidden=!note;$('draftHint').textContent=note;
@@ -1161,10 +1199,37 @@ function appearance(card=null) {
  };
 }
 
+function influenzaPosition(x,y,r,lado=1) {
+ return {x,y:y-4,escala:r/54,lado};
+}
+
+function influenzaModelPose(pose,body) {
+ return poseInfluenza(reduce?influenzaRig.modelo.neutra:pose,body);
+}
+
+function influenzaLook(look) {
+ return {...look,genome:viralMorphology.genomes[look.morph.genome],
+  temper:look.temper??viralMorphology.faces[look.morph.face].intensity};
+}
+
+function drawInfluenza(g,local,look,pose) {
+ const {x,y,escala}=local;
+ oval(g,x,y+escala*48,escala*47,escala*11,'rgba(37,29,53,.34)');
+ influenzaRig.desenhar(g,local,influenzaModelPose(pose,look.morph.body),influenzaLook(look));
+}
+
 function paintPortrait(canvas,look) {
  const g=canvas.getContext('2d');
  if(!g)return;
  g.clearRect(0,0,canvas.width,canvas.height);
+ if(!look.vsr){
+  if(influenzaRig){
+   const local=influenzaPosition(canvas.width/2,canvas.height*.56,canvas.width*.28);
+   drawInfluenza(g,local,look,influenzaRig.pose(0,'idle'));
+   return;
+  }
+  pendingPortraits.set(canvas,look);
+ }else pendingPortraits.delete(canvas);
  arenaArt.drawVirus(g,canvas.width/2,canvas.height*.49,canvas.width*.28,look);
 }
 
@@ -1173,8 +1238,35 @@ function previewEvolution(card=null) {
  $('evolutionCaption').textContent=card?'Prévia · '+card.name:'Morfologia atual';
 }
 
+function drawInfluenzaPlayer(p,look) {
+ const shot=p.shot;
+ const dashTime=(S.clock-p.dashAt)*1.5;
+ const dashing=S.phase==='travel'||dashTime<influenzaRig.modelo.clipes.dash.duracao;
+ const hurtTime=S.clock-p.hitAt;
+ const shooting=shot&&(!dashing&&hurtTime>=influenzaRig.modelo.clipes.hurt.duracao||shot.animation.tempo<.29);
+ const local=influenzaPosition(p.x,p.y,24,shooting?shot.side:p.facing);
+ const dashPose=dashing?influenzaRig.pose(S.phase==='travel'?.18:dashTime,'dash'):null;
+ const detail={...look,temper:Math.min(2,viralMorphology.faces[S.morph.face].intensity+Number(S.cells>=5)),
+  flash:hurtTime<.18,antennaLit:S.superState!=='empty'};
+ if(dashPose&&!reduce){
+  ctx.save();
+  ctx.globalAlpha=.26;
+  const trail=influenzaPosition(p.x-p.fx*18,p.y-p.fy*24,21,p.facing);
+  influenzaRig.desenhar(ctx,trail,influenzaModelPose(dashPose,look.morph.body),influenzaLook(detail));
+  ctx.restore();
+ }
+ const action=p.walk>.1?'move':'idle';
+ const pose=shooting?shot.animation.pose():dashPose??(hurtTime<influenzaRig.modelo.clipes.hurt.duracao?
+  influenzaRig.pose(hurtTime,'hurt'):influenzaRig.pose(S.clock,action));
+ drawInfluenza(ctx,local,detail,pose);
+}
+
 function drawPlayer() {
  const p=S.p,look=appearance();
+ if(influenzaRig&&!look.vsr){
+  drawInfluenzaPlayer(p,look);
+  return;
+ }
  const stride=reduce?0:Math.sin(p.stride)*p.walk*3.8;
  const lift=reduce?0:Math.abs(stride)*.54+Math.sin(S.clock*3.4)*1.6;
  const recoil=reduce?0:Math.max(0,1-(S.clock-p.castAt)/.12)*2.4;
@@ -1191,13 +1283,18 @@ function drawPlayer() {
 }
 
 function drawReplicas() {
+ const influenza=influenzaRig&&S.chapter.id==='influenza';
+ const look=influenza?{morph:{...S.morph,face:'calm'},segmented:influenzaCore.shape(S.segmented)}:companionLook;
  for(const ally of S.replication.allies){
   const remaining=ally.until-S.clock;
   const lift=reduce?0:Math.sin(S.clock*5+ally.side)*1.9;
   ctx.save();
   ctx.globalAlpha=.82*Math.min(1,remaining/.55);
   oval(ctx,ally.x,ally.y+8,15,5,null,ally.study?'#ffdb9c':'#a9e9d8');
-  arenaArt.drawVirus(ctx,ally.x,ally.y,ally.study?12:10.5,companionLook,{lift,clock:reduce?0:S.clock});
+  const radius=ally.study?12:10.5;
+  if(influenza)drawInfluenza(ctx,influenzaPosition(ally.x,ally.y,radius,S.p.facing),look,
+   influenzaRig.pose(S.clock+Math.abs(ally.side)*.13,'idle'));
+  else arenaArt.drawVirus(ctx,ally.x,ally.y,radius,look,{lift,clock:reduce?0:S.clock});
   ctx.restore();
  }
 }
@@ -1216,6 +1313,17 @@ function drawEffects() {
    ctx.lineCap='round';ctx.lineWidth=echo?9:15;ctx.strokeStyle=echo?'#843857':'#702899';ctx.stroke();
    ctx.lineWidth=echo?4:7;ctx.strokeStyle=effect.color;ctx.stroke();
    ctx.lineWidth=echo?1.7:2.6;ctx.strokeStyle=echo?'#ffe8d4':'#fff0ff';ctx.stroke();
+  }else if(effect.type==='pellet'){
+   const dx=effect.x2-effect.x,dy=effect.y2-effect.y;
+   const progress=reduce?.94:t;
+   if(!reduce&&t<.45)oval(ctx,effect.x,effect.y,6+t*6,5+t*5,'rgba(255,236,183,.68)');
+   ctx.save();
+   ctx.translate(effect.x+dx*progress,effect.y+dy*progress);
+   ctx.rotate(Math.atan2(dy,dx));
+   oval(ctx,-3,0,9.2,3.5,'rgba(231,249,230,.45)');
+   oval(ctx,0,0,5.9,3.8,'#42596b');
+   oval(ctx,1,-.2,4.2,2.7,effect.color);
+   ctx.restore();
   }else{
    const dx=effect.x2-effect.x,dy=effect.y2-effect.y;
    const assistance=effect.type==='assist';
@@ -2118,4 +2226,11 @@ setupMorphology();
 setupGuide();
 setupCourses();
 showIntro();
+carregarInfluenza().then(modelo=>{
+ influenzaRig=new Personagem2D(modelo);
+ for(const [canvas,look] of pendingPortraits)paintPortrait(canvas,look);
+ pendingPortraits.clear();
+}).catch(()=>{
+ pendingPortraits.clear();
+});
 }

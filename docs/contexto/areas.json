@@ -15,7 +15,7 @@
     "tema": "morfologia",
     "busca": ["aparência", "apariencia", "fibras", "patas", "flutuação", "filamentoso", "envoltório", "envoltura"],
     "resumo": "Silhueta do personagem, flutuação e detalhes das habilidades equipadas.",
-    "arquivos": ["docs/decisoes/capitulos-respiratorios.md", "dist/morfologia.js", "dist/arte-jogo.js", "dist/jogo.js"]
+    "arquivos": ["docs/decisoes/capitulos-respiratorios.md", "docs/decisoes/animacao-influenza.md", "dist/morfologia.js", "dist/influenza-2d.js", "dist/arte-jogo.js", "dist/jogo.js"]
   },
   {
     "tema": "combate",

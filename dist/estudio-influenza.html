@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6efdf">
+  <title>Influenza · Atlas Viral</title>
+  <link rel="icon" href="./influenza-membrana.webp" type="image/webp">
+  <link rel="stylesheet" href="./estudio-influenza.css">
+</head>
+<body>
+  <main class="estudio">
+    <header class="cabecalho">
+      <a class="marca" href="/" aria-label="Voltar ao Atlas Viral">
+        <span class="marca-icone" aria-hidden="true"></span>
+        Atlas Viral
+      </a>
+      <div class="titulo">
+        <div>
+          <h1>Influenza</h1>
+          <output id="acao" class="acao" aria-label="Animação atual">Carregando</output>
+        </div>
+        <div class="escala" role="group" aria-label="Tamanho do personagem">
+          <button type="button" data-escala="ampliado" aria-pressed="true">Ampliado</button>
+          <button type="button" data-escala="jogo" aria-pressed="false">No jogo</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="palco" aria-label="Área de animação">
+      <canvas id="arena" tabindex="0" aria-label="Teste jogável da influenza" aria-describedby="teclado">
+        O teste de animação precisa de suporte a Canvas.
+      </canvas>
+      <p id="carregamento" class="carregamento" role="status">Preparando o personagem…</p>
+    </section>
+
+    <section class="comandos" aria-label="Comandos do personagem">
+      <div class="movimento">
+        <div id="direcional" class="direcional" role="group" aria-label="Direcional de toque">
+          <span id="manete" class="manete" aria-hidden="true"></span>
+        </div>
+        <div>
+          <strong>Mover</strong>
+          <p id="teclado">WASD ou setas · espaço atira · Shift esquiva</p>
+          <p id="mira">Mire e atire na arena com mouse ou toque.</p>
+        </div>
+      </div>
+      <div class="botoes">
+        <button id="atirar" type="button" class="primario" disabled>Atirar</button>
+        <button id="esquivar" type="button" disabled>Esquivar</button>
+        <button id="impacto" type="button" disabled>Testar impacto</button>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="./estudio-influenza.js"></script>
+</body>
+</html>
