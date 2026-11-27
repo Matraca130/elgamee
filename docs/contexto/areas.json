@@ -1,5 +1,11 @@
 [
   {
+    "tema": "chagas",
+    "busca": ["cruzi", "vinchuca", "triatoma", "guia", "guía", "pdf", "fonte", "fuente", "epimastigote", "amastigote", "tripomastigote", "cinetoplasto", "kinetoplasto"],
+    "resumo": "Guia de microbiologia, referências por página e treino de Chagas.",
+    "arquivos": ["docs/decisoes/guia-da-cursada.md", "dist/guia.html", "dist/guia-estudo.js", "AGENTS.md"]
+  },
+  {
     "tema": "influenza",
     "busca": ["gripe", "traqueia", "tráquea", "hemaglutinina", "neuraminidase", "neuraminidasa", "deriva", "salto", "drift", "shift"],
     "resumo": "Quatro arenas, evolução do núcleo e recompensas HA e NA.",
