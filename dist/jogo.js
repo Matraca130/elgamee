@@ -1,10 +1,13 @@
 import { carregarInfluenza, poseInfluenza } from './influenza-2d.js';
 import { Personagem2D } from './personagem-2d.js';
+import { toxocaraChapter, evolucoesToxocara } from './toxocara.js?v=rotas';
+import { modeloToxocara, desenharCompanheiro } from './arte-toxocara.js?v=rotas';
 
 {
 const root=document.getElementById('lobulo-game');
 const $=id=>root.querySelector('#'+id);
 const cv=$('cv'), stage=$('stage'), terrain=$('arenaTerrain'), roomAtlas=$('roomAtlas');
+const parasiteAtlas=$('parasiteAtlas');
 const chapters={
  influenza:{
   id:'influenza',title:'Influenza',short:'Influenza',topic:'Influenza',
@@ -12,7 +15,8 @@ const chapters={
   stages:respiratory.stages,bosses:respiratory.bosses,review:respiratory.review,practice:respiratory.review.epidemiology,
   win:'Você passou pela traqueia e venceu o macrófago alveolar. +25 moedas.'
  },
- vsr:vsrChapter
+ vsr:vsrChapter,
+ toxocara:toxocaraChapter
 };
 const courseLimits=atlasCourseLimits;
 const courseChoiceKey='atlas-viral-curso-ativo';
@@ -91,6 +95,7 @@ mapCache.width=mapCache.height=respiratory.size;
 
 let S=null, ctx=null, frameId=null, observer=null;
 let influenzaRig=null;
+const toxocaraRig=new Personagem2D(modeloToxocara);
 const pendingPortraits=new Map();
 let W=1,H=1,dpr=1,scale=1,ox=0,oy=0,lastFrame=0,lastHud='';
 let toastUntil=0;
@@ -186,14 +191,19 @@ function chapterMorph(){
  return {...startingMorph,genome:selectedChapter.fixedGenome??startingMorph.genome};
 }
 
+function chapterStats(chapter,morph) {
+ return chapter.stats??viralMorphology.stats(morph);
+}
+
 function createState() {
- const chapter=selectedChapter,morph=chapterMorph(),stats=viralMorphology.stats(morph);
+ const chapter=selectedChapter,morph=chapterMorph(),stats=chapterStats(chapter,morph);
  const first=chapter.stages[0];
  return {
   phase:'play',clock:0,step:0,regions:0,impact:0,cells:0,level:1,xp:0,chapter,morph,stats,control:morph.control,
   p:{...first.spawn,r:15,hp:stats.hp,max:stats.hp,fx:0,fy:1,facing:1,walk:0,stride:0,dash:0,dashAt:-1,
    cooldown:0,hitAt:-2,castAt:-1,shot:null},
   slots:{movimento:{id:'dash',rank:1}},fusions:new Set(),enemies:[],orbs:[],effects:[],
+  parasite:chapter===toxocaraChapter?{adaptacao:null,companheiro:null,shield:false,casts:0}:null,
   segmented:null,variation:null,pathogenesisOffered:false,superState:'empty',
   replication:arenaReplication.create(morph.replication),pressure:null,studySeen:false,
   nextAttack:stats.delay,casts:0,assistedCasts:0,nextPatrol:5.5,encounter:null,round:null,history:[],
@@ -249,8 +259,8 @@ function move(dt) {
  p.walk=Math.hypot(x,y);
  if(p.walk>.1){p.fx=x/p.walk;p.fy=y/p.walk;}
  if(Math.abs(x)>.08)p.facing=Math.sign(x);
- const surface=S.mucus<0?(pressureAtPlayer()?.speedFactor??1):.51;
- const speed=S.stats.speed*surface;
+ const surface=S.mucus<0?(pressureAtPlayer()?.speedFactor??1):(room().surface?.speedFactor??.51);
+ const speed=S.stats.speed*surface*(evolucoesToxocara[S.parasite?.adaptacao]?.speedFactor??1);
  const dashing=p.dash>0;
  p.x+=(dashing?p.fx*speed*2.85:x*speed)*dt;
  p.y+=(dashing?p.fy*speed*2.85:y*speed)*dt;
@@ -263,6 +273,12 @@ function move(dt) {
 function harm(amount) {
  const p=S.p;
  if(S.clock-p.hitAt<.78||p.dash>0)return;
+ if(S.parasite?.shield){
+  S.parasite.shield=false;
+  p.hitAt=S.clock;lastHud='';
+  announce('Broto do jardim absorveu o impacto.');
+  return;
+ }
  p.hp=Math.max(0,p.hp-amount*S.stats.damageTaken*(1-traitRank('shell')*.14));
  p.hitAt=S.clock;
 }
@@ -351,12 +367,13 @@ function releaseAttack(shot,releasePose,nearby=attackTargets(S.p,shot.reach)) {
  const ray=aim??(primary&&unit(primary.x-p.x,primary.y-p.y))??shot.ray;
  if(Math.abs(ray.x)>.08)shot.side=Math.sign(ray.x);
  const targets=aim?nearby.filter(enemy=>aimedAt(enemy,p,aim,reach,14)):nearby;
- const origin=releasePose?influenzaRig.ponto('disparo',influenzaPosition(p.x,p.y,24,shot.side),
-  influenzaModelPose(releasePose,S.morph.body)):p;
+ const rig=shot.rig;
+ const origin=releasePose?rig.ponto('disparo',playerPosition(rig,p.x,p.y,24,shot.side),
+  playerPose(rig,releasePose,S.morph.body)):p;
  S.casts++;
  p.castAt=S.clock;
  if(p.walk<.18)p.facing=shot.side;
- const color=ha?'#ffe5a5':'#b8f8fd';
+ const color=ha||S.parasite?'#ffe5a5':'#b8f8fd';
  const effectType=releasePose?'pellet':'strike';
  const shapeDamage=influenzaCore.stats(S.segmented).attackOffset+(S.variation?.attackOffset??0);
  const damage=S.stats.attack+ha*4+core*4+shapeDamage;
@@ -379,7 +396,12 @@ function releaseAttack(shot,releasePose,nearby=attackTargets(S.p,shot.reach)) {
    for(const enemy of S.enemies)if(aimedAt(enemy,p,ray,length,24))hit(enemy,17+na*3);
   }
  }
- assistShots(nearby,ray);
+ if(room().escapePulse&&++S.parasite.casts%3===0){
+  const r=112;
+  addEffect({type:'pulse',x:p.x,y:p.y,r,color:'#ffe7a7',life:.34});
+  for(const enemy of nearby)if(distance(enemy,p)<r+enemy.r)hit(enemy,11);
+ }
+ if(!S.parasite)assistShots(nearby,ray);
 }
 
 function attack(dt) {
@@ -405,8 +427,10 @@ function attack(dt) {
   reach,ha,na:traitRank('na'),core:traitRank('core')};
  S.nextAttack=S.stats.interval-ha*.025;
  S.tapUntil=-1;
- if(influenzaRig&&S.chapter.id==='influenza'){
-  shot.animation=new Personagem2D(influenzaRig.modelo);
+ const rig=S.parasite?toxocaraRig:S.chapter.id==='influenza'?influenzaRig:null;
+ if(rig){
+  shot.rig=rig;
+  shot.animation=new Personagem2D(rig.modelo);
   shot.animation.tocar('shoot');
   p.shot=shot;
  }else releaseAttack(shot,undefined,nearby);
@@ -479,11 +503,11 @@ function moveDefenses(dt) {
 }
 
 function collect(dt) {
- const p=S.p, reach=65+traitRank('magnet')*27+crew.extraReach();
+ const p=S.p, reach=65+traitRank('magnet')*27+crew.extraReach()+(evolucoesToxocara[S.parasite?.companheiro]?.reach??0);
  for(let i=S.orbs.length-1;i>=0;i--) {
   const orb=S.orbs[i],d=distance(orb,p);
   if(d>reach)continue;
-  if(d<20){S.orbs.splice(i,1);S.xp++;arenaReplication.fragment(S.replication);continue;}
+  if(d<20){S.orbs.splice(i,1);S.xp++;if(!S.parasite)arenaReplication.fragment(S.replication);continue;}
   const move=Math.min(1,(78+(1-d/reach)*185)*dt/d);
   orb.x+=(p.x-orb.x)*move;orb.y+=(p.y-orb.y)*move;
  }
@@ -517,6 +541,23 @@ function arenaReward() {
  S.p.hp=Math.min(S.p.max,S.p.hp+14);
  if(reward)equip(reward);
  levelAfterArena();
+ if(S.parasite){
+  openQuiz(area.question,'cycle',correct=>{
+   if(correct)S.p.hp=Math.min(S.p.max,S.p.hp+12);
+   if(area.choices){
+    const cards=area.choices.map(id=>{
+     const {kind,description,...choice}=evolucoesToxocara[id];
+     return {...choice,id,kind:'parasite',kicker:kind,desc:description,rarity:'common'};
+    });
+    showDraft(cards,'Escolha uma evolução',area.name+' · arena concluída',
+     'A escolha acompanha o personagem nas próximas arenas.');
+   }else{
+    S.round=null;
+    continueRun();
+   }
+  },'Acerte para recuperar 12 pontos de integridade.');
+  return;
+ }
  const available=[...OPTIONAL,...['ha','na'].filter(traitRank)];
  const featured=reward==='na'?['na',...(traitRank('shell')?['dash']:[])]:[];
  const cards=reward==='ha'?['shell','core','reserve'].filter(canEquip).map(traitCard):
@@ -536,7 +577,7 @@ function leaveArena() {
  S.phase='travel';
  S.wind={time:0,x:S.p.x,y:S.p.y};
  clearInput();setPanel('travel');syncArena();
- $('travelNote').textContent='Corrente de ar para '+next.name;
+ $('travelNote').textContent=S.parasite?'Passagem para '+next.name:'Corrente de ar para '+next.name;
 }
 
 function enterArena(step) {
@@ -545,7 +586,11 @@ function enterArena(step) {
  S.variation=influenzaCore.roll(S.segmented);
  Object.assign(S.p,{...room().spawn,walk:0,dash:0,dashAt:-1,castAt:-1,shot:null});
  S.pressure=null;S.studySeen=false;
- arenaReplication.update(S.replication,S.p,S.clock,1,false);
+ if(S.parasite){
+  S.parasite.shield=Boolean(evolucoesToxocara[S.parasite.companheiro]?.shield);
+  S.parasite.casts=0;
+  if(room().escapePulse)S.p.hp=Math.min(S.p.max,S.p.hp+15);
+ }else arenaReplication.update(S.replication,S.p,S.clock,1,false);
  S.mucus=-1;S.mucusTime=0;S.mucusAnswered=false;S.nextPatrol=4.8;S.nextAttack=S.stats.delay;
  addTargets();makeRoom();
 }
@@ -556,12 +601,13 @@ function travel(dt) {
  const t=Math.min(1,wind.time/duration), progress=t*t;
  S.p.x=wind.x+(reduce?0:Math.sin(t*Math.PI*2)*22*progress);
  S.p.y=wind.y+progress*157;
- arenaReplication.update(S.replication,S.p,S.clock,dt,false);
+ if(!S.parasite)arenaReplication.update(S.replication,S.p,S.clock,dt,false);
  if(t<1)return;
  enterArena(S.step+1);
  S.wind=null;S.arrivedAt=S.clock;S.phase='play';
  setPanel('play');lastHud='';cv.focus({preventScroll:true});
- announce(S.variation?room().name+' · '+S.variation.name+'. '+S.variation.desc+'.':room().name);
+ const cue=room().escapePulse?' · Bônus do ciclo canino: até 15 de integridade.':'';
+ announce(S.variation?room().name+' · '+S.variation.name+'. '+S.variation.desc+'.':room().name+cue);
 }
 
 function checkpoint() {
@@ -576,9 +622,9 @@ function mucusCheck(dt) {
  const index=respiratory.mucusAt(room(),S.p);
  if(index!==S.mucus) {
   S.mucus=index;S.mucusTime=0;S.mucusAnswered=false;
-  if(index>=0)announce('Muco espesso: seu movimento ficou mais lento.');
+  if(index>=0)announce(room().surface?.label??'Muco espesso: seu movimento ficou mais lento.');
  }
- if(index<0||S.mucusAnswered)return false;
+ if(index<0||S.mucusAnswered||room().surface)return false;
  S.mucusTime+=dt;
  if(S.mucusTime<.36)return false;
  S.mucusAnswered=true;
@@ -609,7 +655,7 @@ function update(dt) {
  S.clock+=dt;
  move(dt);
  collect(dt);
- arenaReplication.update(S.replication,S.p,S.clock,dt,!S.roomCleared);
+ if(!S.parasite)arenaReplication.update(S.replication,S.p,S.clock,dt,!S.roomCleared);
  if(S.roomCleared){
   if(room().exit&&distance(room().exit,S.p)<45)leaveArena();
   return;
@@ -683,7 +729,6 @@ function renderCourseStatus(){
   button.setAttribute('aria-pressed',String(id===selectedChapter.id));
   score.textContent=courseScore(id);
  }
- $('parasiteScore').textContent=courseScore('toxocara');
 }
 
 function courseScore(id){
@@ -694,7 +739,8 @@ function courseScore(id){
 
 function setupCourses(){
  try{
-  const last=localStorage.getItem(courseChoiceKey);
+  const requested=new URLSearchParams(location.search).get('curso');
+  const last=Object.hasOwn(chapters,requested)?requested:localStorage.getItem(courseChoiceKey);
   if(Object.hasOwn(chapters,last))selectedChapter=chapters[last];
  }catch{}
  for(const chapter of Object.values(chapters)){
@@ -711,23 +757,30 @@ function setupCourses(){
   $('courseChoices').append(button);
   courseButtons.set(chapter.id,{button,score});
  }
- $('courseChoices').append($('parasiteCourse'));
  atlasProgress.init(courseLimits,renderCourseStatus);
 }
 
 function renderChapter(){
  const chapter=selectedChapter, influenza=chapter.id==='influenza';
+ const parasite=chapter===toxocaraChapter;
  $('chapterTitle').textContent=chapter.title;
  $('chapterLead').textContent=chapter.lead;
- $('genomeOption').hidden=Boolean(chapter.fixedGenome);
+ $('chapterGroup').textContent=parasite?'Atlas Viral · Toxocara canis':'Atlas Viral · Fase respiratória';
+ $('integrityLabel').textContent=parasite?'Integridade':'Integridade viral';
+ $('genomeOption').hidden=parasite||Boolean(chapter.fixedGenome);
+ for(const id of ['bodySelect','faceSelect','surfaceSelect','replicationSelect'])$(id).closest('label').hidden=parasite;
+ for(const id of ['virusSlots','virusFusions','virusGenome','virusGuide','arenaTerrain'])$(id).hidden=parasite;
+ $('parasiteHelp').hidden=!parasite;
+ $('parasiteTerrain').hidden=!parasite;
+ $('routeCaption').textContent=parasite?'Mapa do percurso zoonótico':'Mapa das vias respiratórias';
  $('influenzaDefenses').hidden=!influenza;
  $('influenzaPathogenesis').hidden=!influenza;
  $('influenzaCoreHelp').hidden=!influenza;
  $('influenzaLink').hidden=!influenza;
- $('vsrHelp').hidden=influenza;
+ $('vsrHelp').hidden=chapter.id!=='vsr';
  $('practiceBtn').textContent='Revisar · '+chapter.practice.topic;
- stage.setAttribute('aria-label','Arena respiratória · '+chapter.short);
- cv.setAttribute('aria-label','Arena do Atlas Viral, com '+chapter.stages.length+' regiões respiratórias');
+ stage.setAttribute('aria-label','Arena · '+chapter.short);
+ cv.setAttribute('aria-label','Arena do Atlas Viral, com '+chapter.stages.length+' regiões');
  $('campaignRoute').replaceChildren();
  $('regionTrack').replaceChildren();
  for(const area of chapter.stages){
@@ -736,8 +789,7 @@ function renderChapter(){
   entry.append(name,detail);$('campaignRoute').append(entry);
   const region=document.createElement('li');region.textContent=area.name;$('regionTrack').append(region);
  }
- $('guideTopic').value=chapter.topic;
- renderGuideQuestions();
+ if(!parasite){$('guideTopic').value=chapter.topic;renderGuideQuestions();}
  renderCourseStatus();
  updateKit();
  renderIntroduction();
@@ -810,6 +862,9 @@ function showDraft(cards,title,label,note,topic=null) {
    if(S?.phase!=='level'||S.round?.kind!=='draft')return;
    if(card.kind==='trait'){
     if(!equip(card.id))return;
+   }else if(card.kind==='parasite'){
+    S.parasite[card.slot]=card.id;
+    if(card.hp){S.p.max+=card.hp;S.p.hp+=card.hp;}
    }else if(!equipFusion(card.id))return;
    continueRun();
   });
@@ -992,11 +1047,18 @@ function continueRun() {
  if(S.p.hp<=0){finish(false);return;}
  if(S.roomCleared&&!room().exit){finish(true);return;}
  S.phase='play';clearInput();setPanel('play');syncArena();cv.focus({preventScroll:true});
- if(S.roomCleared)announce('Chegue à corrente de ar para avançar.');
+ if(S.roomCleared)announce(S.parasite?'Chegue à passagem para avançar.':'Chegue à corrente de ar para avançar.');
 }
 
 function describeBuild(list) {
  list.replaceChildren();
+ if(S.parasite){
+  const notes=[room().form,'Impulso 1',...['adaptacao','companheiro'].map(slot=>evolucoesToxocara[S.parasite[slot]]?.name).filter(Boolean)];
+  for(const note of notes){
+   const item=document.createElement('li');item.textContent=note;list.append(item);
+  }
+  return;
+ }
  for(const [key,label] of SLOTS) {
   const item=document.createElement('li');item.className='none';
   const held=S.slots[key];
@@ -1045,9 +1107,13 @@ function finish(won) {
  S.phase='end';clearInput();
  if(won){S.impact=100;S.regions=S.chapter.stages.length;crew.rewardCoins(25);saveCourseProgress();}
  setPanel('end');syncArena();
- $('endH').textContent=won?S.chapter.short+' · capítulo concluído':'A defesa respiratória conteve o vírus';
+ $('endH').textContent=won?S.chapter.short+' · capítulo concluído':
+  S.parasite?'A rota foi interrompida':'A defesa respiratória conteve o vírus';
  $('endP').textContent=won?S.chapter.win:'Tente outra combinação e use o dash para sair dos anéis de defesa.';
- $('sInf').textContent=S.cells;$('sBoss').textContent=S.regions+'/'+S.chapter.stages.length;$('sF').textContent=S.impact+'%';
+ $('sInf').textContent=S.cells;$('sBoss').textContent=S.regions+'/'+S.chapter.stages.length;
+ $('sDefensesLabel').textContent=S.parasite?'defesas superadas':'células enfrentadas';
+ $('sResultLabel').textContent=S.parasite?'respostas certas':'mal-estar no jogo';
+ $('sF').textContent=S.parasite?S.history.filter(answer=>answer.correct).length:S.impact+'%';
  describeBuild($('loadoutEnd'));
  $('codex').replaceChildren();
  for(const result of S.history) {
@@ -1065,15 +1131,15 @@ function hud() {
  const hp=Math.ceil(p.hp),dashSeconds=Math.ceil(p.cooldown);
  const key=[hp,p.max,S.step,S.level,S.xp,S.impact,S.mucus,boss?.type,boss?.hp,dashSeconds,
   S.roomCleared,S.phase,S.control,touchLayout,S.segmented?.segments,S.segmented?.profile,S.segmented?.signature,
-  S.fusions.has('eco'),S.superState,charge,allies.length,underPressure,S.studySeen].join('|');
+  S.fusions.has('eco'),S.superState,charge,allies.length,underPressure,S.studySeen,S.parasite?.shield].join('|');
  if(key===lastHud)return;
  lastHud=key;
  $('regionNow').textContent=area.name;$('hpt').textContent=hp+'/'+p.max;
  $('hpb').style.width=100*p.hp/p.max+'%';
- $('lvt').textContent='Nível '+S.level;$('fbt').textContent='Mal-estar '+S.impact+'%';
+ $('lvt').textContent='Nível '+S.level;$('fbt').textContent=S.parasite?area.form:'Mal-estar '+S.impact+'%';
  $('xpb').style.width=Math.min(100,100*S.xp/(4+S.level*2))+'%';
  const guide=$('arenaTissue');
- guide.textContent=S.roomCleared?'Arena concluída · siga até a corrente de ar.':
+ guide.textContent=S.roomCleared?(S.parasite?'Arena concluída · siga até a passagem.':'Arena concluída · siga até a corrente de ar.'):
   boss?'Defesa ativa · '+S.chapter.bosses[boss.type].name:area.task;
  for(const [index,el] of [...$('regionTrack').children].entries()){
   if(index===S.step)el.setAttribute('aria-current','step');
@@ -1081,8 +1147,12 @@ function hud() {
   el.classList.toggle('done',index<S.regions);
  }
  $('mucusStatus').hidden=S.mucus<0||S.roomCleared;
+ $('mucusStatus').textContent=area.surface?.label??'Muco · movimento mais lento';
  $('pressureStatus').hidden=!underPressure;
- $('echoStatus').textContent='Ecos '+allies.length+'/'+profile.capacity+' · '+charge+'/'+arenaReplication.cost+' fragmentos';
+ const companion=evolucoesToxocara[S.parasite?.companheiro];
+ $('echoStatus').hidden=Boolean(S.parasite&&!companion);
+ $('echoStatus').textContent=companion?companion.name+(S.parasite.shield?' · proteção pronta':''):
+  'Ecos '+allies.length+'/'+profile.capacity+' · '+charge+'/'+arenaReplication.cost+' fragmentos';
  $('studyHint').hidden=!area.study||S.studySeen||S.roomCleared;
  if(area.study)$('studyHint').textContent=area.study.hint??'Posto de profilaxia · à direita da entrada';
  $('coreHud').hidden=!S.segmented;
@@ -1116,7 +1186,7 @@ function makeRoom() {
  const g=mapCache.getContext('2d');
  if(!g)return;
  g.setTransform(1,0,0,1,respiratory.size/2,0);
- respiratory.paintRoom(g,roomAtlas,room());
+ respiratory.paintRoom(g,S.parasite?parasiteAtlas:roomAtlas,room());
  if(S.chapter.id==='vsr'){
   g.fillStyle='rgba(35,131,122,.13)';
   g.fillRect(-respiratory.size/2,0,respiratory.size,respiratory.size);
@@ -1130,6 +1200,16 @@ function makeRoutePreview() {
  const ratio=Math.min(thumb.width/respiratory.mapWidth,thumb.height/respiratory.mapHeight)*.94;
  const w=respiratory.mapWidth*ratio,h=respiratory.mapHeight*ratio;
  g.drawImage(terrain,(thumb.width-w)/2,(thumb.height-h)/2,w,h);
+}
+
+function makeParasitePreview() {
+ const canvas=$('parasiteTerrain'),g=canvas.getContext('2d');
+ if(!g||!parasiteAtlas.complete||!parasiteAtlas.naturalWidth)return;
+ const tile=parasiteAtlas.naturalWidth/2, height=canvas.height/3;
+ for(const {art} of toxocaraChapter.stages){
+  g.drawImage(parasiteAtlas,art%2*tile+4,Math.floor(art/2)*tile+tile*.28,tile-8,tile*.44,
+   0,art*height,canvas.width,height-3);
+ }
 }
 
 function resize() {
@@ -1192,6 +1272,7 @@ function drawDefense(e) {
 }
 
 function appearance(card=null) {
+ if(S.parasite)return {parasite:true,fase:S.step,...S.parasite,...(card?.kind==='parasite'?{[card.slot]:card.id}:{})};
  const rank=id=>card?.kind==='trait'&&card.id===id?card.level:traitRank(id);
  return {
   morph:S.morph,ha:rank('ha'),na:rank('na'),core:rank('core'),
@@ -1211,6 +1292,21 @@ function influenzaModelPose(pose,body) {
  return poseInfluenza(reduce?influenzaRig.modelo.neutra:pose,body);
 }
 
+function playerPosition(rig,x,y,r,side) {
+ return rig===toxocaraRig?{x,y:y-3,escala:r/27,lado:side}:influenzaPosition(x,y,r,side);
+}
+
+function playerPose(rig,pose,body) {
+ return rig===toxocaraRig?(reduce?rig.modelo.neutra:pose):influenzaModelPose(pose,body);
+}
+
+function drawToxocara(g,local,look,pose) {
+ const {x,y,escala,lado}=local;
+ oval(g,x,y+escala*23,escala*21,escala*5.5,'rgba(37,29,53,.34)');
+ if(look.companheiro)desenharCompanheiro(g,look.companheiro,x-lado*34*escala,y+9*escala);
+ toxocaraRig.desenhar(g,local,playerPose(toxocaraRig,pose),look);
+}
+
 function influenzaLook(look) {
  return {...look,genome:viralMorphology.genomes[look.morph.genome],
   temper:look.temper??viralMorphology.faces[look.morph.face].intensity};
@@ -1226,6 +1322,12 @@ function paintPortrait(canvas,look) {
  const g=canvas.getContext('2d');
  if(!g)return;
  g.clearRect(0,0,canvas.width,canvas.height);
+ if(look.parasite){
+  pendingPortraits.delete(canvas);
+  drawToxocara(g,playerPosition(toxocaraRig,canvas.width/2,canvas.height*.52,canvas.width*.25,1),look,
+   toxocaraRig.pose(0,'idle'));
+  return;
+ }
  if(!look.vsr){
   if(influenzaRig){
    const local=influenzaPosition(canvas.width/2,canvas.height*.56,canvas.width*.28);
@@ -1242,33 +1344,35 @@ function previewEvolution(card=null) {
  $('evolutionCaption').textContent=card?'Prévia · '+card.name:'Morfologia atual';
 }
 
-function drawInfluenzaPlayer(p,look) {
+function drawAnimatedPlayer(p,look,rig) {
  const shot=p.shot;
  const dashTime=(S.clock-p.dashAt)*1.5;
- const dashing=S.phase==='travel'||dashTime<influenzaRig.modelo.clipes.dash.duracao;
+ const dashing=S.phase==='travel'||dashTime<rig.modelo.clipes.dash.duracao;
  const hurtTime=S.clock-p.hitAt;
- const shooting=shot&&(!dashing&&hurtTime>=influenzaRig.modelo.clipes.hurt.duracao||shot.animation.tempo<.29);
- const local=influenzaPosition(p.x,p.y,24,shooting?shot.side:p.facing);
- const dashPose=dashing?influenzaRig.pose(S.phase==='travel'?.18:dashTime,'dash'):null;
- const detail={...look,temper:Math.min(2,viralMorphology.faces[S.morph.face].intensity+Number(S.cells>=5)),
+ const shooting=shot&&(!dashing&&hurtTime>=rig.modelo.clipes.hurt.duracao||shot.animation.tempo<.29);
+ const local=playerPosition(rig,p.x,p.y,24,shooting?shot.side:p.facing);
+ const dashPose=dashing?rig.pose(S.phase==='travel'?.18:dashTime,'dash'):null;
+ const detail=look.parasite?look:{...look,temper:Math.min(2,viralMorphology.faces[S.morph.face].intensity+Number(S.cells>=5)),
   flash:hurtTime<.18,antennaLit:S.superState!=='empty'};
  if(dashPose&&!reduce){
   ctx.save();
   ctx.globalAlpha=.26;
-  const trail=influenzaPosition(p.x-p.fx*18,p.y-p.fy*24,21,p.facing);
-  influenzaRig.desenhar(ctx,trail,influenzaModelPose(dashPose,look.morph.body),influenzaLook(detail));
+  const trail=playerPosition(rig,p.x-p.fx*18,p.y-p.fy*24,21,p.facing);
+  rig.desenhar(ctx,trail,playerPose(rig,dashPose,S.morph.body),look.parasite?detail:influenzaLook(detail));
   ctx.restore();
  }
  const action=p.walk>.1?'move':'idle';
- const pose=shooting?shot.animation.pose():dashPose??(hurtTime<influenzaRig.modelo.clipes.hurt.duracao?
-  influenzaRig.pose(hurtTime,'hurt'):influenzaRig.pose(S.clock,action));
- drawInfluenza(ctx,local,detail,pose);
+ const pose=shooting?shot.animation.pose():dashPose??(hurtTime<rig.modelo.clipes.hurt.duracao?
+  rig.pose(hurtTime,'hurt'):rig.pose(S.clock,action));
+ if(look.parasite)drawToxocara(ctx,local,detail,pose);
+ else drawInfluenza(ctx,local,detail,pose);
 }
 
 function drawPlayer() {
  const p=S.p,look=appearance();
- if(influenzaRig&&!look.vsr){
-  drawInfluenzaPlayer(p,look);
+ const rig=look.parasite?toxocaraRig:!look.vsr?influenzaRig:null;
+ if(rig){
+  drawAnimatedPlayer(p,look,rig);
   return;
  }
  const stride=reduce?0:Math.sin(p.stride)*p.walk*3.8;
@@ -1391,7 +1495,7 @@ function draw() {
   oval(ctx,field.x,field.y,field.r*.91,field.r*.91,null,'rgba(255,225,156,.65)');
  }
  if(S.roomCleared&&area.exit&&S.phase==='play'){
-  respiratory.marker(ctx,{...area.exit,tone:'#c7f8f7'},'Corrente de ar',true,S.clock,reduce);
+  respiratory.marker(ctx,{...area.exit,tone:'#c7f8f7'},S.parasite?'Passagem':'Corrente de ar',true,S.clock,reduce);
  }else if(!S.roomCleared&&!currentBoss()){
   respiratory.marker(ctx,area,area.label,S.enemies.every(e=>!e.required),S.clock,reduce);
  }
@@ -2173,6 +2277,10 @@ roomAtlas.addEventListener('load',()=>{
  makeRoom();
  if(ctx&&['play','travel'].includes(S.phase))draw();
 });
+parasiteAtlas.addEventListener('load',()=>{
+ makeParasitePreview();
+ if(S?.parasite){makeRoom();if(frameId!==null)draw();}
+});
 
 function fillSelect(select,choices) {
  for(const [key,value] of Object.entries(choices)){
@@ -2182,18 +2290,19 @@ function fillSelect(select,choices) {
 }
 
 function updateKit() {
- const morph=chapterMorph(),stats=viralMorphology.stats(morph);
+ const morph=chapterMorph(),stats=chapterStats(selectedChapter,morph),parasite=selectedChapter===toxocaraChapter;
  const armor=stats.damageTaken<1?' · recebe 6% menos dano':'';
- $('morphStats').textContent=stats.note+' '+stats.hp+' de integridade · '+stats.attack+
+ $('morphStats').textContent=(stats.note?stats.note+' ':'')+stats.hp+' de integridade · '+stats.attack+
   ' de dano · velocidade '+stats.speed+' · recarga do dash '+stats.cooldown.toLocaleString('pt-BR')+' s'+armor;
  const profile=arenaReplication.profiles[startingMorph.replication];
  const count=profile.capacity===1?'1 eco por '+profile.duration+' s':
   'Até '+profile.capacity+' ecos por '+profile.duration+' s cada';
- $('replicationNote').textContent=count+'. Um aliado a cada '+arenaReplication.cost+' fragmentos.';
+ $('replicationNote').textContent=parasite?'Ovo no ambiente · evolua ao concluir cada arena.':
+  count+'. Um aliado a cada '+arenaReplication.cost+' fragmentos.';
  $('controlsHelp').textContent=startingMorph.control==='manual'?
   'Arraste à esquerda para andar e à direita para mirar e atacar. No computador, use WASD ou setas e segure o mouse ou J para atacar. Espaço ou Dash desvia.':
   'Arraste ou use WASD e setas para andar. O ataque mira no alvo mais próximo. Use Espaço ou Dash para desviar.';
- paintPortrait($('virusPortrait'),{morph,vsr:selectedChapter.id==='vsr'});
+ paintPortrait($('virusPortrait'),parasite?{parasite:true,fase:0}:{morph,vsr:selectedChapter.id==='vsr'});
 }
 
 const MORPH_SAVE='atlas-viral-morfologia-v1';
@@ -2226,6 +2335,7 @@ function setupMorphology() {
 }
 
 makeRoutePreview();
+makeParasitePreview();
 setupMorphology();
 setupGuide();
 setupCourses();

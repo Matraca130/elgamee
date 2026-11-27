@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Atlas Viral · Cursos respiratórios</title>
-<link rel="stylesheet" href="./jogo.css">
+<link rel="stylesheet" href="./jogo.css?v=rotas">
 </head>
 <body>
 <section id="lobulo-game" lang="pt-BR">
@@ -12,7 +12,7 @@
 <header id="hud" hidden>
  <div class="day"><small>Região</small><span id="regionNow">Orofaringe</span></div>
  <div class="bars">
-  <div class="row"><span>Integridade viral</span><span id="hpt">100/100</span></div>
+  <div class="row"><span id="integrityLabel">Integridade viral</span><span id="hpt">100/100</span></div>
   <div class="bar"><i id="hpb"></i></div>
   <div class="row"><span id="lvt">Nível 1</span><span id="fbt">Mal-estar 0%</span></div>
   <div class="bar"><i id="xpb"></i></div>
@@ -36,6 +36,7 @@
 <main id="stage" data-phase="intro" aria-label="Arena respiratória da influenza">
  <canvas id="cv" width="1" height="1" tabindex="0" role="img" aria-label="Arena do Atlas Viral, com quatro regiões respiratórias ligadas por correntes de ar"></canvas>
  <img id="roomAtlas" src="./arenas-respiratorias.webp" alt="" hidden>
+ <img id="parasiteAtlas" src="./terrenos-toxocara.webp" alt="" hidden>
  <div id="toast" role="status" aria-live="polite"></div>
  <p id="travelNote" role="status" class="travel-note" hidden></p>
  <div class="touch-legend" id="touchLegend" aria-hidden="true" hidden><span>Mover</span><span id="aimLegend">Mirar e atacar</span></div>
@@ -52,15 +53,13 @@
      <p id="courseStatus" role="status">Consultando o progresso…</p>
      <a href="/signin-with-chatgpt?return_to=%2F" id="courseSignIn" target="_top" hidden>Entrar com ChatGPT</a>
     </div>
-    <div id="courseChoices" class="course-choices" role="group" aria-label="Escolher curso">
-     <a id="parasiteCourse" href="./parasitos.html"><strong>Parasitos zoonóticos</strong><span id="parasiteScore">3 arenas</span></a>
-    </div>
+    <div id="courseChoices" class="course-choices" role="group" aria-label="Escolher curso"></div>
    </section>
    <div class="campaign-layout">
     <div class="campaign-copy">
      <div class="arena-intro">
       <div class="hero-portrait"><canvas id="virusPortrait" width="112" height="112" aria-hidden="true"></canvas></div>
-      <div><p class="hero-name">Atlas Viral · Fase respiratória</p><h1 id="chapterTitle">Influenza</h1></div>
+      <div><p class="hero-name" id="chapterGroup">Atlas Viral · Fase respiratória</p><h1 id="chapterTitle">Influenza</h1></div>
      </div>
      <p class="lead" id="chapterLead">Monte seu vírus e passe por quatro arenas do aparelho respiratório.</p>
      <fieldset class="morph-options" id="morphOptions">
@@ -81,15 +80,16 @@
     </div>
     <figure class="route-preview">
      <img id="arenaTerrain" src="./terreno-respiratorio.webp" width="863" height="1164" alt="Orofaringe no alto, traqueia larga no centro e brônquios que se dividem em direção aos pulmões">
-     <figcaption>Mapa das vias respiratórias</figcaption>
+     <canvas id="parasiteTerrain" width="384" height="432" role="img" aria-label="Solo sombreado, terra do jardim e passagem intestinal" hidden></canvas>
+     <figcaption id="routeCaption">Mapa das vias respiratórias</figcaption>
     </figure>
    </div>
-   <details class="arena-help">
+   <details class="arena-help" id="virusSlots">
     <summary>Espaços e raridades</summary>
     <p>O envoltório tem espaços de ataque, pulso, defesa e apoio. Morfologia interna, reforço do nucleocapsídeo, acessório de movimento, status e patogenia também têm seus espaços. As ofertas aparecem depois de vencer a arena.</p>
     <p><span class="rarity-badge" data-rarity="common">Comum</span> e <span class="rarity-badge" data-rarity="rare">Super-rara</span> aparecem nas primeiras ofertas. Habilidades de nível alto podem chegar a <span class="rarity-badge" data-rarity="epic">Épica</span> ou <span class="rarity-badge" data-rarity="legendary">Lendária</span>. Fusões e poderes desbloqueados por desafios usam <span class="rarity-badge" data-rarity="special">Especial</span>.</p>
    </details>
-   <details class="arena-help"><summary id="fusionCount">Fusões descobertas</summary><ul id="fusionRecipes"></ul></details>
+   <details class="arena-help" id="virusFusions"><summary id="fusionCount">Fusões descobertas</summary><ul id="fusionRecipes"></ul></details>
    <details class="arena-help" id="influenzaDefenses">
     <summary>Replicação, defesa e profilaxia</summary>
     <p>Os fragmentos convocam ecos temporários que acompanham seus disparos. O Anel coletor aumenta o alcance da coleta. Nos brônquios, acerte uma pergunta no posto de profilaxia para ganhar um aliado de estudo por 14 s.</p>
@@ -118,7 +118,7 @@
     <p>O VSR pode causar sintomas de resfriado e também bronquiolite. Lactentes e idosos estão entre os grupos com maior risco de doença grave. As fichas da fase trazem um caso de bronquiolite e uma situação de prevenção para a equipe de saúde.</p>
     <p class="study-source"><a href="https://ictv.global/report/chapter/pneumoviridae/pneumoviridae" target="_blank" rel="noopener noreferrer">Família Pneumoviridae · ICTV</a> · <a href="https://www.who.int/news-room/fact-sheets/detail/respiratory-syncytial-virus-%28RSV%29" target="_blank" rel="noopener noreferrer">Quadro clínico do VSR · OMS</a></p>
    </details>
-   <details class="arena-help">
+   <details class="arena-help" id="virusGenome">
     <summary>Genoma, capsídeo e envoltório</summary>
     <p>O influenza A tem RNA de fita simples negativa, segmentado. O VSR tem RNA de fita simples negativa, não segmentado.</p>
     <p>O capsídeo é proteico e o envoltório é uma camada lipídica externa. Na arte do Atlas, o vírus flutua e pode ter fibras finas na superfície, inspiradas em estruturas de adesão.</p>
@@ -126,13 +126,19 @@
     <p>Os perfis selecionáveis são fictícios. A cor e o número de traços distinguem RNA e DNA. Os benefícios de dano, cadência e resistência servem ao equilíbrio da arena.</p>
     <p class="study-source"><a href="https://www.ncbi.nlm.nih.gov/books/NBK559437/figure/F3/" target="_blank" rel="noopener noreferrer">Classificação de Baltimore · NCBI</a></p>
    </details>
+   <details class="arena-help" id="parasiteHelp" hidden>
+    <summary>Ciclo de <i>Toxocara canis</i></summary>
+    <p>O cão é hospedeiro definitivo. Nesta rota, o humano é hospedeiro acidental e ingere um ovo infectante. As larvas podem migrar para diferentes tecidos e ficam na fase larval. O ciclo dispensa vetor.</p>
+    <p>As arenas comprimem o tempo do ciclo. O mascote, os disparos e as adaptações são recursos de jogo.</p>
+    <p class="study-source"><a href="https://www.cdc.gov/dpdx/toxocariasis/index.html" target="_blank" rel="noopener noreferrer">Ficha e ciclo · CDC</a></p>
+   </details>
    <details class="arena-help">
     <summary>Revisão da fase</summary>
-    <p>As perguntas trazem o tema e a dificuldade. As fichas ensinam virologia. Os poderes e as fusões fazem parte da ficção do jogo.</p>
+    <p>As perguntas trazem o tema e a dificuldade. Os poderes e as fusões fazem parte da ficção do jogo.</p>
     <button class="arena-button ghost" id="practiceBtn" type="button">Questão fácil de epidemiologia</button>
     <p class="study-source" id="influenzaLink"><a href="https://www.cdc.gov/flu/php/viruses/antigenic.html" target="_blank" rel="noopener noreferrer">Antígenos da influenza · CDC</a></p>
    </details>
-   <details class="arena-help study-guide">
+   <details class="arena-help study-guide" id="virusGuide">
     <summary>43 perguntas do Taller 14</summary>
     <p>Enunciados em espanhol para rever os temas da guia.</p>
     <label for="guideTopic">Tema</label>
@@ -166,7 +172,7 @@
  <div class="ov dim" id="end" hidden>
   <div class="arena-card">
    <h2 id="endH"></h2><p class="lead" id="endP"></p>
-   <div class="stats"><div><b id="sInf">0</b>células enfrentadas</div><div><b id="sBoss">0/4</b>arenas concluídas</div><div><b id="sF">0%</b>mal-estar no jogo</div></div>
+   <div class="stats"><div><b id="sInf">0</b><span id="sDefensesLabel">células enfrentadas</span></div><div><b id="sBoss">0/4</b>arenas concluídas</div><div><b id="sF">0%</b><span id="sResultLabel">mal-estar no jogo</span></div></div>
    <h3>Sua combinação</h3><ul class="codex" id="loadoutEnd"></ul>
    <div id="runQuizLog" hidden><p class="mut">Perguntas desta partida</p><ul class="codex" id="codex"></ul></div>
    <div class="btns"><button class="arena-button" id="againBtn">Nova partida</button><button class="arena-button ghost" id="crewEnd">Base dos auxiliares</button></div>
@@ -211,7 +217,7 @@
 <script defer src="./fase-influenza.js"></script>
 <script defer src="./capitulo-vsr.js"></script>
 <script defer src="./guia-respiratoria.js"></script>
-<script defer src="./progresso.js"></script>
-<script type="module" src="./jogo.js"></script>
+<script defer src="./progresso.js?v=rotas"></script>
+<script type="module" src="./jogo.js?v=rotas"></script>
 </body>
 </html>

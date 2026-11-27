@@ -12,7 +12,7 @@ const clipes = {
   shoot: { duracao: .36, quadros: [
     idle, q(.105, { x: -6, sx: .84, sy: 1.16, curva: -.8, olhos: .28 }),
     q(.15, { x: 6, sx: 1.24, sy: .79, giro: .12, curva: 1 }), q(.36)
-  ], eventos: [{ nome: 'pulso', tempo: .15 }] }
+  ], eventos: [{ nome: 'disparo', tempo: .15 }] }
 };
 
 function preencher(ctx, cor, linha = ink, grossura = 2.5) {
@@ -103,7 +103,7 @@ function adornar(ctx, adaptacao, larva) {
 }
 
 export const modeloToxocara = {
-  neutra, clipes, pontos: { pulso: [27, -2] },
+  neutra, clipes, pontos: { disparo: [18, -2] },
   desenharCamadas(ctx, pose, { fase, adaptacao }) {
     const larva = fase === 2;
     if (larva) desenharLarva(ctx, pose);

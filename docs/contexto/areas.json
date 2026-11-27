@@ -21,7 +21,7 @@
     "tema": "parasitos",
     "busca": ["zoonose", "toxocara", "toxocariase", "hospedeiro", "hospedador", "vetor", "larva", "proglote"],
     "resumo": "Rota de Toxocara canis do solo à fase larval no hospedeiro humano acidental.",
-    "arquivos": ["docs/decisoes/rotas-de-parasitos.md", "dist/toxocara.js", "dist/parasitos.js", "dist/arte-toxocara.js"]
+    "arquivos": ["docs/decisoes/rotas-de-parasitos.md", "dist/toxocara.js", "dist/jogo.js", "dist/arte-toxocara.js"]
   },
   {
     "tema": "combate",
