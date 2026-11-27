@@ -28,6 +28,9 @@
   <p class="round-objective" id="arenaTissue"></p>
   <span id="mucusStatus" hidden>Muco · movimento mais lento</span>
  </div>
+ <div class="core-hud" id="coreHud" hidden>
+  <strong id="coreHudTitle"></strong><span id="coreHudStats"></span><span id="coreForm" hidden></span>
+ </div>
 </header>
 <main id="stage" data-phase="intro" aria-label="Arena respiratória da influenza">
  <canvas id="cv" width="1" height="1" tabindex="0" role="img" aria-label="Arena do Atlas Viral, com quatro regiões respiratórias ligadas por correntes de ar"></canvas>
@@ -59,7 +62,7 @@
      <p class="areanotice" id="arenaNotice" role="status" hidden></p>
      <div class="btns"><button class="arena-button" id="startBtn">Começar fase</button><button class="arena-button ghost" id="crewIntro">Base dos auxiliares</button></div>
      <ol class="campaign-route" aria-label="Objetivos da fase">
-      <li><b>Orofaringe</b><span>Derrote o primeiro chefe e ganhe hemaglutinina.</span></li>
+      <li><b>Orofaringe</b><span>Derrote o primeiro chefe, ganhe hemaglutinina e explore a Área do núcleo.</span></li>
       <li><b>Traqueia</b><span>Passe pela mucosa e desbloqueie neuraminidase.</span></li>
       <li><b>Brônquios</b><span>Enfrente a defesa ciliar na bifurcação.</span></li>
       <li><b>Pulmões</b><span>Desvie dos anticorpos e vença o macrófago alveolar.</span></li>
@@ -72,14 +75,21 @@
    </div>
    <details class="arena-help">
     <summary>Espaços e raridades</summary>
-    <p>O envoltório tem espaços de ataque, pulso, defesa e apoio. Nucleocapsídeo, movimento e status têm um espaço cada. As escolhas aparecem depois de vencer cada arena.</p>
+    <p>O envoltório tem espaços de ataque, pulso, defesa e apoio. Morfologia interna, reforço do nucleocapsídeo, movimento e status têm um espaço cada. As escolhas aparecem depois de vencer cada arena.</p>
     <p><span class="rarity-badge" data-rarity="common">Comum</span> e <span class="rarity-badge" data-rarity="rare">Rara</span> aparecem nas ofertas. Duas habilidades compatíveis podem liberar uma fusão <span class="rarity-badge" data-rarity="special">Especial</span>.</p>
    </details>
    <details class="arena-help"><summary id="fusionCount">Fusões descobertas</summary><ul id="fusionRecipes"></ul></details>
    <details class="arena-help">
+    <summary>Área do núcleo</summary>
+    <p>Ao vencer a orofaringe, responda a um desafio de morfologia para equipar um núcleo segmentado. Uma pergunta bônus dá acesso ao perfil de influenza e ao desafio do poder exclusivo.</p>
+    <p>Na arena, detectabilidade indica a distância a que a patrulha começa a perseguir o jogador. Variabilidade é a chance de sortear uma forma temporária ao chegar a outra arena. Essa forma muda o disparo ou a recarga do dash durante a sala.</p>
+    <p>Na virologia, os tipos A e B têm oito segmentos e causam epidemias sazonais. O tipo C tem sete segmentos e geralmente causa doença leve. Deriva antigênica é uma mudança gradual. Salto antigênico descreve uma mudança abrupta no tipo A.</p>
+    <p class="study-source"><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC7119911/" target="_blank" rel="noopener noreferrer">Genomas segmentados</a> · <a href="https://www.cdc.gov/flu/about/viruses-types.html" target="_blank" rel="noopener noreferrer">Tipos de influenza · CDC</a> · <a href="https://www.cdc.gov/flu/php/viruses/change.html" target="_blank" rel="noopener noreferrer">Deriva e salto · CDC</a></p>
+   </details>
+   <details class="arena-help">
     <summary>Genoma, capsídeo e envoltório</summary>
     <p>O influenza A tem RNA segmentado de fita simples (−). A polimerase viral produz o RNA mensageiro que os ribossomos leem. Em muitos vírus de RNA (+), o próprio RNA que entra na célula já pode servir como mensageiro.</p>
-    <p>O capsídeo é proteico e o envoltório é uma camada lipídica externa. No influenza, a hemaglutinina e a neuraminidase ficam no envoltório. Na arte do jogo, os ramos verdes indicam NA e os pinos dourados indicam HA.</p>
+    <p>O capsídeo é proteico e o envoltório é uma camada lipídica externa. Nas influenzas A e B, a hemaglutinina e a neuraminidase ficam no envoltório. Na arte do jogo, os ramos verdes indicam NA e os pinos dourados indicam HA.</p>
     <p>Tropismo descreve quais células ou tecidos um vírus consegue infectar. A ligação à célula faz parte disso. A patogênese inclui o que a infecção e a resposta do hospedeiro provocam no organismo.</p>
     <p>Os perfis selecionáveis são fictícios. A cor e o número de traços distinguem RNA e DNA. Os benefícios de dano, cadência e resistência servem ao equilíbrio da arena.</p>
     <p class="study-source"><a href="https://www.ncbi.nlm.nih.gov/books/NBK559437/figure/F3/" target="_blank" rel="noopener noreferrer">Classificação de Baltimore · NCBI</a></p>
@@ -163,6 +173,7 @@
 
 </section>
 <script defer src="./morfologia.js"></script>
+<script defer src="./nucleo-influenza.js"></script>
 <script defer src="./arte-jogo.js"></script>
 <script defer src="./fase-influenza.js"></script>
 <script defer src="./guia-respiratoria.js"></script>

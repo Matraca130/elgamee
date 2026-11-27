@@ -17,7 +17,7 @@ const SLOTS=[
  ['pulso','Envoltório · pulso'],
  ['defesa','Envoltório · defesa'],
  ['apoio','Envoltório · apoio'],
- ['nucleo','Nucleocapsídeo'],
+ ['nucleo','Reforço do nucleocapsídeo'],
  ['movimento','Movimento'],
  ['status','Status']
 ];
@@ -130,7 +130,7 @@ function actor(type,x,y,required=false) {
  const hp=setup?.health??(type==='cell'?28:31);
  return {type,x,y,hp,max:hp,r:setup?.r??(type==='cell'?15:13),
   speed:setup?.speed??(type==='cell'?0:43+Math.random()*12),
-  hitAt:-1,required,phase:Math.random()*TAU,charge:1.8,windup:0,waves:0};
+  hitAt:-1,required,phase:Math.random()*TAU,charge:1.8,windup:0,waves:0,spottedAt:null};
 }
 
 function addTargets() {
@@ -149,6 +149,7 @@ function createState() {
   phase:'play',clock:0,step:0,regions:0,impact:0,cells:0,level:1,xp:0,morph,stats,control:morph.control,
   p:{...first.spawn,r:15,hp:stats.hp,max:stats.hp,fx:0,fy:1,facing:1,walk:0,stride:0,dash:0,cooldown:0,hitAt:-2,castAt:-1},
   slots:{movimento:{id:'dash',rank:1}},fusions:new Set(),enemies:[],orbs:[],effects:[],
+  segmented:null,variation:null,
   nextAttack:stats.delay,casts:0,nextPatrol:5.5,encounter:null,round:null,history:[],
   mucus:-1,mucusTime:0,mucusAnswered:false,roomCleared:false,wind:null,arrivedAt:-5,tapUntil:-1
  };
@@ -173,7 +174,8 @@ function clearInput() {
 function dash() {
  if(S?.phase!=='play'||S.p.cooldown>0)return;
  S.p.dash=S.stats.dash;
- S.p.cooldown=S.stats.cooldown-(traitRank('dash')-1)*.42;
+ const recharge=S.stats.cooldown-(traitRank('dash')-1)*.42;
+ S.p.cooldown=recharge*(S.variation?.cooldownFactor??1);
 }
 
 function move(dt) {
@@ -214,6 +216,7 @@ function addEffect(effect) {
 function hit(enemy,damage) {
  if(enemy.hp<=0)return;
  enemy.hp-=damage;enemy.hitAt=S.clock;
+ if(enemy.type==='patrol')enemy.spottedAt??=S.clock;
  if(enemy.hp>0)return;
  const total=enemy.required?3:2;
  for(let i=0;i<total;i++) {
@@ -274,7 +277,8 @@ function attack(dt) {
    addEffect({type:'strike',x:p.x,y:p.y,x2:target.x,y2:target.y,color,life:.18});
   }
  }
- for(const target of targets.slice(0,ha>=2?2:1))hit(target,S.stats.attack+ha*4+core*4);
+ const shapeDamage=influenzaCore.stats(S.segmented).attackOffset+(S.variation?.attackOffset??0);
+ for(const target of targets.slice(0,ha>=2?2:1))hit(target,S.stats.attack+ha*4+core*4+shapeDamage);
  if(na&&S.casts%3===0) {
   const range=96+na*15;
   addEffect({type:'pulse',x:p.x,y:p.y,r:range,color:'#a3f7de',life:.34});
@@ -289,12 +293,13 @@ function attack(dt) {
 
 function moveDefenses(dt) {
  const p=S.p;
+ const {patrolRange}=influenzaCore.stats(S.segmented);
  S.nextPatrol-=dt;
  if(S.nextPatrol<=0){
   S.nextPatrol=4.7-S.step*.46;
   if(S.enemies.length<13){
-   const y=p.y+86, sign=Math.random()<.5?-1:1;
-   const enemy=actor('patrol',sign*(room().rx-29),y);
+   const sign=Math.abs(p.x)>125?-Math.sign(p.x):Math.random()<.5?-1:1;
+   const enemy=actor('patrol',p.x+sign*(145+Math.random()*70),p.y+55);
    respiratory.confine(enemy,room());
    S.enemies.push(enemy);
   }
@@ -302,6 +307,16 @@ function moveDefenses(dt) {
  for(const enemy of S.enemies) {
   if(enemy.hp<=0||enemy.type==='cell')continue;
   const boss=respiratory.bosses[enemy.type], d=distance(p,enemy);
+  if(enemy.type==='patrol'&&enemy.spottedAt===null){
+   if(d>patrolRange){
+    const direction=enemy.phase+S.clock*.65;
+    enemy.x+=Math.cos(direction)*enemy.speed*.35*dt;
+    enemy.y+=Math.sin(direction)*enemy.speed*.35*dt;
+    respiratory.confine(enemy,room());
+    continue;
+   }
+   enemy.spottedAt=S.clock;
+  }
   if(enemy.windup>0) {
    enemy.windup=Math.max(0,enemy.windup-dt);
    if(enemy.windup===0) {
@@ -370,7 +385,9 @@ function arenaReward() {
   encounterCards(available,reward==='na'?['na']:[]);
  const title=reward?TRAITS[reward].name+' entrou no envoltório':'Escolha uma evolução';
  const note=reward?TRAITS[reward].study:'As habilidades evoluem no próprio espaço.';
- showDraft(cards,title,area.name+' · arena concluída',note,reward);
+ const draft={cards,title,label:area.name+' · arena concluída',note,topic:reward};
+ if(S.step===0)showLayoutChoices(draft);
+ else resumeDraft(draft);
 }
 
 function leaveArena() {
@@ -385,6 +402,7 @@ function leaveArena() {
 function enterArena(step) {
  S.step=step;S.roomCleared=false;S.encounter=null;
  S.enemies.length=0;S.orbs.length=0;S.effects.length=0;
+ S.variation=influenzaCore.roll(S.segmented);
  Object.assign(S.p,{...room().spawn,walk:0,dash:0});
  S.mucus=-1;S.mucusTime=0;S.mucusAnswered=false;S.nextPatrol=4.8;S.nextAttack=S.stats.delay;
  addTargets();makeRoom();
@@ -400,7 +418,7 @@ function travel(dt) {
  enterArena(S.step+1);
  S.wind=null;S.arrivedAt=S.clock;S.phase='play';
  setPanel('play');lastHud='';cv.focus({preventScroll:true});
- announce(room().name);
+ announce(S.variation?room().name+' · '+S.variation.name+'. '+S.variation.desc+'.':room().name);
 }
 
 function checkpoint() {
@@ -464,7 +482,7 @@ function buttonCard(card, onChoose) {
  const content=document.createElement('span');content.className='build-copy';
  const meta=document.createElement('span');meta.className='build-meta';
  const location=document.createElement('span');location.className='build-kicker';
- location.textContent=card.kind==='fusion'?'Fusão':SLOT_NAMES[card.slot]+' · nível '+card.level;
+ location.textContent=card.kicker??(card.kind==='fusion'?'Fusão':SLOT_NAMES[card.slot]+' · nível '+card.level);
  meta.append(rarityBadge(card.rarity),location);
  const title=document.createElement('strong');title.textContent=card.name;
  const body=document.createElement('span');body.className='build-desc';body.textContent=card.desc;
@@ -540,6 +558,7 @@ function setupChoice(title,label,note) {
  $('draftHint').hidden=!note;$('draftHint').textContent=note;
  $('opts').replaceChildren();
  $('ups').replaceChildren();$('ups').hidden=true;
+ $('contBtn').textContent='Continuar';$('contBtn').classList.remove('ghost');
  $('fb').hidden=true;$('contBtn').hidden=true;$('reviewBtn').hidden=true;$('evolutionPreview').hidden=true;
 }
 
@@ -569,9 +588,78 @@ function showDraft(cards,title,label,note,topic=null) {
  panel.firstElementChild?.focus({preventScroll:true});
 }
 
-function openQuiz(question,mode,returnTo=null) {
+function resumeDraft(draft) {
+ showDraft(draft.cards,draft.title,draft.label,draft.note,draft.topic);
+}
+
+function coreCard(id,item,segmented,kicker,desc,rarity='rare') {
+ return {id,name:item.name,color:item.color,icon:item.icon??String(segmented.segments),
+  segmented,kicker,desc,rarity,question:item.question};
+}
+
+function coreStatsText(segmented) {
+ const {patrolRange,chance,bonusShare,attackOffset}=influenzaCore.stats(segmented);
+ const damage=attackOffset?' · '+String(attackOffset).replace('-','−')+' no dano do disparo':'';
+ return 'Detectabilidade '+patrolRange+' · Variabilidade '+chance+'% · '+bonusShare+'% das formas são bônus'+damage;
+}
+
+function showCoreChoices({title,note,cards,skip,hint},draft,onUnlock) {
+ const round={kind:'core-choice',returnTo:()=>resumeDraft(draft)};
+ S.round=round;
+ setupChoice(title,'Área do núcleo · Orofaringe',note);
+ $('evolutionPreview').hidden=false;
+ previewEvolution(cards[0]);
+ const panel=$('ups');panel.hidden=false;
+ for(const card of cards){
+  const button=buttonCard(card,()=>{
+   if(S?.phase!=='level'||S.round!==round)return;
+   openQuiz(card.question,'core',correct=>{
+    if(!correct){resumeDraft(draft);return;}
+    S.segmented=card.segmented;
+    onUnlock(draft);
+   },hint);
+  });
+  button.addEventListener('focus',()=>previewEvolution(card));
+  button.addEventListener('pointerenter',()=>previewEvolution(card));
+  panel.append(button);
+ }
+ const skipButton=$('contBtn');
+ skipButton.textContent=skip;skipButton.hidden=false;skipButton.classList.add('ghost');
+ panel.firstElementChild.focus({preventScroll:true});
+}
+
+function showLayoutChoices(draft) {
+ const cards=[8,7].map(segments=>{
+  const segmented={segments};
+  return coreCard('segments-'+segments,influenzaCore.layouts[segments],segmented,'Morfologia interna',coreStatsText(segmented));
+ });
+ showCoreChoices({title:'Escolha seu núcleo',note:'Detectabilidade é o alcance de visão das patrulhas. Variabilidade é a chance de sortear uma forma temporária ao entrar em outra arena.',
+  cards,skip:'Seguir sem núcleo segmentado',hint:'Acerte para equipar esta morfologia interna.'},draft,showProfileChoices);
+}
+
+function showProfileChoices(draft) {
+ const layout=influenzaCore.layouts[S.segmented.segments];
+ const cards=layout.profiles.map(profile=>{
+  const segmented={...S.segmented,profile};
+  return coreCard(profile,influenzaCore.profiles[profile],segmented,layout.name,coreStatsText(segmented));
+ });
+ showCoreChoices({title:'Escolha um perfil de influenza',note:'Seu núcleo de '+layout.name+' está equipado. Uma pergunta bônus libera o perfil escolhido e o acesso ao poder exclusivo.',
+  cards,skip:'Manter só os segmentos',hint:'Se errar, você segue com os segmentos que equipou.'},draft,showSignatureChoices);
+}
+
+function showSignatureChoices(draft) {
+ const profile=influenzaCore.profiles[S.segmented.profile];
+ const cards=profile.signatures.map(signature=>{
+  const power=influenzaCore.signatures[signature];
+  return coreCard(signature,power,{...S.segmented,signature},'Poder exclusivo',power.desc,'special');
+ });
+ showCoreChoices({title:'Escolha um poder exclusivo',note:'Cada partida tem um espaço para um poder de núcleo. O efeito é passivo e aparece na descrição de cada opção.',
+  cards,skip:'Manter o perfil sem poder',hint:'Se errar, você segue com seu perfil de núcleo.'},draft,resumeDraft);
+}
+
+function openQuiz(question,mode,returnTo=null,hint='') {
  S.round={kind:'quiz',mode,returnTo,answered:false};
- const note=mode==='mucus'?'Uma resposta certa protege sua integridade. Um erro custa 26 pontos.':'';
+ const note=mode==='mucus'?'Uma resposta certa protege sua integridade. Um erro custa 26 pontos.':hint;
  const source=question.guide?' · Taller 14, questão '+question.guide:'';
  setupChoice(question.q,question.level+' · '+question.topic+source,note);
  if(mode==='practice')$('hud').hidden=true;
@@ -591,8 +679,8 @@ function openQuiz(question,mode,returnTo=null) {
 
 function answerQuiz(index,question,option) {
  if(S?.phase!=='level'||S.round?.kind!=='quiz'||S.round.answered)return;
- S.round.answered=true;
  const correct=index===0,mucus=S.round.mode==='mucus';
+ S.round.answered=true;S.round.correct=correct;
  S.history.push({question:question.q,correct});
  if(mucus) {
   if(correct)crew.rewardAnswer();
@@ -629,6 +717,7 @@ function continueRun() {
  const round=S.round;
  if(round?.kind==='quiz'&&!round.answered)return;
  const destination=round?.returnTo;
+ if(typeof destination==='function'){destination(round.correct);return;}
  if(destination?.kind==='intro'){showIntro();$('practiceBtn').focus();return;}
  if(destination?.kind==='draft'){
   showDraft(destination.cards,destination.title,destination.label,destination.note);
@@ -652,6 +741,21 @@ function describeBuild(list) {
  for(const id of S.fusions){
   const item=document.createElement('li');item.className='none';
   item.append(FUSIONS[id].name+' ',rarityBadge('special'));list.append(item);
+ }
+ if(S.segmented){
+  const {segments,profile,signature}=S.segmented;
+  const core=document.createElement('li');core.className='none';
+  core.textContent='Morfologia interna · '+influenzaCore.layouts[segments].name+(profile?' · '+influenzaCore.profiles[profile].name:'');
+  const stats=document.createElement('li');stats.className='none';stats.textContent=coreStatsText(S.segmented);
+  list.append(core,stats);
+  if(signature){
+   const power=document.createElement('li');power.className='none';
+   power.append('Poder exclusivo · '+influenzaCore.signatures[signature].name+' ',rarityBadge('special'));list.append(power);
+  }
+  if(S.variation){
+   const variation=document.createElement('li');variation.className='none';
+   variation.textContent=S.variation.name+' · '+S.variation.desc;list.append(variation);
+  }
  }
 }
 
@@ -689,7 +793,7 @@ function hud() {
  const p=S.p,area=room(),boss=currentBoss();
  const hp=Math.ceil(p.hp),dashSeconds=Math.ceil(p.cooldown);
  const key=[hp,p.max,S.step,S.level,S.xp,S.impact,S.mucus,boss?.type,boss?.hp,dashSeconds,
-  S.roomCleared,S.phase,S.control,touchLayout].join('|');
+  S.roomCleared,S.phase,S.control,touchLayout,S.segmented?.segments,S.segmented?.profile,S.segmented?.signature].join('|');
  if(key===lastHud)return;
  lastHud=key;
  $('regionNow').textContent=area.name;$('hpt').textContent=hp+'/'+p.max;
@@ -705,6 +809,17 @@ function hud() {
   el.classList.toggle('done',index<S.regions);
  }
  $('mucusStatus').hidden=S.mucus<0||S.roomCleared;
+ $('coreHud').hidden=!S.segmented;
+ if(S.segmented){
+  const {segments,profile}=S.segmented, {chance,patrolRange}=influenzaCore.stats(S.segmented);
+  $('coreHudTitle').textContent=profile?influenzaCore.profiles[profile].name+' · '+segments+' segmentos':influenzaCore.layouts[segments].name;
+  $('coreHudStats').textContent='Variabilidade '+chance+'% · Detectabilidade '+patrolRange;
+ }
+ const form=$('coreForm');form.hidden=!S.variation;
+ if(S.variation){
+  form.dataset.effect=S.variation.positive?'bonus':'penalty';
+  form.textContent=S.variation.name+' · '+S.variation.desc;
+ }
  $('dashBtn').disabled=p.cooldown>0;
  $('dashTime').textContent=dashSeconds?dashSeconds+'s':'Pronto';
  $('touchLegend').hidden=S.phase!=='play'||!touchLayout;
@@ -777,6 +892,11 @@ function drawDefense(e) {
  }
  const motion=reduce?0:Math.sin(S.clock*8+e.phase)*e.r*.095;
  arenaArt.drawActor(ctx,sprite(e.type,boss?.rank),e.x,e.y,e.r,motion,S.clock-e.hitAt<.13);
+ if(e.spottedAt!==null&&S.clock-e.spottedAt<.8){
+  ctx.font='900 18px system-ui, sans-serif';ctx.textAlign='center';ctx.lineWidth=4;
+  ctx.strokeStyle='#44253c';ctx.fillStyle='#ffdda8';
+  ctx.strokeText('!',e.x,e.y-20);ctx.fillText('!',e.x,e.y-20);
+ }
  if(e.required&&!boss&&e.hp<e.max){
   ctx.fillStyle='#522645';ctx.fillRect(e.x-14,e.y+13,28,4);
   ctx.fillStyle='#ffdca3';ctx.fillRect(e.x-14,e.y+13,28*e.hp/e.max,4);
@@ -788,6 +908,7 @@ function appearance(card=null) {
  return {
   morph:S.morph,ha:rank('ha'),na:rank('na'),core:rank('core'),
   defense:Boolean(rank('shell')||rank('veil')),magnet:Boolean(rank('magnet')),reserve:Boolean(rank('reserve')),
+  segmented:influenzaCore.shape(card?.segmented??S.segmented),variation:S.variation,
   fused:S.fusions.has('resonancia')||card?.id==='resonancia'
  };
 }

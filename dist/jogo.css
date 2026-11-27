@@ -409,6 +409,15 @@ label.talent-item{cursor:pointer}
 .region-track li[aria-current=step]{border-color:var(--line);background:color-mix(in srgb,var(--line) 63%,transparent);color:var(--ink);font-weight:850}
 .region-track li.done{color:var(--good);font-weight:750}
 .round-objective{flex:1;min-width:min(100%,270px);margin:0;padding:.1rem 0;font-size:.88rem}
+.core-hud{
+ grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;padding:4px 8px;
+ border:1px solid var(--line);border-radius:7px;color:var(--mut);font-size:.79rem;line-height:1.35;
+}
+.core-hud strong{color:var(--ink)}
+.core-hud[hidden],.core-hud [hidden]{display:none}
+#coreForm{font-weight:800}
+#coreForm[data-effect=bonus]{color:var(--good)}
+#coreForm[data-effect=penalty]{color:var(--bad)}
 #mucusStatus{color:var(--good);font-weight:850}
 .boss-meter{position:absolute;z-index:1;width:min(295px,60%);bottom:12px;left:50%;transform:translateX(-50%);text-align:center;color:#fff5e6;text-shadow:0 1px 3px #301224;font-size:.85rem;pointer-events:none}
 .boss-meter .bar{height:7px;background:#3c1e36;border:1px solid #a86683}
