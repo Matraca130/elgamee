@@ -16,7 +16,7 @@ Uma consulta semântica offline em espanhol encontrou a decisão em português s
 
 ## Em desenho
 
-[Rotas iniciais de Chagas e toxoplasmose](../decisoes/rotas-iniciais-parasitologia.md) registra casas de cura, a pergunta Chagasico, o bônus noturno, o poder felino e as quatro arenas propostas. A primeira arte escolhida para desenvolvimento é o rancho ao entardecer, com a personalidade da rodada ilustrada inicial e terreno aberto.
+[Rotas iniciais de Chagas e toxoplasmose](../decisoes/rotas-iniciais-parasitologia.md) registra casas de cura, a pergunta Chagasico, o bônus noturno, o poder felino e as quatro arenas propostas. A primeira arte escolhida para desenvolvimento é o rancho ao entardecer, com o quadro T5 da prancha arcade como referência visual e terreno aberto.
 
 ## Retomar
 
