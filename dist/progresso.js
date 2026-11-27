@@ -1,7 +1,8 @@
 const atlasProgress=(()=>{
  const key='atlas-viral-cursos-v1';
+ const localOnly=Boolean(document.querySelector('meta[name="atlas-progresso-local"]'));
  const courses={};
- let limits={},mode='connecting',notify=()=>{},queued=false,saving=false;
+ let limits={},mode=localOnly?'local':'connecting',notify=()=>{},queued=false,saving=false;
  const bounded=(value,max)=>Number.isInteger(value)?Math.min(max,Math.max(0,value)):0;
 
  function restore(source){
@@ -47,8 +48,10 @@ const atlasProgress=(()=>{
   try{stored=JSON.parse(localStorage.getItem(key));}catch{}
   restore(stored);
   notify();
-  window.addEventListener('online',synchronize);
-  synchronize();
+  if(!localOnly){
+   window.addEventListener('online',synchronize);
+   synchronize();
+  }
  }
 
  function record(id,cleared,correct){
@@ -58,7 +61,7 @@ const atlasProgress=(()=>{
   store();
   if(mode==='account')mode='saving';
   notify();
-  synchronize();
+  if(!localOnly)synchronize();
  }
 
  return {init,record,read:id=>courses[id],status:()=>mode};
