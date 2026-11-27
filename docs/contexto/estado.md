@@ -1,6 +1,6 @@
 # Estado do Atlas Viral
 
-Revisado em 26 de novembro de 2026.
+Revisado em 27 de novembro de 2026.
 
 - **Influenza** tem quatro arenas, evolução do núcleo, HA, NA e posto de profilaxia.
 - **VSR** tem duas arenas, casos de lactente e equipe de saúde e Confluência como recompensa do desafio do sincício.
@@ -13,6 +13,10 @@ Revisado em 26 de novembro de 2026.
 A compilação do Worker passou. Os capítulos foram testados até a última arena, e o salvamento por conta foi testado localmente com sessões isoladas.
 
 Uma consulta semântica offline em espanhol encontrou a decisão em português sobre preservar o melhor resultado de cada curso.
+
+## Em desenho
+
+[Rotas iniciais de Chagas e toxoplasmose](../decisoes/rotas-iniciais-parasitologia.md) registra casas de cura, a pergunta Chagasico, o bônus noturno, o poder felino e as quatro arenas propostas. A primeira arte escolhida para desenvolvimento é o rancho ao entardecer, com o quadro T5 da prancha arcade como referência visual e terreno aberto.
 
 ## Retomar
 
