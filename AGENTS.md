@@ -24,7 +24,7 @@
 ## Continuidade do projeto
 
 - Use o [README](README.md) para retomar o projeto e consulte o [registro de decisões](docs/decisoes/README.md) antes de mudar uma área já documentada.
-- Em uma nova sessão, use `npm run contexto` para ler o estado atual. Para localizar uma decisão e seus arquivos, use `npm run contexto -- buscar "tema"`. Consulte o histórico do tema quando precisar confirmar o que mudou no código.
+- Em uma nova sessão, use `npm run contexto` para ler o estado atual. Quando já souber o assunto, use `npm run contexto -- retomar "tema"` para recuperar as decisões, os arquivos e os commits recentes. Se estiver procurando pelo sentido da pergunta, use `npm run contexto -- semantica "pergunta"` e confira a decisão original.
 - Registre decisões que mudem as regras do jogo, os cursos, o armazenamento ou a publicação junto com a alteração que as aplica. Anote o contexto, o que foi decidido e as consequências.
 - Identifique ideias em discussão como propostas. Quando uma decisão mudar, vincule a anterior à nova e atualize as instruções vigentes aqui.
 - Atualize o [estado do projeto](docs/contexto/estado.md) quando a entrega ou a pendência principal mudar.

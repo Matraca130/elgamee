@@ -16,6 +16,8 @@ O contexto acompanha o código e pode ser revisado no Git. Uma conversa nova com
 
 ## Consultas
 
-O estado atual dá o ponto de partida. A busca textual encontra trechos em decisões e código e o histórico mostra as mudanças do tema. Para buscar pelo sentido, cada pessoa pode gerar um índice MemPalace local com os documentos versionados.
+O comando `retomar` reúne o estado atual, as decisões e os commits recentes de um tema. A busca textual encontra trechos em decisões e código. A busca por significado usa um índice MemPalace gerado localmente a partir dos documentos versionados.
+
+O comando `preparar` instala a versão do MemPalace usada pelo projeto e obtém os arquivos públicos do modelo. A indexação e a consulta usam esses arquivos em modo offline. O índice é reconstruído a partir da memória versionada sempre que uma decisão ou regra vigente mudar. O Git conserva a sequência das decisões e permite voltar ao contexto de uma versão anterior.
 
 Arquivos relacionados. [Instruções do projeto](../../AGENTS.md) · [Importação para Claude Code](../../CLAUDE.md) · [Como colaborar](../../README.md)

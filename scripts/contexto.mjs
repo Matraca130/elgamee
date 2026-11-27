@@ -1,14 +1,12 @@
-import { execFileSync, spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { exportMemPalace, prepareMemPalace, searchMemPalace } from './mempalace.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
 const state='docs/contexto/estado.md';
 const decisions='docs/decisoes';
-const generated=join(root,'.atlas-contexto');
-const palace=join(generated,'palace');
 const read=file=>readFileSync(join(root,file),'utf8');
 const notes=readdirSync(join(root,decisions))
  .filter(file=>file.endsWith('.md')).sort().map(file=>join(decisions,file));
@@ -26,9 +24,10 @@ function matchingAreas(query){
  return areas.filter(area=>[area.tema,...area.busca].some(term=>contains(query,normalize(term))));
 }
 
-function showHistory(query=''){
+function showHistory(query='', {limit=5, details=true}={}){
  const paths=matchingAreas(normalize(query)).flatMap(area=>area.arquivos);
- const args=['log','-5','--date=short','--format=%h %ad %s','--name-only'];
+ const args=['log','-'+limit,'--date=short','--format=%h %ad %s'];
+ if(details)args.push('--name-only');
  if(paths.length)args.push('--',...unique(paths));
  else if(query)args.push('--fixed-strings','--regexp-ignore-case','--grep='+query);
  try{
@@ -37,7 +36,7 @@ function showHistory(query=''){
  }catch{console.log('Histórico do Git indisponível nesta cópia.');}
 }
 
-function search(raw){
+function search(raw, {files=sources, limit=7}={}){
  const query=normalize(raw);
  const terms=unique(query.split(' ').filter(word=>word.length>1&&!commonWords.has(word)));
  const matched=matchingAreas(query);
@@ -45,7 +44,7 @@ function search(raw){
   .filter(term=>!terms.includes(term));
  const nearby=new Set(matched.flatMap(area=>area.arquivos));
  const hits=[];
- for(const file of sources){
+ for(const file of files){
   const lines=read(file).split(/\r?\n/);
   let best=null;
   for(const [index,line] of lines.entries()){
@@ -61,7 +60,7 @@ function search(raw){
  hits.sort((left,right)=>right.score-left.score||left.file.localeCompare(right.file));
  if(!hits.length){console.log('Nenhum trecho encontrado. Consulte os temas com npm run contexto -- areas.');return;}
  if(matched.length)console.log('Temas relacionados · '+matched.map(area=>area.tema).join(', '));
- for(const hit of hits.slice(0,7))console.log(hit.file+':'+hit.line+'  '+hit.excerpt);
+ for(const hit of hits.slice(0,limit))console.log(hit.file+':'+hit.line+'  '+hit.excerpt);
 }
 
 function showArea(query){
@@ -78,34 +77,22 @@ function memoryCorpus(){
  return '# Contexto do Atlas Viral\n\n'+records.join('\n\n')+'\n';
 }
 
-function exportMemPalace(corpus=memoryCorpus()){
- const directory=join(generated,'mempalace');
- mkdirSync(directory,{recursive:true});
- writeFileSync(join(directory,'atlas-viral.md'),corpus);
- return directory;
-}
-
-function runMemPalace(command,args){
- const options=['--palace',palace,'--wing','atlas-viral'];
- const result=spawnSync('mempalace',['--backend','chroma',command,...options,...args],{
-  cwd:root,stdio:'inherit',env:{...process.env,MEMPALACE_EMBEDDING_MODEL:'embeddinggemma'}
- });
- if(result.error?.code==='ENOENT')console.error('MemPalace indisponível neste ambiente.');
- else if(result.error)console.error('Falha ao iniciar o MemPalace.');
- return result.status===0;
-}
-
 function semantic(raw){
- const corpus=memoryCorpus();
- const stamp=join(generated,'mempalace.sha256');
- const hash=createHash('sha256').update(corpus).digest('hex');
- const fresh=existsSync(palace)&&existsSync(stamp)&&readFileSync(stamp,'utf8')===hash;
- if(!fresh){
-  const folder=exportMemPalace(corpus);
-  if(!runMemPalace('mine',['--no-gitignore',folder])){search(raw);return;}
-  writeFileSync(stamp,hash);
+ if(!searchMemPalace(memoryCorpus(),raw)){
+  console.log('\nBusca por texto');
+  search(raw);
  }
- if(!runMemPalace('search',['--results','5','--',raw]))search(raw);
+}
+
+function resume(raw){
+ console.log(read(state).trim());
+ if(!raw)return;
+ console.log('\n## Arquivos da área');
+ showArea(raw);
+ console.log('\n## Decisões e instruções relacionadas');
+ search(raw,{files:documents,limit:4});
+ console.log('\n## Mudanças recentes no Git');
+ showHistory(raw,{limit:3,details:false});
 }
 
 const [command='inicio',...args]=process.argv.slice(2);
@@ -117,10 +104,12 @@ const routes={
  buscar(){if(query)search(query);else showArea('');},
  historico(){showHistory(query);},
  semantica(){if(query)semantic(query);else showArea('');},
- 'exportar-mempalace'(){console.log(exportMemPalace());}
+ retomar(){resume(query);},
+ preparar(){if(!prepareMemPalace(memoryCorpus()))process.exitCode=1;},
+ 'exportar-mempalace'(){console.log(exportMemPalace(memoryCorpus()));}
 };
 if(Object.hasOwn(routes,command))routes[command]();
 else{
- console.error('Use inicio, areas, area, buscar, historico, semantica ou exportar-mempalace.');
+ console.error('Use inicio, areas, area, buscar, historico, retomar, preparar, semantica ou exportar-mempalace.');
  process.exitCode=1;
 }

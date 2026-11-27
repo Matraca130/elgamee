@@ -33,6 +33,6 @@
     "tema": "colaboracao",
     "busca": ["colaboração", "colaboración", "memória", "memoria", "contexto", "decisões", "decisiones", "github", "mempalace", "claude", "harness"],
     "resumo": "Instruções compartilhadas, decisões, busca e revisão pelo Git.",
-    "arquivos": ["README.md", "AGENTS.md", "docs/decisoes/memoria-no-repositorio.md", "docs/contexto/estado.md", "scripts/contexto.mjs"]
+    "arquivos": ["README.md", "AGENTS.md", "docs/decisoes/memoria-no-repositorio.md", "docs/contexto/estado.md", "scripts/contexto.mjs", "scripts/mempalace.mjs", "scripts/mempalace_atlas.py"]
   }
 ]
