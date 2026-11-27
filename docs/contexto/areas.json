@@ -18,6 +18,12 @@
     "arquivos": ["docs/decisoes/capitulos-respiratorios.md", "docs/decisoes/animacao-influenza.md", "dist/morfologia.js", "dist/influenza-2d.js", "dist/arte-jogo.js", "dist/jogo.js"]
   },
   {
+    "tema": "personagens",
+    "busca": ["personagem", "personaje", "personajes", "criação de personagens", "crear personajes", "animação", "animación", "arte articulada", "estúdio"],
+    "resumo": "Ficha, peças articuladas, clipes, integração e teste de personagens jogáveis.",
+    "arquivos": ["docs/decisoes/criacao-de-personagens.md", "docs/prototipo-influenza.md", "dist/personagem-2d.js", "dist/influenza-2d.js", "dist/arte-toxocara.js"]
+  },
+  {
     "tema": "parasitos",
     "busca": ["zoonose", "toxocara", "toxocariase", "hospedeiro", "hospedador", "vetor", "larva", "proglote"],
     "resumo": "Rota de Toxocara canis do solo à fase larval no hospedeiro humano acidental.",
