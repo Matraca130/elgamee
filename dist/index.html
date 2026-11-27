@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Atlas Viral · Influenza</title>
+<title>Atlas Viral · Cursos respiratórios</title>
 <link rel="stylesheet" href="./jogo.css">
 </head>
 <body>
@@ -22,9 +22,7 @@
   <button class="icon" id="pauseBtn" aria-label="Pausar">II</button>
  </div>
  <div class="arena-roster">
-  <ol class="region-track" id="regionTrack" aria-label="Percurso da fase">
-   <li aria-current="step">Orofaringe</li><li>Traqueia</li><li>Brônquios</li><li>Pulmões</li>
-  </ol>
+  <ol class="region-track" id="regionTrack" aria-label="Percurso da fase"></ol>
   <p class="round-objective" id="arenaTissue"></p>
   <span id="echoStatus" class="echo-status"></span>
   <span id="mucusStatus" hidden>Muco · movimento mais lento</span>
@@ -48,19 +46,27 @@
  </div>
  <div class="ov" id="intro">
   <div class="arena-card campaign-card">
+   <section class="courses" aria-labelledby="courseHeading">
+    <div class="courses-head">
+     <h2 id="courseHeading">Meus cursos</h2>
+     <p id="courseStatus" role="status">Consultando o progresso…</p>
+     <a href="/signin-with-chatgpt?return_to=%2F" id="courseSignIn" target="_top" hidden>Entrar com ChatGPT</a>
+    </div>
+    <div id="courseChoices" class="course-choices" role="group" aria-label="Escolher curso"></div>
+   </section>
    <div class="campaign-layout">
     <div class="campaign-copy">
      <div class="arena-intro">
       <div class="hero-portrait"><canvas id="virusPortrait" width="112" height="112" aria-hidden="true"></canvas></div>
-      <div><p class="hero-name">Atlas Viral · Fase respiratória</p><h1>Influenza</h1></div>
+      <div><p class="hero-name">Atlas Viral · Fase respiratória</p><h1 id="chapterTitle">Influenza</h1></div>
      </div>
-     <p class="lead">Monte seu vírus e passe por quatro arenas do aparelho respiratório.</p>
+     <p class="lead" id="chapterLead">Monte seu vírus e passe por quatro arenas do aparelho respiratório.</p>
      <fieldset class="morph-options" id="morphOptions">
       <legend>Morfologia e controles</legend>
-      <label>Genoma<select id="genomeSelect"></select></label>
+      <label id="genomeOption">Genoma<select id="genomeSelect"></select></label>
       <label>Corpo<select id="bodySelect"></select></label>
       <label>Expressão<select id="faceSelect"></select></label>
-      <label>Patas e flutuação<select id="feetSelect"></select></label>
+      <label>Superfície<select id="surfaceSelect"></select></label>
       <label>Replicação<select id="replicationSelect" aria-describedby="replicationNote"></select></label>
       <label>Controle de ataque<select id="controlSelect"></select></label>
       <p id="morphStats" aria-live="polite"></p>
@@ -69,12 +75,7 @@
      <p class="mut" id="controlsHelp">Arraste à esquerda para andar e à direita para mirar e atacar. No teclado, use WASD ou setas para andar e segure o mouse para atacar. Espaço ou Dash desvia.</p>
      <p class="areanotice" id="arenaNotice" role="status" hidden></p>
      <div class="btns"><button class="arena-button" id="startBtn">Começar fase</button><button class="arena-button ghost" id="crewIntro">Base dos auxiliares</button></div>
-     <ol class="campaign-route" aria-label="Objetivos da fase">
-      <li><b>Orofaringe</b><span>Derrote o primeiro chefe, ganhe hemaglutinina e explore a Área do núcleo.</span></li>
-      <li><b>Traqueia</b><span>Passe pela mucosa e desbloqueie neuraminidase.</span></li>
-      <li><b>Brônquios</b><span>Enfrente a defesa ciliar e encontre o posto de profilaxia.</span></li>
-      <li><b>Pulmões</b><span>Desvie dos pulsos e saia dos campos dourados para vencer o macrófago.</span></li>
-     </ol>
+     <ol class="campaign-route" id="campaignRoute" aria-label="Objetivos da fase"></ol>
     </div>
     <figure class="route-preview">
      <img id="arenaTerrain" src="./terreno-respiratorio.webp" width="863" height="1164" alt="Orofaringe no alto, traqueia larga no centro e brônquios que se dividem em direção aos pulmões">
@@ -87,41 +88,47 @@
     <p><span class="rarity-badge" data-rarity="common">Comum</span> e <span class="rarity-badge" data-rarity="rare">Super-rara</span> aparecem nas primeiras ofertas. Habilidades de nível alto podem chegar a <span class="rarity-badge" data-rarity="epic">Épica</span> ou <span class="rarity-badge" data-rarity="legendary">Lendária</span>. Fusões e poderes desbloqueados por desafios usam <span class="rarity-badge" data-rarity="special">Especial</span>.</p>
    </details>
    <details class="arena-help"><summary id="fusionCount">Fusões descobertas</summary><ul id="fusionRecipes"></ul></details>
-   <details class="arena-help">
+   <details class="arena-help" id="influenzaDefenses">
     <summary>Replicação, defesa e profilaxia</summary>
     <p>Os fragmentos convocam ecos temporários que acompanham seus disparos. O Anel coletor aumenta o alcance da coleta. Nos brônquios, acerte uma pergunta no posto de profilaxia para ganhar um aliado de estudo por 14 s.</p>
     <p>Nos pulmões, o pulso violeta causa dano no impacto. O campo dourado reduz a velocidade enquanto o personagem estiver dentro dele. São padrões de combate da arena.</p>
     <p>Na influenza, anticorpos contra a hemaglutinina podem impedir a entrada do vírus na célula. Anticorpos contra a neuraminidase também podem proteger e limitar a liberação de partículas virais.</p>
     <p class="study-source"><a href="https://www.cdc.gov/flu/php/viruses/human-serology.html" target="_blank" rel="noopener noreferrer">Anticorpos na influenza · CDC</a> · <a href="https://www.cdc.gov/flu/vaccines/index.htm" target="_blank" rel="noopener noreferrer">Tipos de vacina · CDC</a></p>
    </details>
-   <details class="arena-help">
+   <details class="arena-help" id="influenzaPathogenesis">
     <summary>Antena de patogenia</summary>
     <p>Membrana firme e Impulso nível 2 podem abrir um desafio após a traqueia ou os brônquios. Acerte a pergunta para ganhar a antena do Eco inflamatório.</p>
     <p>Na arena, o dash no instante do impacto de uma onda carrega o Super. Toque em Super ou pressione E para transformar o próximo disparo em um leque de três raios.</p>
     <p>Na gripe, a lesão das células que revestem as vias aéreas e a inflamação ajudam a explicar a doença. Tosse e mal-estar estão entre os sintomas.</p>
     <p class="study-source"><a href="https://www.cdc.gov/flu/signs-symptoms/index.html" target="_blank" rel="noopener noreferrer">Sinais e sintomas · CDC</a></p>
    </details>
-   <details class="arena-help">
+   <details class="arena-help" id="influenzaCoreHelp">
     <summary>Área do núcleo</summary>
     <p>Ao vencer a orofaringe, responda a um desafio de morfologia para equipar um núcleo segmentado. Uma pergunta bônus dá acesso ao perfil de influenza e ao desafio do poder exclusivo.</p>
     <p>Na arena, detectabilidade indica a distância a que a patrulha começa a perseguir o jogador. Variabilidade é a chance de sortear uma forma temporária ao chegar a outra arena. Essa forma muda o disparo ou a recarga do dash durante a sala.</p>
     <p>Na virologia, os tipos A e B têm oito segmentos e causam epidemias sazonais. O tipo C tem sete segmentos e geralmente causa doença leve. Deriva antigênica é uma mudança gradual. Salto antigênico descreve uma mudança abrupta no tipo A.</p>
     <p class="study-source"><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC7119911/" target="_blank" rel="noopener noreferrer">Genomas segmentados</a> · <a href="https://www.cdc.gov/flu/about/viruses-types.html" target="_blank" rel="noopener noreferrer">Tipos de influenza · CDC</a> · <a href="https://www.cdc.gov/flu/php/viruses/change.html" target="_blank" rel="noopener noreferrer">Deriva e salto · CDC</a></p>
    </details>
+   <details class="arena-help" id="vsrHelp" hidden>
+    <summary>VSR, sincícios e bronquiolite</summary>
+    <p>O vírus sincicial respiratório pertence ao gênero <i>Orthopneumovirus</i>, família <i>Pneumoviridae</i>. Tem envoltório e RNA de fita simples negativa, não segmentado. Pode apresentar partículas arredondadas e filamentosas.</p>
+    <p>A proteína G participa da ligação à célula. A proteína F promove fusão de membranas e pode fazer células se fundirem, formando um sincício com vários núcleos.</p>
+    <p>O VSR pode causar sintomas de resfriado e também bronquiolite. Lactentes e idosos estão entre os grupos com maior risco de doença grave. As fichas da fase trazem um caso de bronquiolite e uma situação de prevenção para a equipe de saúde.</p>
+    <p class="study-source"><a href="https://ictv.global/report/chapter/pneumoviridae/pneumoviridae" target="_blank" rel="noopener noreferrer">Família Pneumoviridae · ICTV</a> · <a href="https://www.who.int/news-room/fact-sheets/detail/respiratory-syncytial-virus-%28RSV%29" target="_blank" rel="noopener noreferrer">Quadro clínico do VSR · OMS</a></p>
+   </details>
    <details class="arena-help">
     <summary>Genoma, capsídeo e envoltório</summary>
-    <p>O influenza A tem RNA segmentado de fita simples (−). A polimerase viral produz o RNA mensageiro que os ribossomos leem. Em muitos vírus de RNA (+), o próprio RNA que entra na célula já pode servir como mensageiro.</p>
-    <p>O capsídeo é proteico e o envoltório é uma camada lipídica externa. Nas influenzas A e B, a hemaglutinina e a neuraminidase ficam no envoltório. Na arte do jogo, os ramos verdes indicam NA e os pinos dourados indicam HA.</p>
-    <p>O envoltório lipídico torna muitos vírus envelopados sensíveis a detergentes. As patas articuladas e a flutuação fazem parte da arte do Atlas.</p>
+    <p>O influenza A tem RNA de fita simples negativa, segmentado. O VSR tem RNA de fita simples negativa, não segmentado.</p>
+    <p>O capsídeo é proteico e o envoltório é uma camada lipídica externa. Na arte do Atlas, o vírus flutua e pode ter fibras finas na superfície, inspiradas em estruturas de adesão.</p>
     <p>Tropismo descreve quais células ou tecidos um vírus consegue infectar. A ligação à célula faz parte disso. A patogênese inclui o que a infecção e a resposta do hospedeiro provocam no organismo.</p>
     <p>Os perfis selecionáveis são fictícios. A cor e o número de traços distinguem RNA e DNA. Os benefícios de dano, cadência e resistência servem ao equilíbrio da arena.</p>
     <p class="study-source"><a href="https://www.ncbi.nlm.nih.gov/books/NBK559437/figure/F3/" target="_blank" rel="noopener noreferrer">Classificação de Baltimore · NCBI</a></p>
    </details>
    <details class="arena-help">
-    <summary>Revisão da influenza</summary>
+    <summary>Revisão da fase</summary>
     <p>As perguntas trazem o tema e a dificuldade. As fichas ensinam virologia. Os poderes e as fusões fazem parte da ficção do jogo.</p>
     <button class="arena-button ghost" id="practiceBtn" type="button">Questão fácil de epidemiologia</button>
-    <p class="study-source"><a href="https://www.cdc.gov/flu/php/viruses/antigenic.html" target="_blank" rel="noopener noreferrer">Antígenos da influenza · CDC</a></p>
+    <p class="study-source" id="influenzaLink"><a href="https://www.cdc.gov/flu/php/viruses/antigenic.html" target="_blank" rel="noopener noreferrer">Antígenos da influenza · CDC</a></p>
    </details>
    <details class="arena-help study-guide">
     <summary>43 perguntas do Taller 14</summary>
@@ -200,7 +207,9 @@
 <script defer src="./nucleo-influenza.js"></script>
 <script defer src="./arte-jogo.js"></script>
 <script defer src="./fase-influenza.js"></script>
+<script defer src="./capitulo-vsr.js"></script>
 <script defer src="./guia-respiratoria.js"></script>
+<script defer src="./progresso.js"></script>
 <script defer src="./jogo.js"></script>
 </body>
 </html>

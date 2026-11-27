@@ -141,21 +141,24 @@ const arenaArt = (() => {
    polygon(g, [[-15,-20],[4,-24],[19,-16],[23,0],[16,16],[-4,20],[-21,11],[-23,-7]],fill,rim,2.8);
    return;
   }
+  if(body==='filament'){
+   oval(g,0,-2,18,27,fill,rim,2.8);
+   return;
+  }
   oval(g,0,-2,23,22,fill,rim,2.8);
  }
 
- function articulatedLegs(g,wide,stride,tint) {
-  const bases=[[-6,24,-12,28,-1],[2,27,2,34,10],[9,24,14,29,23]];
-  for(const side of [-1,1]){
-   for(const [index,[anchor,kneeX,kneeY,tipX,tipY]] of bases.entries()){
-    const swing=stride*side*(index%2?-1:1);
-    const knee=kneeY+swing*.6,tip=tipY+swing;
-    g.beginPath();g.moveTo(side*16,anchor);g.lineTo(side*kneeX,knee);
-    g.quadraticCurveTo(side*(tipX+1),tip-3,side*tipX,tip);
-    g.lineWidth=wide?6.2:4.5;g.strokeStyle=ink;g.stroke();
-    g.lineWidth=wide?3.7:2.45;g.strokeStyle=tint??(wide?'#7792aa':'#9bcdcd');g.stroke();
-    oval(g,side*kneeX,knee,wide?2.2:1.5,wide?2.2:1.5,tint??'#d4e8e7');
-   }
+ const fiberAngles=[.43,1.07,1.97,2.66,3.34,4.02,4.95,5.67];
+ function surfaceFibers(g,body,long,clock,color) {
+  const rx=body==='filament'?17:21,ry=body==='filament'?25:20;
+  for(const [i,angle] of fiberAngles.entries()){
+   const x=Math.cos(angle),y=Math.sin(angle),span=long?11:6;
+   const bend=Math.sin(clock*2.7+i)*.9;
+   g.beginPath();g.moveTo(x*rx,y*ry-2);
+   g.quadraticCurveTo(x*(rx+span*.7)-y*bend,y*(ry+span*.7)-2,x*(rx+span),y*(ry+span)-2);
+   g.lineWidth=3.1;g.strokeStyle=ink;g.stroke();
+   g.lineWidth=1.65;g.strokeStyle=color;g.stroke();
+   oval(g,x*(rx+span),y*(ry+span)-2,1.7,1.7,color,ink,.75);
   }
  }
 
@@ -248,7 +251,7 @@ const arenaArt = (() => {
  }
 
  function drawVirus(g,x,y,r,appearance,pose={}) {
-  const {morph,ha=0,na=0,core=0,defense=false,magnet=false,reserve=false,fused=false,segmented,variation,antenna=false}=appearance;
+  const {morph,ha=0,na=0,core=0,defense=false,magnet=false,reserve=false,fused=false,segmented,variation,antenna=false,vsr=false,confluence=false}=appearance;
   const {clock=0,stride=0,lift=0,facing=1,streak=0,flash=false,antennaLit=false,temper=viralMorphology.faces[morph.face].intensity}=pose;
   const unit=r/24;
   g.save();g.translate(x,y);g.scale(unit,unit);g.lineCap=g.lineJoin='round';
@@ -260,19 +263,20 @@ const arenaArt = (() => {
    oval(g,0,1,36,32,aura);
    oval(g,0,18,27,8,null,'#e8b9ff',1.6);
   }
-  const floating=morph.feet==='float';
-  const hover=floating?4+Math.sin(clock*2.7)*1.5:0;
+  const hover=4+Math.sin(clock*2.7)*1.5;
   g.translate(0,-lift-hover);g.scale(facing*(1+streak),1-streak*.55);g.rotate(stride*.022);
-  if(!floating)articulatedLegs(g,morph.feet==='strong',stride,variation?.cooldownFactor?variation.color:null);
+  if(morph.surface&&morph.surface!=='float'){
+   surfaceFibers(g,morph.body,morph.surface==='long',clock,vsr?'#bdf7d6':'#c2eef1');
+  }
   if(na)neuraminidase(g,clock,na,fused);
   if(ha)hemagglutinin(g,ha);
   if(antenna)spiralAntenna(g,clock,antennaLit);
   const coat=g.createLinearGradient(-14,-22,12,23);
-  coat.addColorStop(0,fused?'#8973b8':'#d1f6fb');
-  coat.addColorStop(.47,fused?'rgba(91,66,146,.88)':'rgba(100,202,230,.84)');
-  coat.addColorStop(1,fused?'#533f87':'#407ea7');
+  coat.addColorStop(0,vsr?'#dbf9e7':fused?'#8973b8':'#d1f6fb');
+  coat.addColorStop(.47,vsr?'#6cc9b8':fused?'rgba(91,66,146,.88)':'rgba(100,202,230,.84)');
+  coat.addColorStop(1,vsr?'#3b7985':fused?'#533f87':'#407ea7');
   outlineBody(g,morph.body,coat,fused?'#302044':'#232d4d');
-  oval(g,0,-1,18.6,16.4,fused?'rgba(52,36,95,.42)':'rgba(209,247,243,.28)',
+  oval(g,0,-1,morph.body==='filament'?14.5:18.6,16.4,fused?'rgba(52,36,95,.42)':'rgba(209,247,243,.28)',
    defense?'#d9f6f9':'rgba(209,243,252,.68)',defense?2.5:1.55);
   oval(g,-13,-14,4.4,2.2,'rgba(246,254,255,.83)',null,0,-.43);
   oval(g,15,-8,2.7,1.7,'rgba(246,254,255,.61)',null,0,.7);
@@ -281,11 +285,16 @@ const arenaArt = (() => {
     polygon(g,[[side*17,-14],[side*22,-20],[side*24,-14],[side*20,-10]],variation.color,ink,1.4);
    }
   }
+  if(variation?.cooldownFactor)oval(g,0,19,13,3,null,variation.color,1.7);
   if(segmented)segmentedNucleocapsid(g,segmented,core);
   else nucleocapsid(g,viralMorphology.genomes[morph.genome],core,clock);
   expression(g,temper,.4);
   if(magnet)oval(g,-17,9,3.2,3.2,'#ffda94',ink,1.3);
   if(reserve)oval(g,17,9,3.2,3.2,'#ffadc8',ink,1.3);
+  if(confluence){
+   oval(g,-13,13,4.5,3.4,'#b9f7e2',ink,1.2);
+   oval(g,-8,15,4.5,3.4,'#e1b8f6',ink,1.2);
+  }
   g.restore();
  }
 

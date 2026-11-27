@@ -3,19 +3,23 @@ const respiratory = (() => {
  const stages=[
   {name:'Orofaringe',art:0,rx:308,ry:278,spawn:{x:0,y:178},x:0,y:446,exit:{x:0,y:603},tone:'#f5bc8c',
    label:'Marco da hemaglutinina',targets:[[-135,250],[148,285],[-113,393]],boss:'watch',reward:'ha',
+   caption:'Derrote o primeiro chefe, ganhe hemaglutinina e explore a Área do núcleo.',
    task:'Limpe a arena e chegue ao marco da hemaglutinina.'},
   {name:'Traqueia',art:1,rx:306,ry:283,spawn:{x:0,y:168},x:0,y:493,exit:{x:0,y:603},tone:'#a9f1e4',
    label:'Marco da neuraminidase',targets:[[-176,280],[158,335],[-124,483],[113,469]],reward:'na',
    mucus:[{x:-75,y:302,rx:85,ry:30},{x:117,y:431,rx:61,ry:25}],
+   caption:'Passe pela mucosa e desbloqueie neuraminidase.',
    task:'Atravesse a traqueia larga e chegue ao marco da neuraminidase.'},
   {name:'Brônquios',art:2,rx:317,ry:279,spawn:{x:0,y:166},x:0,y:435,exit:{x:122,y:574},tone:'#edb4ff',
    label:'Bifurcação',targets:[[-156,300],[158,302],[0,478]],boss:'airway',
    study:{x:173,y:236,tone:'#ffda95',label:'Posto de profilaxia'},
    mucus:[{x:-111,y:417,rx:67,ry:30},{x:160,y:458,rx:57,ry:23}],
+   caption:'Enfrente a defesa ciliar e encontre o posto de profilaxia.',
    task:'Passe pela bifurcação e enfrente a defesa ciliar.'},
   {name:'Pulmões',art:3,rx:311,ry:291,spawn:{x:0,y:165},x:0,y:430,tone:'#f9adba',
    label:'Entrada dos alvéolos',targets:[[-156,307],[153,303],[-138,469],[128,483]],boss:'lungs',
    mucus:[{x:-136,y:360,rx:64,ry:28},{x:160,y:412,rx:60,ry:27}],
+   caption:'Desvie dos pulsos e saia dos campos dourados para vencer o macrófago.',
    task:'Abra caminho pelos alvéolos e enfrente o macrófago.'}
  ];
  const bosses={

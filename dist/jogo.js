@@ -2,6 +2,19 @@
 const root=document.getElementById('lobulo-game');
 const $=id=>root.querySelector('#'+id);
 const cv=$('cv'), stage=$('stage'), terrain=$('arenaTerrain'), roomAtlas=$('roomAtlas');
+const chapters={
+ influenza:{
+  id:'influenza',title:'Influenza',short:'Influenza',topic:'Influenza',
+  lead:'Monte seu vírus e passe por quatro arenas do aparelho respiratório.',
+  stages:respiratory.stages,bosses:respiratory.bosses,review:respiratory.review,practice:respiratory.review.epidemiology,
+  win:'Você passou pela traqueia e venceu o macrófago alveolar. +25 moedas.'
+ },
+ vsr:vsrChapter
+};
+const courseLimits=Object.fromEntries(Object.values(chapters).map(chapter=>[chapter.id,chapter.stages.length]));
+const courseChoiceKey='atlas-viral-curso-ativo';
+let selectedChapter=chapters.influenza;
+const courseButtons=new Map();
 const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TAU=Math.PI*2, FRAME_MS=1000/30;
 const keys=new Set();
@@ -49,10 +62,12 @@ const TRAITS={
   desc:'Recupera integridade lentamente durante a partida.'}
 };
 const FUSIONS={
- resonancia:{name:'Ressonância violeta',needs:{ha:1,na:1},icon:'✹',color:'#7a43a8',
+ resonancia:{name:'Ressonância violeta',chapter:'influenza',needs:{ha:1,na:1},icon:'✹',color:'#7a43a8',
   desc:'A cada terceiro disparo, o pulso lança também um feixe violeta na direção do ataque.'},
- eco:{name:'Eco inflamatório',needs:{shell:1,dash:2},quiz:'pathogenesis',icon:'↟',color:'#ad5365',kicker:'Patogenia · Super',
-  desc:'Use o dash para escapar do impacto de uma onda do chefe. Acione o Super para lançar o próximo disparo em leque, com +30% de dano por alvo.'}
+ eco:{name:'Eco inflamatório',chapter:'influenza',needs:{shell:1,dash:2},quiz:'pathogenesis',icon:'↟',color:'#ad5365',kicker:'Patogenia · Super',
+  desc:'Use o dash para escapar do impacto de uma onda do chefe. Acione o Super para lançar o próximo disparo em leque, com +30% de dano por alvo.'},
+ confluencia:{name:'Confluência',chapter:'vsr',needs:{},quiz:'syncytium',recipe:'Desafio do sincício',icon:'◉',color:'#5c5ba8',kicker:'Patogenia · ecos',
+  desc:'A cada três disparos que acertam com a ajuda de um eco, libere um pulso curto em volta do personagem.'}
 };
 const SLOT_NAMES=Object.fromEntries(SLOTS);
 const OPTIONAL=['shell','veil','magnet','core','dash','reserve'];
@@ -61,9 +76,11 @@ const defenseArt={
  patrol:{look:'tuft',colors:['#85bbdd','#485b96','#d1eff0']},
  watch:{look:'shell',colors:['#9bd9c5','#458787','#e4f5c6']},
  airway:{look:'spark',colors:['#79b2d6','#4d5d98','#deefff']},
- lungs:{look:'scallop',colors:['#bb7ec2','#663b87','#f8cae8']}
+ lungs:{look:'scallop',colors:['#bb7ec2','#663b87','#f8cae8']},
+ vsrWatch:{look:'shell',colors:['#8bb4cf','#486184','#e0fbeb']},
+ vsrBronchi:{look:'spark',colors:['#7fcbb4','#3e727f','#e6ffd9']}
 };
-const companionLook={morph:{...viralMorphology.defaults,feet:'float',face:'calm'}};
+const companionLook={morph:{...viralMorphology.defaults,face:'calm'}};
 const bodyCache=new Map();
 const mapCache=document.createElement('canvas');
 mapCache.width=mapCache.height=respiratory.size;
@@ -102,7 +119,8 @@ function equip(id) {
 }
 
 function canFuse(id) {
- return !S.fusions.has(id)&&Object.entries(FUSIONS[id].needs).every(([trait,rank])=>traitRank(trait)>=rank);
+ const fusion=FUSIONS[id];
+ return fusion.chapter===S.chapter.id&&!S.fusions.has(id)&&Object.entries(fusion.needs).every(([trait,rank])=>traitRank(trait)>=rank);
 }
 
 function equipFusion(id) {
@@ -142,7 +160,7 @@ function encounterCards(ids,preferred=[]) {
 }
 
 function actor(type,x,y,required=false) {
- const setup=respiratory.bosses[type];
+ const setup=(S?.chapter??selectedChapter).bosses[type];
  const hp=setup?.health??(type==='cell'?28:31);
  return {type,x,y,hp,max:hp,r:setup?.r??(type==='cell'?15:13),
   speed:setup?.speed??(type==='cell'?0:43+Math.random()*12),
@@ -150,30 +168,34 @@ function actor(type,x,y,required=false) {
 }
 
 function addTargets() {
- const stop=respiratory.stages[S.step];
+ const stop=room();
  for(const [x,y] of stop.targets)S.enemies.push(actor('cell',x,y,true));
 }
 
 function room() {
- return respiratory.stages[S.step];
+ return S.chapter.stages[S.step];
+}
+
+function chapterMorph(){
+ return {...startingMorph,genome:selectedChapter.fixedGenome??startingMorph.genome};
 }
 
 function createState() {
- const morph={...startingMorph}, stats=viralMorphology.stats(morph);
- const first=respiratory.stages[0];
+ const chapter=selectedChapter,morph=chapterMorph(),stats=viralMorphology.stats(morph);
+ const first=chapter.stages[0];
  return {
-  phase:'play',clock:0,step:0,regions:0,impact:0,cells:0,level:1,xp:0,morph,stats,control:morph.control,
+  phase:'play',clock:0,step:0,regions:0,impact:0,cells:0,level:1,xp:0,chapter,morph,stats,control:morph.control,
   p:{...first.spawn,r:15,hp:stats.hp,max:stats.hp,fx:0,fy:1,facing:1,walk:0,stride:0,dash:0,cooldown:0,hitAt:-2,castAt:-1},
   slots:{movimento:{id:'dash',rank:1}},fusions:new Set(),enemies:[],orbs:[],effects:[],
   segmented:null,variation:null,pathogenesisOffered:false,superState:'empty',
   replication:arenaReplication.create(morph.replication),pressure:null,studySeen:false,
-  nextAttack:stats.delay,casts:0,nextPatrol:5.5,encounter:null,round:null,history:[],
+  nextAttack:stats.delay,casts:0,assistedCasts:0,nextPatrol:5.5,encounter:null,round:null,history:[],
   mucus:-1,mucusTime:0,mucusAnswered:false,roomCleared:false,wind:null,arrivedAt:-5,tapUntil:-1
  };
 }
 
 function currentBoss() {
- return S.enemies.find(e=>e.hp>0&&Object.hasOwn(respiratory.bosses,e.type));
+ return S.enemies.find(e=>e.hp>0&&Object.hasOwn(S.chapter.bosses,e.type));
 }
 
 function announce(message) {
@@ -293,12 +315,19 @@ function fireEcho(p,aim,nearby,reach,damage) {
 }
 
 function assistShots(nearby,aim) {
+ let assisted=false;
  for(const ally of S.replication.allies){
   const target=nearby.find(enemy=>enemy.hp>0&&distance(enemy,ally)<=142+enemy.r&&aimedAt(enemy,ally,aim,142,17));
   if(!target)continue;
   addEffect({type:'assist',x:ally.x,y:ally.y,x2:target.x,y2:target.y,
    color:ally.study?'#ffdc9c':'#aef7eb',life:.21});
   hit(target,ally.study?6:4);
+  assisted=true;
+ }
+ if(assisted&&S.fusions.has('confluencia')&&++S.assistedCasts%3===0){
+  const {x,y}=S.p,r=96;
+  addEffect({type:'pulse',x,y,r,color:'#c7f9e6',life:.34});
+  for(const enemy of nearby)if(distance(enemy,S.p)<r+enemy.r)hit(enemy,10);
  }
 }
 
@@ -347,7 +376,7 @@ function attack(dt) {
 }
 
 function pressurePattern(enemy) {
- return enemy.waves%2===1?respiratory.bosses[enemy.type]?.pressure:null;
+ return enemy.waves%2===1?S.chapter.bosses[enemy.type]?.pressure:null;
 }
 
 function moveDefenses(dt) {
@@ -365,7 +394,7 @@ function moveDefenses(dt) {
  }
  for(const enemy of S.enemies) {
   if(enemy.hp<=0||enemy.type==='cell')continue;
-  const boss=respiratory.bosses[enemy.type], d=distance(p,enemy);
+  const boss=S.chapter.bosses[enemy.type], d=distance(p,enemy);
   if(enemy.type==='patrol'&&enemy.spottedAt===null){
    if(d>patrolRange){
     const direction=enemy.phase+S.clock*.65;
@@ -424,7 +453,7 @@ function collect(dt) {
 }
 
 function spawnBoss(id) {
- const {x,y,name}=respiratory.bosses[id];
+ const {x,y,name}=S.chapter.bosses[id];
  S.enemies.push(actor(id,x,y,true));
  S.encounter=id;
  const cue=id==='lungs'?'Pulmões · desvie do pulso violeta e saia do campo dourado.':
@@ -444,6 +473,7 @@ function arenaReward() {
  const area=room(), reward=area.reward;
  S.roomCleared=true;
  S.regions=S.step+1;
+ saveCourseProgress();
  S.enemies.length=0;S.effects.length=0;
  S.mucus=-1;S.p.dash=0;S.pressure=null;
  S.impact=Math.min(96,S.impact+12);
@@ -457,12 +487,14 @@ function arenaReward() {
  const title=reward?TRAITS[reward].name+' entrou no envoltório':'Escolha uma evolução';
  const note=reward?TRAITS[reward].study:'As habilidades evoluem no próprio espaço.';
  const draft={cards,title,label:area.name+' · arena concluída',note,topic:reward};
- if(S.step===0)showLayoutChoices(draft);
+ if(S.step===0&&S.chapter.id==='influenza')showLayoutChoices(draft);
+ else if(area.unlock)showFusionChallenge(fusionCard(area.unlock),'Desafio do sincício',
+  'Associe a proteína do VSR ao efeito observado nas células.',()=>resumeDraft(draft));
  else resumeDraft(draft);
 }
 
 function leaveArena() {
- const next=respiratory.stages[S.step+1];
+ const next=S.chapter.stages[S.step+1];
  if(!next)return;
  S.phase='travel';
  S.wind={time:0,x:S.p.x,y:S.p.y};
@@ -513,7 +545,8 @@ function mucusCheck(dt) {
  S.mucusTime+=dt;
  if(S.mucusTime<.36)return false;
  S.mucusAnswered=true;
- const pool=S.step===1?[respiratory.questions[index],...respiratory.influenzaBank]:[respiratory.questions[2]];
+ const pool=S.chapter.id==='influenza'&&S.step===1?
+  [respiratory.questions[index],...respiratory.influenzaBank]:[respiratory.questions[2]];
  const unseen=pool.filter(question=>!S.history.some(item=>item.question===question.q));
  const options=unseen.length?unseen:pool;
  openQuiz(options[Math.floor(Math.random()*options.length)],'mucus');
@@ -524,7 +557,7 @@ function studyCheckpoint() {
  const post=room().study;
  if(!post||S.studySeen||distance(post,S.p)>34)return false;
  S.studySeen=true;
- const pool=respiratory.prophylaxis;
+ const pool=post.questions??respiratory.prophylaxis;
  const question=pool[Math.floor(Math.random()*pool.length)];
  openQuiz(question,'study',correct=>{
   if(correct)arenaReplication.studyReward(S.replication,S.p,S.clock);
@@ -600,42 +633,110 @@ function showIntro() {
  S=null;lastHud='';clearInput();
  setPanel('intro');syncArena();
  $('arenaNotice').hidden=true;
+ renderChapter();
+}
+
+function renderCourseStatus(){
+ const mode=atlasProgress.status();
+ const status={connecting:'Consultando o progresso…',saving:'Salvando com ChatGPT…',account:'Progresso salvo com ChatGPT',
+  signin:'Progresso neste navegador',local:'Progresso neste navegador'};
+ $('courseStatus').textContent=status[mode];
+ $('courseSignIn').hidden=mode!=='signin';
+ for(const [id,{button,score}] of courseButtons){
+  const entry=atlasProgress.read(id);
+  const max=courseLimits[id];
+  const correct=entry?.correct??0;
+  button.setAttribute('aria-pressed',String(id===selectedChapter.id));
+  score.textContent=(entry?.cleared===max?'Concluído':(entry?.cleared??0)+'/'+max+' arenas')+
+   ' · '+correct+(correct===1?' acerto':' acertos');
+ }
+}
+
+function setupCourses(){
+ try{
+  const last=localStorage.getItem(courseChoiceKey);
+  if(Object.hasOwn(chapters,last))selectedChapter=chapters[last];
+ }catch{}
+ for(const chapter of Object.values(chapters)){
+  const button=document.createElement('button');
+  button.type='button';button.dataset.course=chapter.id;
+  const title=document.createElement('strong');title.textContent=chapter.title;
+  const score=document.createElement('span');
+  button.append(title,score);
+  button.addEventListener('click',()=>{
+   selectedChapter=chapter;
+   try{localStorage.setItem(courseChoiceKey,chapter.id);}catch{}
+   renderChapter();
+  });
+  $('courseChoices').append(button);
+  courseButtons.set(chapter.id,{button,score});
+ }
+ atlasProgress.init(courseLimits,renderCourseStatus);
+}
+
+function renderChapter(){
+ const chapter=selectedChapter, influenza=chapter.id==='influenza';
+ $('chapterTitle').textContent=chapter.title;
+ $('chapterLead').textContent=chapter.lead;
+ $('genomeOption').hidden=Boolean(chapter.fixedGenome);
+ $('influenzaDefenses').hidden=!influenza;
+ $('influenzaPathogenesis').hidden=!influenza;
+ $('influenzaCoreHelp').hidden=!influenza;
+ $('influenzaLink').hidden=!influenza;
+ $('vsrHelp').hidden=influenza;
+ $('practiceBtn').textContent='Revisar · '+chapter.practice.topic;
+ stage.setAttribute('aria-label','Arena respiratória · '+chapter.short);
+ cv.setAttribute('aria-label','Arena do Atlas Viral, com '+chapter.stages.length+' regiões respiratórias');
+ $('campaignRoute').replaceChildren();
+ $('regionTrack').replaceChildren();
+ for(const area of chapter.stages){
+  const entry=document.createElement('li'),name=document.createElement('b'),detail=document.createElement('span');
+  name.textContent=area.name;detail.textContent=area.caption??area.task;
+  entry.append(name,detail);$('campaignRoute').append(entry);
+  const region=document.createElement('li');region.textContent=area.name;$('regionTrack').append(region);
+ }
+ $('guideTopic').value=chapter.topic;
+ renderGuideQuestions();
+ renderCourseStatus();
+ updateKit();
  renderIntroduction();
 }
 
 function renderIntroduction() {
- $('fusionCount').textContent='Fusões descobertas '+crew.fusionsFound().length+'/'+Object.keys(FUSIONS).length;
+ const relevant=Object.entries(FUSIONS).filter(([,fusion])=>fusion.chapter===selectedChapter.id);
+ const found=crew.fusionsFound();
+ $('fusionCount').textContent='Poderes especiais descobertos '+relevant.filter(([id])=>found.includes(id)).length+'/'+relevant.length;
  const list=$('fusionRecipes');
  list.replaceChildren();
- for(const [id,fusion] of Object.entries(FUSIONS)){
+ for(const [id,fusion] of relevant){
   const row=document.createElement('li');
-  const recipe=Object.entries(fusion.needs).map(([key,rank])=>TRAITS[key].name+(rank>1?' nível '+rank:'')).join(' + ');
-  row.textContent=crew.fusionsFound().includes(id)?fusion.name+' · '+recipe:recipe;
+  const recipe=fusion.recipe??Object.entries(fusion.needs).map(([key,rank])=>TRAITS[key].name+(rank>1?' nível '+rank:'')).join(' + ');
+  row.textContent=found.includes(id)?fusion.name+' · '+recipe:recipe;
   list.append(row);
  }
 }
 
 function setupGuide() {
- const select=$('guideTopic'), list=$('guideQuestions');
+ const select=$('guideTopic');
  const topics=[...new Set(guiaRespiratoria.map(item=>item.topic))];
  for(const topic of ['Todos os temas',...topics]){
   const option=document.createElement('option');
   option.value=topic;option.textContent=topic;select.append(option);
  }
- select.value='Influenza';
- function renderQuestions(){
-  list.replaceChildren();
-  for(const entry of guiaRespiratoria){
-   if(select.value!=='Todos os temas'&&entry.topic!==select.value)continue;
-   const row=document.createElement('li');
-   row.value=entry.number;
-   const level=document.createElement('strong');level.textContent=entry.level;
-   const text=document.createElement('p');text.lang='es';text.textContent=entry.prompt;
-   row.append(level,text);list.append(row);
-  }
+ select.addEventListener('change',renderGuideQuestions);
+}
+
+function renderGuideQuestions(){
+ const select=$('guideTopic'),list=$('guideQuestions');
+ list.replaceChildren();
+ for(const entry of guiaRespiratoria){
+  if(select.value!=='Todos os temas'&&entry.topic!==select.value)continue;
+  const row=document.createElement('li');
+  row.value=entry.number;
+  const level=document.createElement('strong');level.textContent=entry.level;
+  const text=document.createElement('p');text.lang='es';text.textContent=entry.prompt;
+  row.append(level,text);list.append(row);
  }
- select.addEventListener('change',renderQuestions);
- renderQuestions();
 }
 
 function startRun() {
@@ -743,21 +844,26 @@ function showSignatureChoices(draft) {
 }
 
 function showPathogenesis() {
- const card=fusionCard('eco');
- const round={kind:'pathogenesis'};
  S.pathogenesisOffered=true;
+ showFusionChallenge(fusionCard('eco'),'Patogenia respiratória',
+  'Membrana firme e Impulso nível 2 abriram um desafio de patogenia.',()=>{
+   S.round=null;
+   continueRun();
+  });
+}
+
+function showFusionChallenge(card,title,note,onContinue) {
+ const round={kind:'pathogenesis',returnTo:onContinue};
  S.round=round;
- setupChoice('Patogenia respiratória',room().name+' · recompensa Especial',
-  'Membrana firme e Impulso nível 2 abriram um desafio de patogenia.');
+ setupChoice(title,room().name+' · recompensa Especial',note);
  $('evolutionPreview').hidden=false;
  previewEvolution(card);
  const choice=buttonCard(card,()=>{
   if(S?.phase!=='level'||S.round!==round)return;
-  openQuiz(respiratory.review[card.quiz],'pathogenesis',correct=>{
+  openQuiz(S.chapter.review[card.quiz],'pathogenesis',correct=>{
    if(correct)equipFusion(card.id);
-   S.round=null;
-   continueRun();
-  },'Acerte para equipar a antena e o Super desta fase.');
+   onContinue();
+  },'Acerte para equipar esta evolução.');
  });
  $('ups').append(choice);$('ups').hidden=false;
  $('contBtn').textContent='Seguir com a combinação atual';
@@ -790,6 +896,7 @@ function answerQuiz(index,question,option) {
  const correct=index===0,mucus=S.round.mode==='mucus';
  S.round.answered=true;S.round.correct=correct;
  S.history.push({question:question.q,correct});
+ saveCourseProgress();
  if(mucus) {
   if(correct)crew.rewardAnswer();
   else S.p.hp=Math.max(0,S.p.hp-26);
@@ -812,12 +919,16 @@ function answerQuiz(index,question,option) {
 
 function reviewTrait() {
  const draft=S?.round;
- if(draft?.kind==='draft'&&draft.topic)openQuiz(respiratory.review[draft.topic],'review',draft);
+ if(draft?.kind==='draft'&&draft.topic)openQuiz(S.chapter.review[draft.topic],'review',draft);
 }
 
 function practice() {
  S=createState();lastHud='';
- openQuiz(respiratory.review.epidemiology,'practice',{kind:'intro'});
+ openQuiz(S.chapter.practice,'practice',{kind:'intro'});
+}
+
+function saveCourseProgress(){
+ atlasProgress.record(S.chapter.id,S.regions,S.history.filter(answer=>answer.correct).length);
 }
 
 function continueRun() {
@@ -890,11 +1001,11 @@ function resume() {
 
 function finish(won) {
  S.phase='end';clearInput();
- if(won){S.impact=100;S.regions=respiratory.stages.length;crew.rewardCoins(25);}
+ if(won){S.impact=100;S.regions=S.chapter.stages.length;crew.rewardCoins(25);saveCourseProgress();}
  setPanel('end');syncArena();
- $('endH').textContent=won?'Fase respiratória concluída':'A defesa respiratória conteve o vírus';
- $('endP').textContent=won?'Você passou pela traqueia e venceu o macrófago alveolar. +25 moedas.':'Tente outra combinação e use o dash para sair dos anéis de defesa.';
- $('sInf').textContent=S.cells;$('sBoss').textContent=S.regions+'/'+respiratory.stages.length;$('sF').textContent=S.impact+'%';
+ $('endH').textContent=won?S.chapter.short+' · capítulo concluído':'A defesa respiratória conteve o vírus';
+ $('endP').textContent=won?S.chapter.win:'Tente outra combinação e use o dash para sair dos anéis de defesa.';
+ $('sInf').textContent=S.cells;$('sBoss').textContent=S.regions+'/'+S.chapter.stages.length;$('sF').textContent=S.impact+'%';
  describeBuild($('loadoutEnd'));
  $('codex').replaceChildren();
  for(const result of S.history) {
@@ -921,7 +1032,7 @@ function hud() {
  $('xpb').style.width=Math.min(100,100*S.xp/(4+S.level*2))+'%';
  const guide=$('arenaTissue');
  guide.textContent=S.roomCleared?'Arena concluída · siga até a corrente de ar.':
-  boss?'Defesa ativa · '+respiratory.bosses[boss.type].name:area.task;
+  boss?'Defesa ativa · '+S.chapter.bosses[boss.type].name:area.task;
  for(const [index,el] of [...$('regionTrack').children].entries()){
   if(index===S.step)el.setAttribute('aria-current','step');
   else el.removeAttribute('aria-current');
@@ -931,6 +1042,7 @@ function hud() {
  $('pressureStatus').hidden=!underPressure;
  $('echoStatus').textContent='Ecos '+allies.length+'/'+profile.capacity+' · '+charge+'/'+arenaReplication.cost+' fragmentos';
  $('studyHint').hidden=!area.study||S.studySeen||S.roomCleared;
+ if(area.study)$('studyHint').textContent=area.study.hint??'Posto de profilaxia · à direita da entrada';
  $('coreHud').hidden=!S.segmented;
  if(S.segmented){
   const {segments,profile}=S.segmented, {chance,patrolRange}=influenzaCore.stats(S.segmented);
@@ -953,7 +1065,7 @@ function hud() {
  $('aimLegend').textContent=S.control==='auto'?'Ataque automático':'Mirar e atacar';
  const bossBar=$('bossBar');bossBar.hidden=!boss||S.phase!=='play';
  if(boss){
-  $('bossName').textContent=respiratory.bosses[boss.type].name;
+  $('bossName').textContent=S.chapter.bosses[boss.type].name;
   $('bossFill').style.width=100*boss.hp/boss.max+'%';
  }
 }
@@ -963,6 +1075,10 @@ function makeRoom() {
  if(!g)return;
  g.setTransform(1,0,0,1,respiratory.size/2,0);
  respiratory.paintRoom(g,roomAtlas,room());
+ if(S.chapter.id==='vsr'){
+  g.fillStyle='rgba(35,131,122,.13)';
+  g.fillRect(-respiratory.size/2,0,respiratory.size,respiratory.size);
+ }
 }
 
 function makeRoutePreview() {
@@ -1009,7 +1125,7 @@ function drawAntibodies(x,y,radius) {
 }
 
 function drawDefense(e) {
- const boss=respiratory.bosses[e.type];
+ const boss=S.chapter.bosses[e.type];
  if(boss&&e.windup>0){
   const progress=1-e.windup/.85;
   const pressure=Boolean(pressurePattern(e)),antibody=e.type==='lungs'&&!pressure;
@@ -1040,6 +1156,7 @@ function appearance(card=null) {
   defense:Boolean(rank('shell')||rank('veil')),magnet:Boolean(rank('magnet')),reserve:Boolean(rank('reserve')),
   segmented:influenzaCore.shape(card?.segmented??S.segmented),variation:S.variation,
   antenna:S.fusions.has('eco')||card?.id==='eco',
+  vsr:S.chapter.id==='vsr',confluence:S.fusions.has('confluencia')||card?.id==='confluencia',
   fused:S.fusions.has('resonancia')||card?.id==='resonancia'
  };
 }
@@ -1953,7 +2070,7 @@ function fillSelect(select,choices) {
 }
 
 function updateKit() {
- const stats=viralMorphology.stats(startingMorph);
+ const morph=chapterMorph(),stats=viralMorphology.stats(morph);
  const armor=stats.damageTaken<1?' · recebe 6% menos dano':'';
  $('morphStats').textContent=stats.note+' '+stats.hp+' de integridade · '+stats.attack+
   ' de dano · velocidade '+stats.speed+' · recarga do dash '+stats.cooldown.toLocaleString('pt-BR')+' s'+armor;
@@ -1964,7 +2081,7 @@ function updateKit() {
  $('controlsHelp').textContent=startingMorph.control==='manual'?
   'Arraste à esquerda para andar e à direita para mirar e atacar. No computador, use WASD ou setas e segure o mouse ou J para atacar. Espaço ou Dash desvia.':
   'Arraste ou use WASD e setas para andar. O ataque mira no alvo mais próximo. Use Espaço ou Dash para desviar.';
- paintPortrait($('virusPortrait'),{morph:startingMorph});
+ paintPortrait($('virusPortrait'),{morph,vsr:selectedChapter.id==='vsr'});
 }
 
 const MORPH_SAVE='atlas-viral-morfologia-v1';
@@ -1977,7 +2094,7 @@ function setupMorphology() {
  try{saved=JSON.parse(localStorage.getItem(MORPH_SAVE));}catch{}
  const fields=[
   ['genome','genomeSelect',viralMorphology.genomes],['body','bodySelect',viralMorphology.bodies],
-  ['face','faceSelect',viralMorphology.faces],['feet','feetSelect',viralMorphology.appendages],
+  ['face','faceSelect',viralMorphology.faces],['surface','surfaceSelect',viralMorphology.appendages],
   ['replication','replicationSelect',arenaReplication.profiles],
   ['control','controlSelect',viralMorphology.controls]
  ];
@@ -1999,5 +2116,6 @@ function setupMorphology() {
 makeRoutePreview();
 setupMorphology();
 setupGuide();
+setupCourses();
 showIntro();
 }

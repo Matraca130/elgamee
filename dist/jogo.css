@@ -400,6 +400,21 @@ label.talent-item{cursor:pointer}
 }
 
 #stage .campaign-card{width:min(920px,100%)}
+.courses{margin:0 0 19px;padding:0 0 16px;border-bottom:1px solid var(--line)}
+.courses-head{display:flex;align-items:baseline;flex-wrap:wrap;gap:3px 11px;margin-bottom:7px}
+.courses-head h2{margin:0}
+.courses-head p,.courses-head a{margin:0;font-size:.79rem;color:var(--mut)}
+.courses-head a{color:var(--ink);font-weight:800}
+.course-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.course-choices button{
+ display:grid;gap:1px;min-height:54px;align-content:center;padding:8px 10px;text-align:left;
+ color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:9px;font:inherit;cursor:pointer
+}
+.course-choices button strong{font-size:.87rem;line-height:1.25}
+.course-choices button span{font-size:.74rem;color:var(--mut)}
+.course-choices button[aria-pressed=true]{
+ border-color:var(--teal);background:color-mix(in srgb,var(--teal) 11%,var(--card))
+}
 .campaign-layout{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(190px,.75fr);gap:clamp(14px,4vw,38px)}
 .campaign-card .arena-intro{grid-template-columns:4.6rem minmax(0,1fr)}
 .campaign-card .hero-portrait{background:radial-gradient(at 50% 65%,#b06d8a,#5c3355 78%)}
@@ -472,6 +487,7 @@ body #stage[data-phase=play]{height:auto;min-height:0}
 }
 .morph-options legend{padding:0 5px;font-size:.9rem;font-weight:850}
 .morph-options label,.pause-control{display:grid;align-content:start;gap:3px;font-size:.84rem;font-weight:750}
+.morph-options label[hidden]{display:none}
 .morph-options select,.pause-control select{
  min-height:44px;width:100%;border:1px solid var(--line);border-radius:8px;
  color:var(--ink);background:var(--card);font:inherit;padding:4px 7px

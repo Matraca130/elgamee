@@ -9,19 +9,20 @@ const viralMorphology = (() => {
  };
  const bodies={
   round:{name:'Arredondado',speed:1,damageTaken:1},
-  facets:{name:'Facetado',speed:.95,damageTaken:.94}
+  facets:{name:'Facetado',speed:.95,damageTaken:.94},
+  filament:{name:'Filamentoso',speed:1,damageTaken:1}
  };
  const faces={calm:{name:'Tranquila',intensity:0},bold:{name:'Travessa',intensity:1},fierce:{name:'Feroz',intensity:2}};
  const appendages={
-  light:{name:'Patas finas',dash:.15,cooldown:2.3},
-  strong:{name:'Patas robustas',dash:.20,cooldown:2.95},
-  float:{name:'Flutuante',dash:.17,cooldown:2.55}
+  float:{name:'Flutuante',dash:.15,cooldown:2.3},
+  short:{name:'Flutuante · fibras curtas',dash:.15,cooldown:2.3},
+  long:{name:'Flutuante · fibras longas',dash:.15,cooldown:2.3}
  };
- const defaults={genome:'rnaNegative',body:'round',face:'bold',feet:'light',control:'manual',replication:'steady'};
+ const defaults={genome:'rnaNegative',body:'round',face:'bold',surface:'float',control:'manual',replication:'steady'};
  const controls={manual:{name:'Mira manual'},auto:{name:'Ataque automático'}};
 
  function stats(config) {
-  const genome=genomes[config.genome], shape=bodies[config.body], step=appendages[config.feet];
+  const genome=genomes[config.genome], shape=bodies[config.body], step=appendages[config.surface??defaults.surface];
   return {...genome,speed:Math.round(genome.speed*shape.speed),damageTaken:shape.damageTaken,
    dash:step.dash,cooldown:step.cooldown};
  }
