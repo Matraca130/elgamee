@@ -40,6 +40,10 @@ const respiratory = (() => {
   na:{level:'Intermediária',topic:'Neuraminidase',q:'Qual é o principal papel da neuraminidase (NA) no ciclo do influenza?',
    answers:['A liberação de novas partículas virais.','A leitura do RNA pelos ribossomos.','O transporte de muco pelos cílios.'],
    note:'A NA é uma proteína do envoltório que facilita a liberação das novas partículas virais.'},
+  pathogenesis:{guide:7,level:'Intermediária',topic:'Patogenia e clínica',
+   q:'Se a infecção está nas vias aéreas, o que pode explicar o mal-estar no corpo todo durante a gripe?',
+   answers:['Sinais da resposta inflamatória do hospedeiro.','A perda de cílios explica sozinha todos os sintomas gerais.','O movimento do muco produz o mal-estar no corpo todo.'],
+   note:'A lesão do epitélio e a inflamação contribuem para a doença. Sinais da resposta do hospedeiro podem causar sintomas gerais, como mal-estar.'},
   epidemiology:{level:'Fácil',topic:'Epidemiologia',q:'Quais tipos de influenza causam epidemias sazonais em humanos?',
    answers:['Influenza A e B.','Influenza C e D.','Somente influenza D.'],
    note:'Os vírus influenza A e B causam epidemias sazonais de gripe em humanos.'}

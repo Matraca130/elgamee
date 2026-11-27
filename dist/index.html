@@ -39,7 +39,10 @@
  <p id="travelNote" role="status" class="travel-note" hidden></p>
  <div class="touch-legend" id="touchLegend" aria-hidden="true" hidden><span>Mover</span><span id="aimLegend">Mirar e atacar</span></div>
  <div id="bossBar" class="boss-meter" hidden><strong id="bossName"></strong><div class="bar"><i id="bossFill"></i></div></div>
- <button class="dash-button" id="dashBtn" type="button" hidden>Dash <small id="dashTime">Pronto</small></button>
+ <div class="arena-actions" id="arenaActions" role="group" aria-label="Habilidades da arena" hidden>
+  <button id="superBtn" type="button" hidden>Super <small id="superStatus">Faça um dash no anel</small></button>
+  <button id="dashBtn" type="button">Dash <small id="dashTime">Pronto</small></button>
+ </div>
  <div class="ov" id="intro">
   <div class="arena-card campaign-card">
    <div class="campaign-layout">
@@ -75,10 +78,17 @@
    </div>
    <details class="arena-help">
     <summary>Espaços e raridades</summary>
-    <p>O envoltório tem espaços de ataque, pulso, defesa e apoio. Morfologia interna, reforço do nucleocapsídeo, movimento e status têm um espaço cada. As escolhas aparecem depois de vencer cada arena.</p>
-    <p><span class="rarity-badge" data-rarity="common">Comum</span> e <span class="rarity-badge" data-rarity="rare">Rara</span> aparecem nas ofertas. Duas habilidades compatíveis podem liberar uma fusão <span class="rarity-badge" data-rarity="special">Especial</span>.</p>
+    <p>O envoltório tem espaços de ataque, pulso, defesa e apoio. Morfologia interna, reforço do nucleocapsídeo, acessório de movimento, status e patogenia também têm seus espaços. As ofertas aparecem depois de vencer a arena.</p>
+    <p><span class="rarity-badge" data-rarity="common">Comum</span> e <span class="rarity-badge" data-rarity="rare">Super-rara</span> aparecem nas primeiras ofertas. Habilidades de nível alto podem chegar a <span class="rarity-badge" data-rarity="epic">Épica</span> ou <span class="rarity-badge" data-rarity="legendary">Lendária</span>. Fusões e poderes desbloqueados por desafios usam <span class="rarity-badge" data-rarity="special">Especial</span>.</p>
    </details>
    <details class="arena-help"><summary id="fusionCount">Fusões descobertas</summary><ul id="fusionRecipes"></ul></details>
+   <details class="arena-help">
+    <summary>Antena de patogenia</summary>
+    <p>Membrana firme e Impulso nível 2 podem abrir um desafio após a traqueia ou os brônquios. Acerte a pergunta para ganhar a antena do Eco inflamatório.</p>
+    <p>Na arena, o dash no instante do impacto de uma onda carrega o Super. Toque em Super ou pressione E para transformar o próximo disparo em um leque de três raios.</p>
+    <p>Na gripe, a lesão das células que revestem as vias aéreas e a inflamação ajudam a explicar a doença. Tosse e mal-estar estão entre os sintomas.</p>
+    <p class="study-source"><a href="https://www.cdc.gov/flu/signs-symptoms/index.html" target="_blank" rel="noopener noreferrer">Sinais e sintomas · CDC</a></p>
+   </details>
    <details class="arena-help">
     <summary>Área do núcleo</summary>
     <p>Ao vencer a orofaringe, responda a um desafio de morfologia para equipar um núcleo segmentado. Uma pergunta bônus dá acesso ao perfil de influenza e ao desafio do poder exclusivo.</p>

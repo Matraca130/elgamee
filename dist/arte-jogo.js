@@ -178,6 +178,19 @@ const arenaArt = (() => {
   }
  }
 
+ function spiralAntenna(g,clock,lit) {
+  const x=Math.sin(clock*4)*1.5;
+  if(lit)oval(g,x+4,-32,10,7,'rgba(255,176,146,.32)');
+  for(const [width,color] of [[5,ink],[2.7,lit?'#ffd3a9':'#ed8b89']]){
+   g.beginPath();g.moveTo(-2,-21);
+   g.bezierCurveTo(-2,-31,x-4,-37,x+3,-38);
+   g.bezierCurveTo(x+(lit?13:10),-39,x+12,-28,x+5,-29);
+   g.quadraticCurveTo(x+1,-30,x+5,-34);
+   g.lineWidth=width;g.strokeStyle=color;g.stroke();
+  }
+  if(lit)polygon(g,[[x+15,-39],[x+17,-36],[x+15,-33],[x+13,-36]],'#fff0b4',ink,1);
+ }
+
  function nucleocapsid(g,genome,rank,clock) {
   if(rank)polygon(g,[[-10,2],[-5,-2],[5,-2],[10,3],[7,12],[-7,12]],'#454263','#222542',1.8);
   else oval(g,0,5,12,7,'rgba(82,75,108,.67)','#807e9e',1.4);
@@ -228,8 +241,8 @@ const arenaArt = (() => {
  }
 
  function drawVirus(g,x,y,r,appearance,pose={}) {
-  const {morph,ha=0,na=0,core=0,defense=false,magnet=false,reserve=false,fused=false,segmented,variation}=appearance;
-  const {clock=0,stride=0,lift=0,facing=1,streak=0,flash=false,temper=viralMorphology.faces[morph.face].intensity}=pose;
+  const {morph,ha=0,na=0,core=0,defense=false,magnet=false,reserve=false,fused=false,segmented,variation,antenna=false}=appearance;
+  const {clock=0,stride=0,lift=0,facing=1,streak=0,flash=false,antennaLit=false,temper=viralMorphology.faces[morph.face].intensity}=pose;
   const unit=r/24;
   g.save();g.translate(x,y);g.scale(unit,unit);g.lineCap=g.lineJoin='round';
   oval(g,0,19,23,7,flash?'rgba(255,219,172,.60)':'rgba(38,19,43,.32)');
@@ -244,6 +257,7 @@ const arenaArt = (() => {
   feetArt(g,morph.feet==='strong',stride,variation?.cooldownFactor?variation.color:null);
   if(na)neuraminidase(g,clock,na,fused);
   if(ha)hemagglutinin(g,ha);
+  if(antenna)spiralAntenna(g,clock,antennaLit);
   const coat=g.createLinearGradient(-14,-22,12,23);
   coat.addColorStop(0,fused?'#8973b8':'#d1f6fb');
   coat.addColorStop(.47,fused?'rgba(91,66,146,.88)':'rgba(100,202,230,.84)');

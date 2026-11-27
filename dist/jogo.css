@@ -335,6 +335,14 @@ label.talent-item{cursor:pointer}
   --rarity-ink:#204d93;--rarity-tag:#e1edff;--rarity-edge:#6589c5;--rarity-icon:#2c5d9f;
   --rarity-card:#f3f7ff
 }
+[data-rarity="epic"]{
+  --rarity-ink:#176557;--rarity-tag:#d9f4e9;--rarity-edge:#519c88;--rarity-icon:#287b66;
+  --rarity-card:#ecf9f3
+}
+[data-rarity="legendary"]{
+  --rarity-ink:#805016;--rarity-tag:#ffe8ae;--rarity-edge:#b9833d;--rarity-icon:#8a5623;
+  --rarity-card:#fff6e0
+}
 [data-rarity="special"]{
   --rarity-ink:#612f91;--rarity-tag:#efdefe;--rarity-edge:#9561c8;--rarity-icon:#733aa5;
   --rarity-card:#f8efff
@@ -342,13 +350,15 @@ label.talent-item{cursor:pointer}
 @media(prefers-color-scheme:dark){
   [data-rarity="common"]{--rarity-ink:#edf0f5;--rarity-tag:#353b46;--rarity-edge:#687383}
   [data-rarity="rare"]{--rarity-ink:#c1daff;--rarity-tag:#273956;--rarity-edge:#699ad8;--rarity-card:#232d44}
+  [data-rarity="epic"]{--rarity-ink:#b4f2da;--rarity-tag:#244638;--rarity-edge:#63ae96;--rarity-card:#253830}
+  [data-rarity="legendary"]{--rarity-ink:#ffe0a1;--rarity-tag:#553e27;--rarity-edge:#c8995e;--rarity-card:#443120}
   [data-rarity="special"]{--rarity-ink:#eacfff;--rarity-tag:#492e61;--rarity-edge:#b68be3;--rarity-card:#37274a}
 }
-.build-card[data-rarity="rare"],.build-card[data-rarity="special"]{
+.build-card[data-rarity]:not([data-rarity="common"]){
   border-color:var(--rarity-edge);border-inline-start-width:4px;background:var(--rarity-card)
 }
 .build-card[data-rarity]:hover{border-color:var(--rarity-ink)}
-.build-card[data-rarity="rare"] .build-icon,.build-card[data-rarity="special"] .build-icon{
+.build-card[data-rarity]:not([data-rarity="common"]) .build-icon{
   background:var(--rarity-icon)
 }
 .rarity-badge{
@@ -422,9 +432,14 @@ label.talent-item{cursor:pointer}
 .boss-meter{position:absolute;z-index:1;width:min(295px,60%);bottom:12px;left:50%;transform:translateX(-50%);text-align:center;color:#fff5e6;text-shadow:0 1px 3px #301224;font-size:.85rem;pointer-events:none}
 .boss-meter .bar{height:7px;background:#3c1e36;border:1px solid #a86683}
 #bossFill{background:#f58b9e}
-.dash-button{position:absolute;z-index:2;right:clamp(8px,3vw,30px);bottom:clamp(14px,4vh,37px);min-width:62px;min-height:58px;padding:6px 9px;border:2px solid #efbead;border-radius:15px;color:#fff2d9;background:#62354f;font:inherit;font-weight:900;cursor:pointer;touch-action:manipulation}
-.dash-button small{display:block;font-size:.74rem;font-weight:750}
-.dash-button:disabled{opacity:.65;cursor:default}
+.arena-actions{display:flex;align-items:stretch;gap:6px;position:absolute;z-index:2;right:clamp(8px,3vw,30px);bottom:clamp(28px,6vh,53px)}
+.arena-actions[hidden],.arena-actions button[hidden]{display:none}
+.arena-actions button{min-width:62px;min-height:58px;padding:5px 8px;border:2px solid #efbead;border-radius:15px;color:#fff2d9;background:#62354f;font:inherit;font-weight:900;cursor:pointer;touch-action:manipulation}
+.arena-actions small{display:block;font-size:.72rem;font-weight:750}
+.arena-actions button:disabled{opacity:.73;cursor:default}
+#superBtn{width:90px;background:#75414f;line-height:1.16}
+#superBtn[data-state="ready"]{border-color:#ffe0ab;background:#955344;box-shadow:0 0 16px rgb(255 158 110/.45)}
+#superBtn[data-state="armed"]{border-color:#fedca9;background:#925d52;opacity:1}
 #cv:focus{outline:0}
 #stage[data-phase=play]{height:calc(100svh - 130px);min-height:275px;background:#421735}
 @media(max-width:640px){
@@ -484,12 +499,11 @@ body #stage[data-phase=play]{height:auto;min-height:0}
 #stage[data-phase="travel"] #cv{display:block;pointer-events:none}
 #app:has(#stage:is([data-phase=play],[data-phase=travel])){display:grid;height:100svh;grid-template-rows:auto minmax(0,1fr)}
 #stage:is([data-phase=play],[data-phase=travel]){touch-action:none}
-.dash-button{bottom:clamp(28px,6vh,53px)}
 @media(max-width:640px){
  .morph-options{padding-inline:7px;gap:7px}
  .campaign-route{gap:5px}
 }
 @media(pointer:coarse){
- .dash-button{right:50%;transform:translateX(50%);bottom:16px}
+ .arena-actions{right:50%;transform:translateX(50%);bottom:16px}
  .boss-meter{bottom:118px;left:50%}
 }

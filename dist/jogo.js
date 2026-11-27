@@ -18,10 +18,16 @@ const SLOTS=[
  ['defesa','Envoltório · defesa'],
  ['apoio','Envoltório · apoio'],
  ['nucleo','Reforço do nucleocapsídeo'],
- ['movimento','Movimento'],
+ ['movimento','Acessório de movimento'],
  ['status','Status']
 ];
-const RARITIES={common:{label:'Comum',weight:3},rare:{label:'Rara',weight:1},special:{label:'Especial'}};
+const RARITIES={
+ common:{label:'Comum',weight:3},rare:{label:'Super-rara',weight:1},
+ epic:{label:'Épica',weight:.55},legendary:{label:'Lendária',weight:.22},
+ special:{label:'Especial'}
+};
+const UPGRADE_RARITIES={common:['common','rare','epic'],rare:['rare','epic','legendary']};
+const SUPER_STATES={empty:'Faça um dash no anel',ready:'Pronto',armed:'No próximo disparo'};
 const TRAITS={
  ha:{slot:'ataque',name:'Hemaglutinina',icon:'✺',color:'#a45826',rarity:'common',
   desc:'Fortalece os disparos. No nível 2, o golpe alcança até dois alvos.',
@@ -43,8 +49,10 @@ const TRAITS={
   desc:'Recupera integridade lentamente durante a partida.'}
 };
 const FUSIONS={
- resonancia:{name:'Ressonância violeta',needs:['ha','na'],icon:'✹',color:'#7a43a8',
-  desc:'A cada terceiro disparo, o pulso lança também um feixe violeta na direção do ataque.'}
+ resonancia:{name:'Ressonância violeta',needs:{ha:1,na:1},icon:'✹',color:'#7a43a8',
+  desc:'A cada terceiro disparo, o pulso lança também um feixe violeta na direção do ataque.'},
+ eco:{name:'Eco inflamatório',needs:{shell:1,dash:2},quiz:'pathogenesis',icon:'↟',color:'#ad5365',kicker:'Patogenia · Super',
+  desc:'Use o dash para escapar do impacto de uma onda do chefe. Acione o Super para lançar o próximo disparo em leque, com +30% de dano por alvo.'}
 };
 const SLOT_NAMES=Object.fromEntries(SLOTS);
 const OPTIONAL=['shell','veil','magnet','core','dash','reserve'];
@@ -93,12 +101,19 @@ function equip(id) {
 }
 
 function canFuse(id) {
- return !S.fusions.has(id)&&FUSIONS[id].needs.every(traitRank);
+ return !S.fusions.has(id)&&Object.entries(FUSIONS[id].needs).every(([trait,rank])=>traitRank(trait)>=rank);
+}
+
+function equipFusion(id) {
+ if(!canFuse(id))return false;
+ S.fusions.add(id);
+ crew.discoverFusion(id);
+ return true;
 }
 
 function traitCard(id) {
  const trait=TRAITS[id], level=traitRank(id)+1;
- return {...trait,id,kind:'trait',rarity:level===1?trait.rarity:'rare',level};
+ return {...trait,id,kind:'trait',rarity:UPGRADE_RARITIES[trait.rarity][level-1],level};
 }
 
 function fusionCard(id) {
@@ -118,7 +133,7 @@ function chooseTraits(ids, count) {
 }
 
 function encounterCards(ids,preferred=[]) {
- const fusions=Object.keys(FUSIONS).filter(canFuse).map(fusionCard);
+ const fusions=Object.keys(FUSIONS).filter(id=>!FUSIONS[id].quiz&&canFuse(id)).map(fusionCard);
  const featured=preferred.filter(canEquip).map(traitCard);
  const spare=3-fusions.length-featured.length;
  const rest=chooseTraits(ids.filter(id=>!preferred.includes(id)),spare);
@@ -149,7 +164,7 @@ function createState() {
   phase:'play',clock:0,step:0,regions:0,impact:0,cells:0,level:1,xp:0,morph,stats,control:morph.control,
   p:{...first.spawn,r:15,hp:stats.hp,max:stats.hp,fx:0,fy:1,facing:1,walk:0,stride:0,dash:0,cooldown:0,hitAt:-2,castAt:-1},
   slots:{movimento:{id:'dash',rank:1}},fusions:new Set(),enemies:[],orbs:[],effects:[],
-  segmented:null,variation:null,
+  segmented:null,variation:null,pathogenesisOffered:false,superState:'empty',
   nextAttack:stats.delay,casts:0,nextPatrol:5.5,encounter:null,round:null,history:[],
   mucus:-1,mucusTime:0,mucusAnswered:false,roomCleared:false,wind:null,arrivedAt:-5,tapUntil:-1
  };
@@ -176,6 +191,12 @@ function dash() {
  S.p.dash=S.stats.dash;
  const recharge=S.stats.cooldown-(traitRank('dash')-1)*.42;
  S.p.cooldown=recharge*(S.variation?.cooldownFactor??1);
+}
+
+function armSuper() {
+ if(S?.phase!=='play'||S.roomCleared||!S.fusions.has('eco')||S.superState!=='ready')return;
+ S.superState='armed';
+ announce('Eco armado. Mire para lançar o próximo disparo em leque.');
 }
 
 function move(dt) {
@@ -250,6 +271,19 @@ function fireLine(p,aim,reach,color,type='strike',life=.18) {
  addEffect({type,x:p.x,y:p.y,x2:p.x+aim.x*reach,y2:p.y+aim.y*reach,color,life});
 }
 
+function fireEcho(p,aim,nearby,reach,damage) {
+ const rays=[-.32,0,.32].map(angle=>{
+  const c=Math.cos(angle),s=Math.sin(angle);
+  return {x:aim.x*c-aim.y*s,y:aim.x*s+aim.y*c};
+ });
+ for(const ray of rays)fireLine(p,ray,reach,'#ffb09d','echo',.3);
+ const bonusDamage=Math.round(damage*1.3);
+ for(const enemy of nearby){
+  if(rays.some(ray=>aimedAt(enemy,p,ray,reach,14)))hit(enemy,bonusDamage);
+ }
+ S.superState='empty';
+}
+
 function attack(dt) {
  S.nextAttack-=dt;
  if(S.nextAttack>0||S.roomCleared)return;
@@ -270,15 +304,17 @@ function attack(dt) {
  p.castAt=S.clock;
  if(p.walk<.18&&Math.abs(ray.x)>.08)p.facing=Math.sign(ray.x);
  const color=ha?'#ffe5a5':'#b8f8fd';
- if(aim){
-  fireLine(p,ray,reach,color);
+ const shapeDamage=influenzaCore.stats(S.segmented).attackOffset+(S.variation?.attackOffset??0);
+ const damage=S.stats.attack+ha*4+core*4+shapeDamage;
+ if(S.superState==='armed'){
+  fireEcho(p,ray,nearby,reach,damage);
  }else{
-  for(const target of targets.slice(0,ha>=2?2:1)) {
-   addEffect({type:'strike',x:p.x,y:p.y,x2:target.x,y2:target.y,color,life:.18});
+  if(aim)fireLine(p,ray,reach,color);
+  for(const target of targets.slice(0,ha>=2?2:1)){
+   if(!aim)addEffect({type:'strike',x:p.x,y:p.y,x2:target.x,y2:target.y,color,life:.18});
+   hit(target,damage);
   }
  }
- const shapeDamage=influenzaCore.stats(S.segmented).attackOffset+(S.variation?.attackOffset??0);
- for(const target of targets.slice(0,ha>=2?2:1))hit(target,S.stats.attack+ha*4+core*4+shapeDamage);
  if(na&&S.casts%3===0) {
   const range=96+na*15;
   addEffect({type:'pulse',x:p.x,y:p.y,r:range,color:'#a3f7de',life:.34});
@@ -324,7 +360,13 @@ function moveDefenses(dt) {
     enemy.waves++;
     addEffect({type:'pulse',x:enemy.x,y:enemy.y,r:boss.wave,
      color:antibody?'#e2c4ff':'#ff8e9e',antibody,life:.36});
-    if(d<boss.wave+p.r)harm(S.step===0?14:19);
+    if(d<boss.wave+p.r){
+     if(p.dash>0&&S.fusions.has('eco')&&S.superState==='empty'){
+      S.superState='ready';
+      announce('Eco inflamatório carregado. Toque em Super ou pressione E.');
+     }
+     harm(S.step===0?14:19);
+    }
     enemy.charge=2.65;
    }
    continue;
@@ -381,8 +423,9 @@ function arenaReward() {
  if(reward)equip(reward);
  levelAfterArena();
  const available=[...OPTIONAL,...['ha','na'].filter(traitRank)];
+ const featured=reward==='na'?['na',...(traitRank('shell')?['dash']:[])]:[];
  const cards=reward==='ha'?['shell','core','reserve'].filter(canEquip).map(traitCard):
-  encounterCards(available,reward==='na'?['na']:[]);
+  encounterCards(available,featured);
  const title=reward?TRAITS[reward].name+' entrou no envoltório':'Escolha uma evolução';
  const note=reward?TRAITS[reward].study:'As habilidades evoluem no próprio espaço.';
  const draft={cards,title,label:area.name+' · arena concluída',note,topic:reward};
@@ -488,6 +531,8 @@ function buttonCard(card, onChoose) {
  const body=document.createElement('span');body.className='build-desc';body.textContent=card.desc;
  content.append(meta,title,body);button.append(icon,content);
  button.addEventListener('click',onChoose);
+ button.addEventListener('focus',()=>previewEvolution(card));
+ button.addEventListener('pointerenter',()=>previewEvolution(card));
  return button;
 }
 
@@ -495,7 +540,7 @@ function setPanel(phase) {
  stage.dataset.phase=phase;
  for(const [id,state] of [['intro','intro'],['lv','level'],['pause','pause'],['end','end']])$(id).hidden=phase!==state;
  $('hud').hidden=phase==='intro';
- $('dashBtn').hidden=phase!=='play';
+ $('arenaActions').hidden=phase!=='play';
  $('travelNote').hidden=phase!=='travel';
  $('touchLegend').hidden=phase!=='play'||!touchLayout;
  $('bossBar').hidden=true;
@@ -517,7 +562,7 @@ function renderIntroduction() {
  list.replaceChildren();
  for(const [id,fusion] of Object.entries(FUSIONS)){
   const row=document.createElement('li');
-  const recipe=fusion.needs.map(key=>TRAITS[key].name).join(' + ');
+  const recipe=Object.entries(fusion.needs).map(([key,rank])=>TRAITS[key].name+(rank>1?' nível '+rank:'')).join(' + ');
   row.textContent=crew.fusionsFound().includes(id)?fusion.name+' · '+recipe:recipe;
   list.append(row);
  }
@@ -575,14 +620,9 @@ function showDraft(cards,title,label,note,topic=null) {
    if(S?.phase!=='level'||S.round?.kind!=='draft')return;
    if(card.kind==='trait'){
     if(!equip(card.id))return;
-   }else{
-    if(!canFuse(card.id))return;
-    S.fusions.add(card.id);crew.discoverFusion(card.id);
-   }
+   }else if(!equipFusion(card.id))return;
    continueRun();
   });
-  button.addEventListener('focus',()=>previewEvolution(card));
-  button.addEventListener('pointerenter',()=>previewEvolution(card));
   panel.append(button);
  }
  panel.firstElementChild?.focus({preventScroll:true});
@@ -619,8 +659,6 @@ function showCoreChoices({title,note,cards,skip,hint},draft,onUnlock) {
     onUnlock(draft);
    },hint);
   });
-  button.addEventListener('focus',()=>previewEvolution(card));
-  button.addEventListener('pointerenter',()=>previewEvolution(card));
   panel.append(button);
  }
  const skipButton=$('contBtn');
@@ -655,6 +693,29 @@ function showSignatureChoices(draft) {
  });
  showCoreChoices({title:'Escolha um poder exclusivo',note:'Cada partida tem um espaço para um poder de núcleo. O efeito é passivo e aparece na descrição de cada opção.',
   cards,skip:'Manter o perfil sem poder',hint:'Se errar, você segue com seu perfil de núcleo.'},draft,resumeDraft);
+}
+
+function showPathogenesis() {
+ const card=fusionCard('eco');
+ const round={kind:'pathogenesis'};
+ S.pathogenesisOffered=true;
+ S.round=round;
+ setupChoice('Patogenia respiratória',room().name+' · recompensa Especial',
+  'Membrana firme e Impulso nível 2 abriram um desafio de patogenia.');
+ $('evolutionPreview').hidden=false;
+ previewEvolution(card);
+ const choice=buttonCard(card,()=>{
+  if(S?.phase!=='level'||S.round!==round)return;
+  openQuiz(respiratory.review[card.quiz],'pathogenesis',correct=>{
+   if(correct)equipFusion(card.id);
+   S.round=null;
+   continueRun();
+  },'Acerte para equipar a antena e o Super desta fase.');
+ });
+ $('ups').append(choice);$('ups').hidden=false;
+ $('contBtn').textContent='Seguir com a combinação atual';
+ $('contBtn').hidden=false;$('contBtn').classList.add('ghost');
+ choice.focus({preventScroll:true});
 }
 
 function openQuiz(question,mode,returnTo=null,hint='') {
@@ -723,6 +784,10 @@ function continueRun() {
   showDraft(destination.cards,destination.title,destination.label,destination.note);
   return;
  }
+ if(round?.kind==='draft'&&S.step>0&&room().exit&&!S.pathogenesisOffered&&canFuse('eco')){
+  showPathogenesis();
+  return;
+ }
  S.round=null;
  if(S.p.hp<=0){finish(false);return;}
  if(S.roomCleared&&!room().exit){finish(true);return;}
@@ -736,11 +801,12 @@ function describeBuild(list) {
   const item=document.createElement('li');item.className='none';
   const held=S.slots[key];
   item.textContent=label+' · '+(held?TRAITS[held.id].name+' '+held.rank:'Livre');
+  if(held)item.append(' ',rarityBadge(UPGRADE_RARITIES[TRAITS[held.id].rarity][held.rank-1]));
   list.append(item);
  }
  for(const id of S.fusions){
   const item=document.createElement('li');item.className='none';
-  item.append(FUSIONS[id].name+' ',rarityBadge('special'));list.append(item);
+  item.append((FUSIONS[id].kicker?FUSIONS[id].kicker+' · ':'')+FUSIONS[id].name+' ',rarityBadge('special'));list.append(item);
  }
  if(S.segmented){
   const {segments,profile,signature}=S.segmented;
@@ -793,7 +859,8 @@ function hud() {
  const p=S.p,area=room(),boss=currentBoss();
  const hp=Math.ceil(p.hp),dashSeconds=Math.ceil(p.cooldown);
  const key=[hp,p.max,S.step,S.level,S.xp,S.impact,S.mucus,boss?.type,boss?.hp,dashSeconds,
-  S.roomCleared,S.phase,S.control,touchLayout,S.segmented?.segments,S.segmented?.profile,S.segmented?.signature].join('|');
+  S.roomCleared,S.phase,S.control,touchLayout,S.segmented?.segments,S.segmented?.profile,S.segmented?.signature,
+  S.fusions.has('eco'),S.superState].join('|');
  if(key===lastHud)return;
  lastHud=key;
  $('regionNow').textContent=area.name;$('hpt').textContent=hp+'/'+p.max;
@@ -822,6 +889,11 @@ function hud() {
  }
  $('dashBtn').disabled=p.cooldown>0;
  $('dashTime').textContent=dashSeconds?dashSeconds+'s':'Pronto';
+ const superButton=$('superBtn');
+ superButton.hidden=!S.fusions.has('eco')||S.roomCleared;
+ superButton.disabled=S.superState!=='ready';
+ superButton.dataset.state=S.superState;
+ $('superStatus').textContent=SUPER_STATES[S.superState];
  $('touchLegend').hidden=S.phase!=='play'||!touchLayout;
  $('aimLegend').textContent=S.control==='auto'?'Ataque automático':'Mirar e atacar';
  const bossBar=$('bossBar');bossBar.hidden=!boss||S.phase!=='play';
@@ -909,6 +981,7 @@ function appearance(card=null) {
   morph:S.morph,ha:rank('ha'),na:rank('na'),core:rank('core'),
   defense:Boolean(rank('shell')||rank('veil')),magnet:Boolean(rank('magnet')),reserve:Boolean(rank('reserve')),
   segmented:influenzaCore.shape(card?.segmented??S.segmented),variation:S.variation,
+  antenna:S.fusions.has('eco')||card?.id==='eco',
   fused:S.fusions.has('resonancia')||card?.id==='resonancia'
  };
 }
@@ -932,7 +1005,8 @@ function drawPlayer() {
  const recoil=reduce?0:Math.max(0,1-(S.clock-p.castAt)/.12)*2.4;
  const temper=Math.min(2,viralMorphology.faces[S.morph.face].intensity+Number(S.cells>=5));
  const pose={clock:reduce?0:S.clock,stride,lift,facing:p.facing,temper,
-  streak:(p.dash>0||S.phase==='travel')&&!reduce ? .15 : 0,flash:S.clock-p.hitAt<.18};
+  streak:(p.dash>0||S.phase==='travel')&&!reduce ? .15 : 0,flash:S.clock-p.hitAt<.18,
+  antennaLit:S.superState!=='empty'};
  if((p.dash>0||S.phase==='travel')&&!reduce) {
   ctx.globalAlpha=.26;
   arenaArt.drawVirus(ctx,p.x-p.fx*18,p.y-p.fy*24,21,look,pose);
@@ -949,11 +1023,12 @@ function drawEffects() {
    const r=Math.max(1,effect.r*(reduce?1:.44+.56*t));
    oval(ctx,effect.x,effect.y,r,r,null,effect.color);
    if(effect.antibody)drawAntibodies(effect.x,effect.y,r);
-  }else if(effect.type==='beam'){
+  }else if(effect.type==='beam'||effect.type==='echo'){
+   const echo=effect.type==='echo';
    ctx.beginPath();ctx.moveTo(effect.x,effect.y);ctx.lineTo(effect.x2,effect.y2);
-   ctx.lineCap='round';ctx.lineWidth=15;ctx.strokeStyle='#702899';ctx.stroke();
-   ctx.lineWidth=7;ctx.strokeStyle=effect.color;ctx.stroke();
-   ctx.lineWidth=2.6;ctx.strokeStyle='#fff0ff';ctx.stroke();
+   ctx.lineCap='round';ctx.lineWidth=echo?9:15;ctx.strokeStyle=echo?'#843857':'#702899';ctx.stroke();
+   ctx.lineWidth=echo?4:7;ctx.strokeStyle=effect.color;ctx.stroke();
+   ctx.lineWidth=echo?1.7:2.6;ctx.strokeStyle=echo?'#ffe8d4':'#fff0ff';ctx.stroke();
   }else{
    const dx=effect.x2-effect.x,dy=effect.y2-effect.y;
    const end=reduce ? .96 : .45+.55*t;
@@ -1703,6 +1778,9 @@ window.addEventListener('keydown',event=>{
  if(S?.phase==='play'&&event.code==='Space'&&document.activeElement?.tagName!=='BUTTON'){
   event.preventDefault();if(!event.repeat)dash();
  }
+ if(S?.phase==='play'&&key==='e'&&S.fusions.has('eco')){
+  event.preventDefault();if(!event.repeat)armSuper();
+ }
  if(key==='escape'||key==='p'){
   if(S?.phase==='play')pauseGame();
   else if(S?.phase==='pause')resume();
@@ -1724,6 +1802,10 @@ $('restartBtn').addEventListener('click',showIntro);
 $('pauseBtn').addEventListener('click',()=>{if(S?.phase==='pause')resume();else pauseGame();});
 $('dashBtn').addEventListener('click',()=>{
  dash();
+ if(S?.phase==='play')cv.focus({preventScroll:true});
+});
+$('superBtn').addEventListener('click',()=>{
+ armSuper();
  if(S?.phase==='play')cv.focus({preventScroll:true});
 });
 
