@@ -303,6 +303,18 @@ label.talent-item{cursor:pointer}
 }
 
 #stage .arsenal-card{width:min(620px,100%)}
+.arena-intro{
+  display:grid;grid-template-columns:clamp(4.5rem,19vw,6.5rem) minmax(0,1fr);
+  align-items:center;gap:clamp(.75rem,3vw,1rem);margin-bottom:.8rem
+}
+.hero-portrait{
+  display:grid;place-items:center;aspect-ratio:1;padding:.35rem;border:1px solid var(--line);
+  border-radius:14px;background:radial-gradient(ellipse at 50% 68%,#7376bb,#31345d 78%);
+}
+.hero-portrait img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:contain}
+#lobulo-game .arena-intro h1{font-size:clamp(1.45rem,5.5vw,2.125rem);margin-bottom:.3rem}
+.hero-name{margin:0 0 .2rem;color:var(--ink);font-weight:850}
+.arena-intro .lead{margin:0}
 .arm-heading{margin:16px 0 8px!important}
 .build-choices{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:9px 0 4px}
 .build-card{
