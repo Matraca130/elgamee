@@ -1,16 +1,21 @@
+html{color-scheme:light dark;background:#f6edf1}
+body{margin:0}
+@media(prefers-color-scheme:dark){html{background:#1a1220}}
+body #lobulo-game{border-radius:0;min-height:100svh}
+body #crewHub{min-height:100svh}
+body #stage[data-phase="play"]{height:calc(100svh - 130px);min-height:280px}
+
 /* VOICE everyday study game: playful, but every cell on screen is anatomically real
    IDEA a living H&E slide of a hepatic lobule where a T lymphocyte fights hepatitis B
    PICTURE the hexagonal lobule is the arena: portal triads on the corners, blood running to the central vein
    COLOUR slide pink ground, eosin pink cells, hematoxylin violet nuclei, blood red, teal virus, blue lymphocyte, trichrome blue fibrosis
    TYPE Nunito 900 for titles + Nunito for text
    LAYOUT one screen: slim HUD on top, lobule fills the rest; cards rise from the bottom on a phone, centred on a laptop */
-:root{color-scheme:light;--bg:#f6edf1;--ink:#2b1633;--card:#fffafc;--line:#e7d3de;--mut:#6e5676;--good:#17784f;--bad:#b12a42;--teal:#0e8a8c;--red:#c2334a}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--bg:#1a1220;--ink:#f5e9f1;--card:#271b2e;--line:#45324c;--mut:#c7b2ca;--good:#62d3a2;--bad:#ff8fa3}}
-:root[data-theme=dark]{color-scheme:dark;--bg:#1a1220;--ink:#f5e9f1;--card:#271b2e;--line:#45324c;--mut:#c7b2ca;--good:#62d3a2;--bad:#ff8fa3}
-*{box-sizing:border-box;min-width:0}
-html,body{height:100%;margin:0}
-body{background:var(--bg);color:var(--ink);font:16px/1.5 Nunito,system-ui,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent}
-#app[hidden]{display:none}
+#lobulo-game{color-scheme:light dark;--bg:light-dark(#f6edf1,#1a1220);--ink:light-dark(#2b1633,#f5e9f1);--card:light-dark(#fffafc,#271b2e);--line:light-dark(#e7d3de,#45324c);--mut:light-dark(#6e5676,#c7b2ca);--teal:#0e8a8c;--red:#c2334a;--good:light-dark(#17784f,#62d3a2);--bad:light-dark(#b12a42,#ff8fa3)}
+#lobulo-game[data-theme=light]{color-scheme:light}
+#lobulo-game[data-theme=dark]{color-scheme:dark}
+#lobulo-game *{box-sizing:border-box;min-width:0}
+#lobulo-game{background:var(--bg);color:var(--ink);font:16px/1.5 Nunito,system-ui,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent}
 #app{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr)}
 #hud{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;padding:8px 16px;background:var(--card);border-bottom:1px solid var(--line)}
 .day{font-weight:900;font-size:20px;line-height:1.05;white-space:nowrap}
@@ -29,17 +34,17 @@ body{background:var(--bg);color:var(--ink);font:16px/1.5 Nunito,system-ui,sans-s
 .ov{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding:16px;background:linear-gradient(to bottom,transparent 35%,color-mix(in srgb,var(--bg) 78%,transparent))}
 .ov.dim{background:color-mix(in srgb,var(--bg) 62%,transparent)}
 .ov[hidden]{display:none}
-.card{width:min(520px,100%);max-height:100%;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 12px 32px rgb(40 10 40/.14)}
-h1{font-size:34px;line-height:1.05;letter-spacing:-.02em;margin:0 0 8px;font-weight:900;text-wrap:balance}
-h2{font-size:22px;line-height:1.15;letter-spacing:-.01em;margin:4px 0;font-weight:900;text-wrap:balance}
+.arena-card{width:min(520px,100%);max-height:100%;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 12px 32px rgb(40 10 40/.14)}
+#lobulo-game h1{font-size:34px;line-height:1.05;letter-spacing:-.02em;margin:0 0 8px;font-weight:900;text-wrap:balance}
+#lobulo-game h2{font-size:22px;line-height:1.15;letter-spacing:-.01em;margin:4px 0;font-weight:900;text-wrap:balance}
 .lead{margin:0 0 6px;font-size:17px}
 .mut{margin:0;color:var(--mut);font-size:14px}
 .legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;margin:14px 0}
 .legend div{display:flex;gap:8px;align-items:center;font-size:14px;line-height:1.25}
 .legend svg{flex:none}
 .legend b{display:block}
-.btn{min-height:48px;padding:10px 20px;border-radius:12px;border:0;background:var(--teal);color:#fff;font:inherit;font-weight:800;font-size:17px;cursor:pointer}
-.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.arena-button{min-height:48px;padding:10px 20px;border-radius:12px;border:0;background:var(--teal);color:#fff;font:inherit;font-weight:800;font-size:17px;cursor:pointer}
+.arena-button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .btns{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-top:12px}
 .btns.stick{position:sticky;bottom:-18px;margin:4px -18px -18px;padding:22px 18px 18px;background:linear-gradient(to bottom,color-mix(in srgb,var(--card) 0%,transparent),var(--card) 18px)}
 .btns.stick:has(#contBtn[hidden]){display:none}
@@ -66,13 +71,13 @@ h2{font-size:22px;line-height:1.15;letter-spacing:-.01em;margin:4px 0;font-weigh
 .codex li.none{padding-left:0}
 .codex li.none::before{content:none}
 .codex span{color:var(--mut)}
-button:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+#lobulo-game button:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 @media (min-width:700px){.ov{align-items:center}}
 /* A caderneta de campo usa a mesma ilustração de cada mascote no atlas e na arena. */
 #crewHub {
   color-scheme:light; --paper:#f7f5ec; --panel:#fffef8; --moss:#173f36; --pine:#265447;
   --ink2:#192e29; --sub:#53675d; --rule:#d6dace; --gold:#f7cf70; --tan:#786439;
-  position:fixed; z-index:8; inset:0; overflow:auto; overscroll-behavior:contain; touch-action:pan-y;
+  position:relative; touch-action:pan-y;
   color:var(--ink2); background:var(--paper); font:16px/1.48 Nunito,ui-rounded,system-ui,sans-serif;
   scrollbar-gutter:stable;
 }
@@ -133,7 +138,7 @@ button:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 .dex-art:before,.profile-art:before{content:"";position:absolute;border:1px solid color-mix(in srgb,var(--accent) 23%,transparent);width:72px;height:72px;border-radius:50%}
 .dex-art:after,.profile-art:after{content:"";position:absolute;bottom:16%;width:56px;height:8px;background:color-mix(in srgb,var(--accent) 30%,transparent);border-radius:50%;z-index:-1}
 .dex-code{position:absolute;left:10px;top:9px;font:800 10px/1.4 ui-monospace,monospace;color:color-mix(in srgb,var(--accent) 40%,#23392d);border:1px solid color-mix(in srgb,var(--accent) 27%,transparent);border-radius:4px;background:var(--tint);padding:1px 4px}
-.crew-sprite{display:block;aspect-ratio:9/8;image-rendering:pixelated;width:94px;height:auto;position:relative;background-image:var(--crew-sheet);background-repeat:no-repeat;background-size:1200% 400%}
+.crew-sprite{image-rendering:pixelated;width:94px;height:auto;position:relative}
 .dex-copy{padding:11px 13px 12px;display:flex;flex:1;flex-direction:column}
 .dex-name{font-size:21px;line-height:1.16;letter-spacing:-.035em;font-weight:900}
 .dex-virus{font-size:13px;line-height:1.25;color:var(--sub);margin-top:3px}
@@ -210,7 +215,7 @@ label.talent-item{cursor:pointer}
 .mission-tile .c-primary,.mission-tile .c-secondary{min-height:38px!important;font-size:14px!important;margin-top:4px}
 .job-list{display:grid;gap:9px;margin:9px 0 23px}
 .job-row{display:grid;grid-template-columns:56px minmax(76px,1fr) auto;gap:13px;align-items:center;padding:10px 13px}
-.job-row .crew-sprite{width:57px;background-color:var(--tint);border-radius:8px}
+.job-row .crew-sprite{width:57px;background:var(--tint);border-radius:8px}
 .job-row .c-secondary{font-size:13px!important;padding:8px 12px!important}
 .job-row .time-track{max-width:360px}
 .job-deadline{font-variant-numeric:tabular-nums}
@@ -255,3 +260,90 @@ label.talent-item{cursor:pointer}
   .crew-arena-short{display:inline}
 }
 @media(prefers-reduced-motion:reduce){#crewHub *{transition:none!important}.dex-card:hover{transform:none!important}}
+
+
+/* Let the game follow the page height, including on narrow touchscreens. */
+#lobulo-game {
+  --bg:#f6edf1;--ink:#2b1633;--card:#fffafc;--line:#e7d3de;--mut:#6e5676;
+  --good:#17784f;--bad:#b12a42;--atlas-image:url(./auxiliares.png);
+  position:relative;isolation:isolate;border-radius:14px;overflow:hidden;
+  background:transparent;text-align:left;
+}
+@media(prefers-color-scheme:dark){
+  #lobulo-game{--bg:#1a1220;--ink:#f5e9f1;--card:#271b2e;--line:#45324c;--mut:#c7b2ca;--good:#62d3a2;--bad:#ff8fa3}
+}
+#lobulo-game [hidden]{display:none!important}
+#app{height:auto;display:block;background:var(--bg);color:var(--ink)}
+#hud{width:100%}
+#stage{min-height:0;overflow:visible}
+#stage[data-phase="play"]{height:clamp(320px,100vw,490px);overflow:hidden}
+#stage:not([data-phase="play"]) #cv,#stage:not([data-phase="play"]) #toast{display:none}
+#stage[data-phase="play"] .ov{display:none}
+#stage .ov{position:relative;inset:auto;align-items:center;min-height:0;background:var(--bg)}
+#stage .arena-card{max-height:none;overflow:visible}
+#stage .btns.stick{position:static;margin:4px 0 0;padding:0;background:none}
+#crewHub{scrollbar-gutter:auto}
+#crewChart{display:block}
+.crew-sprite{display:block;aspect-ratio:36 / 32}
+.crew-sprite,.job-row .crew-sprite{
+  background-image:var(--atlas-image);background-size:1200% 400%;
+  background-position:var(--sprite-x) var(--sprite-y);background-repeat:no-repeat
+}
+.pixel-icon{image-rendering:pixelated}
+#crewHub .crew-arena,#crewHub .crew-filter,#crewHub .c-secondary,#crewHub .c-primary,
+#crewHub .mission-tile .c-primary,#crewHub .mission-tile .c-secondary,
+#crewHub .quiz-option,.arena-tools .icon,.arena-base-button{min-height:44px!important}
+.areanotice{margin:12px 0;color:var(--bad);font-size:14px;font-weight:700}
+@media(max-width:420px){
+  #stage .ov{padding:10px}
+  #stage .arena-card{padding:14px}
+  #stage .legend{gap:10px}
+  #stage .legend div{font-size:13px}
+  #crewHub .crew-arena{padding-inline:10px}
+}
+
+#stage .arsenal-card{width:min(620px,100%)}
+.arm-heading{margin:16px 0 8px!important}
+.build-choices{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:9px 0 4px}
+.build-card{
+  text-align:left;display:grid;grid-template-columns:42px minmax(0,1fr);gap:11px;align-items:center;
+  width:100%;min-height:65px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);
+  color:var(--ink);background:var(--card);font:inherit;line-height:1.3;cursor:pointer
+}
+.build-card:hover{border-color:var(--ability-color)}
+.build-card[aria-pressed=true]{border:2px solid var(--ability-color);padding:9px 11px;
+  background:color-mix(in srgb,var(--ability-color) 12%,var(--card))}
+.build-card[data-kind=fusion],.build-card[data-kind=evolve]{
+  border-color:var(--ability-color);background:color-mix(in srgb,var(--ability-color) 11%,var(--card))
+}
+.build-icon{
+  width:42px;height:42px;display:grid;place-items:center;border-radius:10px;
+  color:white;background:var(--ability-color);font-size:25px;font-weight:800
+}
+.build-copy{display:grid;gap:2px}
+.build-copy strong{font-size:17px}
+.build-desc{font-size:14px;color:var(--mut)}
+.build-kicker{font-size:12px;color:var(--mut);font-weight:800}
+.arena-help{margin-top:12px;border-top:1px solid var(--line);font-size:14px}
+.arena-help summary{padding:9px 0;min-height:44px;font-weight:800;cursor:pointer}
+.arena-help ul{margin:2px 0 10px;padding-inline-start:22px;color:var(--mut)}
+.arena-help p{color:var(--mut);margin:0 0 8px}
+.arena-lesson{margin-top:9px;width:100%;font-size:14px!important}
+.arena-roster{
+  grid-column:1/-1;display:flex;min-width:0;align-items:center;gap:6px 12px;flex-wrap:wrap;
+  color:var(--mut);font-size:13px;line-height:1.3;border-top:1px solid var(--line);padding-top:4px
+}
+.arena-roster b{color:var(--ink)}
+#loadoutEnd{display:flex;gap:4px 12px;flex-wrap:wrap;margin:10px 0 14px}
+#loadoutEnd li{padding:3px 7px;background:color-mix(in srgb,var(--ink) 6%,transparent);border-radius:6px}
+#stage .arena-card>h2{margin-bottom:5px}
+@media(min-width:650px){
+  #arsenalChoices{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #arsenalChoices .build-card{grid-template-columns:1fr;gap:8px;align-content:start;min-height:126px}
+}
+@media(max-width:390px){
+  .arena-roster{font-size:12px}
+  .build-card{gap:8px;padding:9px;grid-template-columns:35px 1fr}
+  .build-card[aria-pressed=true]{padding:8px}
+  .build-icon{width:35px;height:35px;font-size:22px}
+}
