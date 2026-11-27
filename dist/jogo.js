@@ -161,18 +161,23 @@ const WEAPONS = {
   range:97, speed:0, damage:19, interval:.70, shots:0, spread:0,
   evolution:{name:'Órbita Gêmea', desc:'Dois anéis. O segundo alcança mais longe e empurra os inimigos.'}}
 };
+const RARITIES = {
+ common: {label:'Comum', weight:3},
+ rare: {label:'Rara', weight:1},
+ special: {label:'Especial'}
+};
 const SKILLS = {
- mark: {name:'Marca', icon:'◇', color:'#8d4384', line:'Acertos marcam o alvo. Acertos seguintes dão +25% de dano.',
+ mark: {rarity:'common', name:'Marca', icon:'◇', color:'#8d4384', line:'Acertos marcam o alvo. Acertos seguintes dão +25% de dano.',
   next:'Marcas duram 5 segundos e dão +40% de dano.'},
- link: {name:'Ricochete', icon:'↝', color:'#4363ad', line:'Um disparo da rajada salta para um inimigo próximo, com 35% do dano.',
+ link: {rarity:'rare', name:'Ricochete', icon:'↝', color:'#4363ad', line:'Um disparo da rajada salta para um inimigo próximo, com 35% do dano.',
   next:'O salto alcança mais longe e causa 55% do dano.'},
- shield: {name:'Barreira', icon:'⬡', color:'#32776b', line:'Bloqueia um golpe e protege por 1 segundo. Recarga de 13 segundos.',
+ shield: {rarity:'rare', name:'Barreira', icon:'⬡', color:'#32776b', line:'Bloqueia um golpe e protege por 1 segundo. Recarga de 13 segundos.',
   next:'A Barreira recarrega em 9 segundos.'},
- pulse: {name:'Pulso', icon:'◉', color:'#7849a4', line:'A cada terceiro ataque, uma onda de dano sai de você.',
+ pulse: {rarity:'rare', name:'Pulso', icon:'◉', color:'#7849a4', line:'A cada terceiro ataque, uma onda de dano sai de você.',
   next:'As ondas ficam maiores e causam mais dano.'},
- magnet: {name:'Ímã', icon:'∪', color:'#87601b', line:'Atrai os fragmentos a uma distância maior.',
+ magnet: {rarity:'common', name:'Ímã', icon:'∪', color:'#87601b', line:'Atrai os fragmentos a uma distância maior.',
   next:'O alcance de coleta aumenta mais uma vez.'},
- reserve: {name:'Reserva', icon:'✦', color:'#a34656', line:'Cada fragmento recupera 2 pontos de vigor.',
+ reserve: {rarity:'common', name:'Reserva', icon:'✦', color:'#a34656', line:'Cada fragmento recupera 2 pontos de vigor.',
   next:'Cada fragmento recupera 3 pontos de vigor.'}
 };
 const FUSIONS = {
@@ -362,11 +367,11 @@ function skillCard(id){
  const s=SKILLS[id],rank=skillRank(id);
  const partner=Object.values(FUSIONS).find(f=>!rank&&f.needs.includes(id)&&
   f.needs.some(need=>need!==id&&skillRank(need)));
- return {kind:'skill',id,title:s.name,label:rank?'Nível 2':'Nova habilidade',
+ return {kind:'skill',id,rarity:s.rarity,title:s.name,label:rank?'Nível 2':'Nova habilidade',
   desc:(rank?s.next:s.line)+(partner?' Completa a receita de '+partner.name+'.':''),icon:s.icon,color:s.color};
 }
 function trainingCard(){
- return {kind:'train',title:'Afiar '+currentWeapon().name,label:'Arma · nível '+(S.build.rank+1),
+ return {kind:'train',rarity:'common',title:'Afiar '+currentWeapon().name,label:'Arma · nível '+(S.build.rank+1),
   desc:'Mais dano, alcance e frequência de ataque.',icon:currentWeapon().icon,color:currentWeapon().color};
 }
 const recoveryCard=()=>({kind:'recover',title:'Fôlego extra',label:'Vigor',desc:'Recupere 30 de vigor e aumente seu máximo em 8.',
@@ -376,12 +381,23 @@ const coinCard=()=>({kind:'coins',title:'Bolsa da equipe',label:'Recompensa',des
 function availableSkills(){
  return Object.keys(SKILLS).filter(id=>skillRank(id)<2);
 }
+function rollSkills(ids,count){
+ const pool=ids.slice();
+ const picks=[];
+ while(pool.length&&picks.length<count){
+  const weight=id=>RARITIES[SKILLS[id].rarity].weight;
+  let roll=rnd()*pool.reduce((total,id)=>total+weight(id),0);
+  const index=pool.findIndex(id=>{roll-=weight(id);return roll<0});
+  picks.push(pool.splice(index,1)[0]);
+ }
+ return picks;
+}
 function draftSkills(){
  const pool=availableSkills();
  const partners=shuffle([...new Set(Object.values(FUSIONS).flatMap(f=>
   f.needs.filter(id=>!skillRank(id)&&f.needs.some(other=>skillRank(other)))))]);
  const lead=partners[0];
- const cards=shuffle(pool.filter(id=>id!==lead)).slice(0,lead?2:3).map(skillCard);
+ const cards=rollSkills(pool.filter(id=>id!==lead),lead?2:3).map(skillCard);
  if(lead)cards.unshift(skillCard(lead));
  if(S.build.rank<3&&(S.st.lvl>=3||cards.length<3))cards.splice(2,1,trainingCard());
  if(cards.length<3)cards.push(recoveryCard());
@@ -394,17 +410,17 @@ function bossCards(){
  if(eligible.length){
   if(S.build.fusionMissed||S.chest.index===BOSSES.length-1||rnd()<.40){
    const id=eligible[0], f=FUSIONS[id];
-   cards.push({kind:'fusion',id,title:f.name,label:'Fusão rara',desc:f.desc,icon:f.icon,color:f.color});
+   cards.push({kind:'fusion',id,rarity:'special',title:f.name,label:'Fusão',desc:f.desc,icon:f.icon,color:f.color});
    S.build.fusionMissed=false;
   }else S.build.fusionMissed=true;
  }
  const arm=currentWeapon();
  if(!S.build.evolved&&S.build.rank>=2){
-  cards.push({kind:'evolve',title:arm.evolution.name,label:'Evolução da arma',desc:arm.evolution.desc,icon:arm.icon,color:arm.color});
+  cards.push({kind:'evolve',rarity:'special',title:arm.evolution.name,label:'Evolução da arma',desc:arm.evolution.desc,icon:arm.icon,color:arm.color});
  }
  const pool=[recoveryCard(),coinCard()];
  if(S.build.rank<3)pool.push(trainingCard());
- const next=shuffle(availableSkills())[0];
+ const [next]=rollSkills(availableSkills(),1);
  if(next)pool.push(skillCard(next));
  if(cards.length<2)cards.push(...shuffle(pool).slice(0,2-cards.length));
  cards.push({kind:'surprise',title:'Baú fechado',label:'Sorteio',desc:'Pode trazer vigor, moedas, uma habilidade ou um treino de arma.',
@@ -436,7 +452,7 @@ function learn(card){
   case 'surprise': {
    const pool=[recoveryCard(),coinCard()];
    if(b.rank<3)pool.push(trainingCard());
-   const next=shuffle(availableSkills())[0];
+   const [next]=rollSkills(availableSkills(),1);
    if(next)pool.push(skillCard(next));
    return 'Baú: '+learn(shuffle(pool)[0]);
   }
@@ -453,16 +469,31 @@ function showIntro(){
  hEl.lvt.textContent='Nível 1';hEl.xpb.style.width='0%';hEl.fbt.textContent='Chefes 0/'+BOSSES.length;
  renderArsenal();syncArena();
 }
+function rarityBadge(rarity){
+ const badge=document.createElement('span');
+ badge.className='rarity-badge';badge.dataset.rarity=rarity;
+ badge.textContent=RARITIES[rarity].label;
+ return badge;
+}
 function optionButton(card,handler){
  const button=document.createElement('button');button.type='button';
  button.className='build-card';button.dataset.kind=card.kind||'';
  if(card.id)button.dataset.choice=card.id;
+ if(card.rarity)button.dataset.rarity=card.rarity;
  button.style.setProperty('--ability-color',card.color);
  const icon=document.createElement('span');icon.className='build-icon';icon.setAttribute('aria-hidden','true');icon.textContent=card.icon;
  const title=document.createElement('strong');title.textContent=card.title;
  const desc=document.createElement('span');desc.className='build-desc';desc.textContent=card.desc;
  const text=document.createElement('span');text.className='build-copy';
- if(card.label){const meta=document.createElement('span');meta.className='build-kicker';meta.textContent=card.label;text.append(meta)}
+ if(card.rarity||card.label){
+  const meta=document.createElement('span');meta.className='build-meta';
+  if(card.rarity)meta.append(rarityBadge(card.rarity));
+  if(card.label){
+   const label=document.createElement('span');label.className='build-kicker';label.textContent=card.label;
+   meta.append(label);
+  }
+  text.append(meta);
+ }
  text.append(title,desc);button.append(icon,text);
  button.addEventListener('click',handler);return button;
 }
@@ -543,12 +574,17 @@ function continueRun(){
 }
 function describeBuild(list){
  list.textContent='';
- const rows=[weaponName()+' · nível '+S.build.rank];
- for(const id of Object.keys(SKILLS))if(skillRank(id))rows.push(SKILLS[id].name+' · nível '+skillRank(id));
- for(const id of S.build.fusions)rows.push(FUSIONS[id].name+' · fusão rara');
- for(const t of TOP)if(S.tier[t.id])rows.push(t.tiers[S.tier[t.id]-1][0]+' · revisão de HBV');
- for(const row of rows){
-  const li=document.createElement('li');li.className='none';li.textContent=row;list.append(li);
+ const rows=[{title:weaponName()+' · nível '+S.build.rank,rarity:S.build.evolved?'special':null}];
+ for(const [id,skill] of Object.entries(SKILLS)){
+  const rank=skillRank(id);
+  if(rank)rows.push({title:skill.name+' · nível '+rank,rarity:skill.rarity});
+ }
+ for(const id of S.build.fusions)rows.push({title:FUSIONS[id].name+' · fusão',rarity:'special'});
+ for(const t of TOP)if(S.tier[t.id])rows.push({title:t.tiers[S.tier[t.id]-1][0]+' · revisão de HBV'});
+ for(const {title,rarity} of rows){
+  const li=document.createElement('li');li.className='none';li.textContent=title;
+  if(rarity)li.append(' ',rarityBadge(rarity));
+  list.append(li);
  }
 }
 

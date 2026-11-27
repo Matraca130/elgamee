@@ -313,9 +313,35 @@ label.talent-item{cursor:pointer}
 .build-card:hover{border-color:var(--ability-color)}
 .build-card[aria-pressed=true]{border:2px solid var(--ability-color);padding:9px 11px;
   background:color-mix(in srgb,var(--ability-color) 12%,var(--card))}
-.build-card[data-kind=fusion],.build-card[data-kind=evolve]{
-  border-color:var(--ability-color);background:color-mix(in srgb,var(--ability-color) 11%,var(--card))
+[data-rarity="common"]{
+  --rarity-ink:#424a56;--rarity-tag:#e9ebef;--rarity-edge:#9aa2ae
 }
+[data-rarity="rare"]{
+  --rarity-ink:#204d93;--rarity-tag:#e1edff;--rarity-edge:#6589c5;--rarity-icon:#2c5d9f;
+  --rarity-card:#f3f7ff
+}
+[data-rarity="special"]{
+  --rarity-ink:#612f91;--rarity-tag:#efdefe;--rarity-edge:#9561c8;--rarity-icon:#733aa5;
+  --rarity-card:#f8efff
+}
+@media(prefers-color-scheme:dark){
+  [data-rarity="common"]{--rarity-ink:#edf0f5;--rarity-tag:#353b46;--rarity-edge:#687383}
+  [data-rarity="rare"]{--rarity-ink:#c1daff;--rarity-tag:#273956;--rarity-edge:#699ad8;--rarity-card:#232d44}
+  [data-rarity="special"]{--rarity-ink:#eacfff;--rarity-tag:#492e61;--rarity-edge:#b68be3;--rarity-card:#37274a}
+}
+.build-card[data-rarity="rare"],.build-card[data-rarity="special"]{
+  border-color:var(--rarity-edge);border-inline-start-width:4px;background:var(--rarity-card)
+}
+.build-card[data-rarity]:hover{border-color:var(--rarity-ink)}
+.build-card[data-rarity="rare"] .build-icon,.build-card[data-rarity="special"] .build-icon{
+  background:var(--rarity-icon)
+}
+.rarity-badge{
+  display:inline-block;max-width:100%;padding:2px 7px;border-radius:6px;
+  border:1px solid var(--rarity-edge);color:var(--rarity-ink);background:var(--rarity-tag);
+  font-size:.84rem;font-weight:850;line-height:1.3;vertical-align:middle
+}
+.build-meta{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;margin-bottom:2px}
 .build-icon{
   width:42px;height:42px;display:grid;place-items:center;border-radius:10px;
   color:white;background:var(--ability-color);font-size:25px;font-weight:800
