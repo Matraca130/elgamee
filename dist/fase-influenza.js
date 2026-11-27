@@ -1,28 +1,26 @@
 const respiratory = (() => {
- const width = 720, height = 970;
- const bounds = [
-  [26,120],[62,222],[128,271],[188,232],[222,169],[261,176],
-  [310,205],[352,223],[432,229],[487,208],[524,163],[560,206],[617,263],[696,302],
-  [826,308],[888,272],[937,196]
+ const size=760, mapWidth=720, mapHeight=970;
+ const stages=[
+  {name:'Orofaringe',art:0,rx:308,ry:278,spawn:{x:0,y:178},x:0,y:446,exit:{x:0,y:603},tone:'#f5bc8c',
+   label:'Marco da hemaglutinina',targets:[[-135,250],[148,285],[-113,393]],boss:'watch',reward:'ha',
+   task:'Limpe a arena e chegue ao marco da hemaglutinina.'},
+  {name:'Traqueia',art:1,rx:306,ry:283,spawn:{x:0,y:168},x:0,y:493,exit:{x:0,y:603},tone:'#a9f1e4',
+   label:'Marco da neuraminidase',targets:[[-176,280],[158,335],[-124,483],[113,469]],reward:'na',
+   mucus:[{x:-75,y:302,rx:85,ry:30},{x:117,y:431,rx:61,ry:25}],
+   task:'Atravesse a traqueia larga e chegue ao marco da neuraminidase.'},
+  {name:'Brônquios',art:2,rx:317,ry:279,spawn:{x:0,y:166},x:0,y:435,exit:{x:122,y:574},tone:'#edb4ff',
+   label:'Bifurcação',targets:[[-156,300],[158,302],[0,478]],boss:'airway',
+   mucus:[{x:-111,y:417,rx:67,ry:30},{x:160,y:458,rx:57,ry:23}],
+   task:'Passe pela bifurcação e enfrente a defesa ciliar.'},
+  {name:'Pulmões',art:3,rx:311,ry:291,spawn:{x:0,y:165},x:0,y:430,tone:'#f9adba',
+   label:'Entrada dos alvéolos',targets:[[-156,307],[153,303],[-138,469],[128,483]],boss:'lungs',
+   mucus:[{x:-136,y:360,rx:64,ry:28},{x:160,y:412,rx:60,ry:27}],
+   task:'Abra caminho pelos alvéolos e enfrente o macrófago.'}
  ];
- const stages = [
-  {name:'Orofaringe', x:0,y:170,gate:230, tone:'#edaa78', targets:[[-86,132],[86,132]],
-   task:'Enfrente as células da orofaringe e chegue ao marco da hemaglutinina.'},
-  {name:'Traqueia', x:0,y:449,gate:530, tone:'#8ae1d3', targets:[[-112,352],[107,408],[41,478]],
-   task:'Enfrente as células ciliadas e alcance o marco da neuraminidase.'},
-  {name:'Pulmões', x:0,y:653,gate:937, tone:'#ddb2ff', targets:[[-130,608],[130,608]],
-   task:'Abra caminho até a bifurcação e enfrente a defesa da traqueia e dos pulmões.'}
- ];
- const mucus = [
-  {x:0,y:293,rx:137,ry:26},
-  {x:-78,y:407,rx:56,ry:22},
-  {x:97,y:713,rx:52,ry:26},
-  {x:-177,y:766,rx:54,ry:27}
- ];
- const bosses = {
-  watch:{name:'Vigia da mucosa', x:0,y:203, health:106,r:27,speed:45,wave:89,color:'#67d8be',look:'shell',rank:1},
-  airway:{name:'Defesa da traqueia', x:0,y:696, health:167,r:31,speed:49,wave:105,color:'#7dc8f2',look:'spark',rank:2},
-  lungs:{name:'Macrófago alveolar ativado', x:131,y:766, health:242,r:39,speed:53,wave:125,color:'#e5a3ed',rank:3}
+ const bosses={
+  watch:{name:'Vigia da mucosa',x:0,y:473,health:106,r:27,speed:45,wave:89,rank:1},
+  airway:{name:'Defesa da traqueia',x:0,y:494,health:167,r:31,speed:49,wave:105,rank:2},
+  lungs:{name:'Macrófago alveolar ativado',x:34,y:502,health:242,r:39,speed:53,wave:125,rank:3}
  };
  const questions = [
   {level:'Fácil', topic:'Mucosa', q:'Qual é a função do muco nas vias aéreas?',
@@ -39,9 +37,9 @@ const respiratory = (() => {
   ha:{level:'Fácil',topic:'Hemaglutinina',q:'Qual proteína do envoltório ajuda o influenza a se ligar à célula?',
    answers:['Hemaglutinina.','Neuraminidase.','Nucleoproteína.'],
    note:'A hemaglutinina, ou HA, participa do reconhecimento e da ligação à célula.'},
-  na:{level:'Intermediária',topic:'Neuraminidase',q:'Qual etapa do ciclo do influenza tem participação da neuraminidase?',
+  na:{level:'Intermediária',topic:'Neuraminidase',q:'Qual é o principal papel da neuraminidase (NA) no ciclo do influenza?',
    answers:['A liberação de novas partículas virais.','A leitura do RNA pelos ribossomos.','O transporte de muco pelos cílios.'],
-   note:'A neuraminidase, ou NA, ajuda a liberar as partículas recém-formadas.'},
+   note:'A NA é uma proteína do envoltório que facilita a liberação das novas partículas virais.'},
   epidemiology:{level:'Fácil',topic:'Epidemiologia',q:'Quais tipos de influenza causam epidemias sazonais em humanos?',
    answers:['Influenza A e B.','Influenza C e D.','Somente influenza D.'],
    note:'Os vírus influenza A e B causam epidemias sazonais de gripe em humanos.'}
@@ -83,51 +81,33 @@ const respiratory = (() => {
    note:'A vacinação quando indicada, a higiene e a ventilação ajudam a reduzir riscos relacionados a infecções respiratórias.'}
  ];
 
- function halfWidth(y) {
-  const index = bounds.findIndex(([end]) => end >= y);
-  if (index <= 0) return bounds[index === 0 ? 0 : bounds.length - 1][1];
-  const [a,u] = bounds[index-1], [b,v] = bounds[index];
-  const t = (y-a)/(b-a), blend = t*t*(3-2*t);
-  return u+(v-u)*blend;
+ function confine(actor, room) {
+  const rx=room.rx-actor.r, ry=room.ry-actor.r, dy=actor.y-size/2;
+  const factor=Math.max(1,Math.hypot(actor.x/rx,dy/ry));
+  actor.x/=factor;actor.y=size/2+dy/factor;
  }
 
- function confine(actor, gate = stages.at(-1).gate) {
-  actor.y = Math.max(bounds[0][0]+actor.r, Math.min(gate-actor.r,actor.y));
-  const extent = halfWidth(actor.y)-actor.r;
-  actor.x = Math.max(-extent,Math.min(extent,actor.x));
-  actor.y = Math.min(actor.y,887+Math.abs(actor.x)*.9);
+ function mucusAt(room,{x,y}) {
+  return (room.mucus??[]).findIndex(patch=>((x-patch.x)/patch.rx)**2+((y-patch.y)/patch.ry)**2<1);
  }
 
- function mucusAt({x,y}) {
-  return mucus.findIndex(patch=>((x-patch.x)/patch.rx)**2+((y-patch.y)/patch.ry)**2<1);
- }
-
- function paintMap(g, image) {
-  g.fillStyle='#3b1736';
-  g.fillRect(-width/2,0,width,height);
-  if(image?.complete && image.naturalWidth) {
-   g.drawImage(image,-width/2,0,width,height);
+ function paintRoom(g, atlas, room) {
+  g.fillStyle='#39192f';g.fillRect(-size/2,0,size,size);
+  if(atlas.complete&&atlas.naturalWidth){
+   const tile=atlas.naturalWidth/2;
+   const x=room.art%2*tile+2,y=Math.floor(room.art/2)*tile+2;
+   g.drawImage(atlas,x,y,tile-4,tile-4,-size/2,0,size,size);
    return;
   }
-  const gradient=g.createLinearGradient(0,50,0,height);
-  gradient.addColorStop(0,'#a74a68');
-  gradient.addColorStop(.38,'#5b8793');
-  gradient.addColorStop(.6,'#7f6e94');
-  gradient.addColorStop(1,'#ce796f');
-  g.beginPath();
-  g.moveTo(-bounds[0][1],bounds[0][0]);
-  for(const [y,w] of bounds)g.lineTo(-w,y);
-  for(const [y,w] of bounds.slice().reverse())g.lineTo(w,y);
-  g.closePath();
-  g.fillStyle=gradient;
-  g.fill();
-  g.strokeStyle='#65344e';
-  g.lineWidth=5;
-  g.stroke();
+  const floor=g.createRadialGradient(0,size/2,0,0,size/2,size*.46);
+  floor.addColorStop(0,room.tone);floor.addColorStop(1,'#784155');
+  g.beginPath();g.ellipse(0,size/2,room.rx+30,room.ry+36,0,0,Math.PI*2);
+  g.fillStyle=floor;g.fill();
+  g.lineWidth=12;g.strokeStyle='#60304f';g.stroke();
  }
 
- function drawMucus(g, elapsed, active, reduced) {
-  for(const [index,patch] of mucus.entries()) {
+ function drawMucus(g, room, elapsed, active, reduced) {
+  for(const [index,patch] of (room.mucus??[]).entries()) {
    const {x,y,rx,ry}=patch;
    const ripple = reduced ? 0 : Math.sin(elapsed*2.8+index*1.9)*2;
    g.beginPath();
@@ -168,12 +148,5 @@ const respiratory = (() => {
   g.fillStyle='#fff7e7';g.fillText(title,area.x,area.y+33);
  }
 
- function lock(g, gate) {
-  const extent=halfWidth(gate)-6;
-  g.beginPath();
-  g.moveTo(-extent,gate);g.quadraticCurveTo(0,gate+11,extent,gate);
-  g.strokeStyle='#512e49';g.lineWidth=8;g.stroke();
-  g.strokeStyle='#ffe0a0';g.lineWidth=2.5;g.setLineDash([8,9]);g.stroke();g.setLineDash([]);
- }
- return {width,height,stages,mucus,bosses,questions,review,influenzaBank,halfWidth,confine,mucusAt,paintMap,drawMucus,marker,lock};
+ return {size,mapWidth,mapHeight,stages,bosses,questions,review,influenzaBank,confine,mucusAt,paintRoom,drawMucus,marker};
 })();

@@ -438,3 +438,49 @@ body #stage[data-phase=play]{height:auto;min-height:0}
 .guide-questions li+li{border-top:1px solid var(--line)}
 .guide-questions strong{font-size:.85rem;color:var(--ink)}
 .guide-questions p{margin:3px 0 0;font-size:.95rem}
+
+.morph-options{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;
+ margin:14px 0 16px;padding:9px 11px;border:1px solid var(--line);border-radius:10px
+}
+.morph-options legend{padding:0 5px;font-size:.9rem;font-weight:850}
+.morph-options label,.pause-control{display:grid;align-content:start;gap:3px;font-size:.84rem;font-weight:750}
+.morph-options select,.pause-control select{
+ min-height:44px;width:100%;border:1px solid var(--line);border-radius:8px;
+ color:var(--ink);background:var(--card);font:inherit;padding:4px 7px
+}
+.morph-options label:last-of-type,#morphStats{grid-column:1/-1}
+#morphStats{margin:1px 0 0;font-size:.82rem;color:var(--mut)}
+.pause-control{margin:10px 0;max-width:250px}
+.campaign-card .arena-intro{grid-template-columns:clamp(4.6rem,10vw,7.1rem) minmax(0,1fr)}
+.campaign-card .hero-portrait,.evolution-preview{
+ background:radial-gradient(ellipse at 50% 60%,#63547e,#362741 78%)
+}
+.evolution-preview{
+ display:flex;gap:14px;align-items:center;margin:9px 0;padding:2px 12px 2px 4px;border-radius:11px;
+ color:#fbecf3;font-size:.84rem
+}
+.evolution-preview canvas{width:82px;height:82px;flex:none}
+.touch-legend{
+ position:absolute;left:8px;right:8px;bottom:6px;z-index:1;
+ display:flex;justify-content:space-between;gap:8px;pointer-events:none;
+ color:#fff4e8;font-size:.74rem;font-weight:850;text-shadow:0 1px 4px #231226
+}
+.travel-note{
+ position:absolute;left:50%;top:12%;z-index:3;transform:translateX(-50%);
+ width:max-content;max-width:calc(100% - 24px);margin:0;padding:9px 14px;border-radius:9px;
+ color:#fef0ee;background:#382640;border:1px solid #c7a9d1;text-align:center;font-weight:800;pointer-events:none
+}
+#stage[data-phase="travel"]{overflow:hidden;background:#39192f}
+#stage[data-phase="travel"] #cv{display:block;pointer-events:none}
+#app:has(#stage:is([data-phase=play],[data-phase=travel])){display:grid;height:100svh;grid-template-rows:auto minmax(0,1fr)}
+#stage:is([data-phase=play],[data-phase=travel]){touch-action:none}
+.dash-button{bottom:clamp(28px,6vh,53px)}
+@media(max-width:640px){
+ .morph-options{padding-inline:7px;gap:7px}
+ .campaign-route{gap:5px}
+}
+@media(pointer:coarse){
+ .dash-button{right:50%;transform:translateX(50%);bottom:16px}
+ .boss-meter{bottom:118px;left:50%}
+}

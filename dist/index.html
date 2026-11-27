@@ -23,15 +23,18 @@
  </div>
  <div class="arena-roster">
   <ol class="region-track" id="regionTrack" aria-label="Percurso da fase">
-   <li aria-current="step">Orofaringe</li><li>Traqueia</li><li>Pulmões</li>
+   <li aria-current="step">Orofaringe</li><li>Traqueia</li><li>Brônquios</li><li>Pulmões</li>
   </ol>
   <p class="round-objective" id="arenaTissue"></p>
   <span id="mucusStatus" hidden>Muco · movimento mais lento</span>
  </div>
 </header>
 <main id="stage" data-phase="intro" aria-label="Arena respiratória da influenza">
- <canvas id="cv" width="1" height="1" tabindex="0" role="img" aria-label="Percurso contínuo da orofaringe à traqueia e aos pulmões, com bifurcação dos brônquios"></canvas>
+ <canvas id="cv" width="1" height="1" tabindex="0" role="img" aria-label="Arena do Atlas Viral, com quatro regiões respiratórias ligadas por correntes de ar"></canvas>
+ <img id="roomAtlas" src="./arenas-respiratorias.webp" alt="" hidden>
  <div id="toast" role="status" aria-live="polite"></div>
+ <p id="travelNote" role="status" class="travel-note" hidden></p>
+ <div class="touch-legend" id="touchLegend" aria-hidden="true" hidden><span>Mover</span><span id="aimLegend">Mirar e atacar</span></div>
  <div id="bossBar" class="boss-meter" hidden><strong id="bossName"></strong><div class="bar"><i id="bossFill"></i></div></div>
  <button class="dash-button" id="dashBtn" type="button" hidden>Dash <small id="dashTime">Pronto</small></button>
  <div class="ov" id="intro">
@@ -42,15 +45,25 @@
       <div class="hero-portrait"><canvas id="virusPortrait" width="112" height="112" aria-hidden="true"></canvas></div>
       <div><p class="hero-name">Atlas Viral · Fase respiratória</p><h1>Influenza</h1></div>
      </div>
-     <p class="lead">Você controla um vírus. Aprenda novos poderes e atravesse as defesas do aparelho respiratório.</p>
+     <p class="lead">Monte seu vírus e passe por quatro arenas do aparelho respiratório.</p>
+     <fieldset class="morph-options" id="morphOptions">
+      <legend>Morfologia e controles</legend>
+      <label>Genoma<select id="genomeSelect"></select></label>
+      <label>Corpo<select id="bodySelect"></select></label>
+      <label>Expressão<select id="faceSelect"></select></label>
+      <label>Pés<select id="feetSelect"></select></label>
+      <label>Controle de ataque<select id="controlSelect"></select></label>
+      <p id="morphStats" aria-live="polite"></p>
+     </fieldset>
+     <p class="mut" id="controlsHelp">Arraste à esquerda para andar e à direita para mirar e atacar. No teclado, use WASD ou setas para andar e segure o mouse para atacar. Espaço ou Dash desvia.</p>
+     <p class="areanotice" id="arenaNotice" role="status" hidden></p>
+     <div class="btns"><button class="arena-button" id="startBtn">Começar fase</button><button class="arena-button ghost" id="crewIntro">Base dos auxiliares</button></div>
      <ol class="campaign-route" aria-label="Objetivos da fase">
       <li><b>Orofaringe</b><span>Derrote o primeiro chefe e ganhe hemaglutinina.</span></li>
       <li><b>Traqueia</b><span>Passe pela mucosa e desbloqueie neuraminidase.</span></li>
-      <li><b>Pulmões</b><span>Chegue aos brônquios e enfrente a defesa traqueopulmonar.</span></li>
+      <li><b>Brônquios</b><span>Enfrente a defesa ciliar na bifurcação.</span></li>
+      <li><b>Pulmões</b><span>Desvie dos anticorpos e vença o macrófago alveolar.</span></li>
      </ol>
-     <p class="mut">Mova com as setas ou arraste. Seus ataques saem automaticamente. Use Espaço ou o botão Dash para desviar.</p>
-     <p class="areanotice" id="arenaNotice" role="status" hidden></p>
-     <div class="btns"><button class="arena-button" id="startBtn">Começar fase</button><button class="arena-button ghost" id="crewIntro">Base dos auxiliares</button></div>
     </div>
     <figure class="route-preview">
      <img id="arenaTerrain" src="./terreno-respiratorio.webp" width="863" height="1164" alt="Orofaringe no alto, traqueia larga no centro e brônquios que se dividem em direção aos pulmões">
@@ -59,10 +72,18 @@
    </div>
    <details class="arena-help">
     <summary>Espaços e raridades</summary>
-    <p>O envoltório tem espaços de ataque, pulso, defesa e apoio. Nucleocapsídeo, movimento e status têm um espaço cada. Escolha uma habilidade por espaço e evolua durante a partida.</p>
+    <p>O envoltório tem espaços de ataque, pulso, defesa e apoio. Nucleocapsídeo, movimento e status têm um espaço cada. As escolhas aparecem depois de vencer cada arena.</p>
     <p><span class="rarity-badge" data-rarity="common">Comum</span> e <span class="rarity-badge" data-rarity="rare">Rara</span> aparecem nas ofertas. Duas habilidades compatíveis podem liberar uma fusão <span class="rarity-badge" data-rarity="special">Especial</span>.</p>
    </details>
    <details class="arena-help"><summary id="fusionCount">Fusões descobertas</summary><ul id="fusionRecipes"></ul></details>
+   <details class="arena-help">
+    <summary>Genoma, capsídeo e envoltório</summary>
+    <p>O influenza A tem RNA segmentado de fita simples (−). A polimerase viral produz o RNA mensageiro que os ribossomos leem. Em muitos vírus de RNA (+), o próprio RNA que entra na célula já pode servir como mensageiro.</p>
+    <p>O capsídeo é proteico e o envoltório é uma camada lipídica externa. No influenza, a hemaglutinina e a neuraminidase ficam no envoltório. Na arte do jogo, os ramos verdes indicam NA e os pinos dourados indicam HA.</p>
+    <p>Tropismo descreve quais células ou tecidos um vírus consegue infectar. A ligação à célula faz parte disso. A patogênese inclui o que a infecção e a resposta do hospedeiro provocam no organismo.</p>
+    <p>Os perfis selecionáveis são fictícios. A cor e o número de traços distinguem RNA e DNA. Os benefícios de dano, cadência e resistência servem ao equilíbrio da arena.</p>
+    <p class="study-source"><a href="https://www.ncbi.nlm.nih.gov/books/NBK559437/figure/F3/" target="_blank" rel="noopener noreferrer">Classificação de Baltimore · NCBI</a></p>
+   </details>
    <details class="arena-help">
     <summary>Revisão da influenza</summary>
     <p>As perguntas trazem o tema e a dificuldade. As fichas ensinam virologia. Os poderes e as fusões fazem parte da ficção do jogo.</p>
@@ -83,6 +104,10 @@
    <p class="mut" id="lvTag"></p><h2 id="qText"></h2>
    <p class="mut" id="draftHint" hidden></p>
    <div id="opts"></div><div class="fb" id="fb" role="status" hidden></div>
+   <figure id="evolutionPreview" class="evolution-preview" hidden>
+    <canvas id="evolutionPortrait" width="116" height="116" aria-hidden="true"></canvas>
+    <figcaption id="evolutionCaption"></figcaption>
+   </figure>
    <div id="ups" class="build-choices" hidden></div>
    <button class="arena-button ghost arena-lesson" id="reviewBtn" type="button" hidden>Revisar esta característica</button>
    <div class="btns stick"><button class="arena-button" id="contBtn" hidden>Continuar</button></div>
@@ -90,14 +115,16 @@
  </div>
  <div class="ov dim" id="pause" hidden>
   <div class="arena-card">
-   <h2>Pausa</h2><p class="mut">Seus espaços nesta partida</p><ul class="codex" id="ctr"></ul>
+   <h2>Pausa</h2>
+   <label class="pause-control">Controle de ataque<select id="pauseControl"></select></label>
+   <p class="mut">Seus espaços nesta partida</p><ul class="codex" id="ctr"></ul>
    <div class="btns"><button class="arena-button" id="resumeBtn">Continuar</button><button class="arena-button ghost" id="crewPause">Base dos auxiliares</button><button class="arena-button ghost" id="restartBtn">Nova partida</button></div>
   </div>
  </div>
  <div class="ov dim" id="end" hidden>
   <div class="arena-card">
    <h2 id="endH"></h2><p class="lead" id="endP"></p>
-   <div class="stats"><div><b id="sInf">0</b>células enfrentadas</div><div><b id="sBoss">0/3</b>regiões concluídas</div><div><b id="sF">0%</b>mal-estar no jogo</div></div>
+   <div class="stats"><div><b id="sInf">0</b>células enfrentadas</div><div><b id="sBoss">0/4</b>arenas concluídas</div><div><b id="sF">0%</b>mal-estar no jogo</div></div>
    <h3>Sua combinação</h3><ul class="codex" id="loadoutEnd"></ul>
    <div id="runQuizLog" hidden><p class="mut">Perguntas desta partida</p><ul class="codex" id="codex"></ul></div>
    <div class="btns"><button class="arena-button" id="againBtn">Nova partida</button><button class="arena-button ghost" id="crewEnd">Base dos auxiliares</button></div>
@@ -135,6 +162,7 @@
 </section>
 
 </section>
+<script defer src="./morfologia.js"></script>
 <script defer src="./arte-jogo.js"></script>
 <script defer src="./fase-influenza.js"></script>
 <script defer src="./guia-respiratoria.js"></script>

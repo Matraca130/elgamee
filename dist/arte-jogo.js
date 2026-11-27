@@ -15,7 +15,8 @@ const arenaArt = (() => {
  function oval(g, x, y, rx, ry, fill, outline, width = 2, rotation = 0) {
   g.beginPath();
   g.ellipse(x, y, rx, ry, rotation, 0, turn);
-  paint(g, fill, outline, width);
+  if(fill)paint(g,fill,outline,width);
+  else if(outline){g.strokeStyle=outline;g.lineWidth=width;g.stroke();}
  }
 
  function polygon(g, points, fill, outline, width) {
@@ -135,5 +136,111 @@ const arenaArt = (() => {
   polygon(g, [[x,y-5],[x+1,y],[x-3,y]], '#f4d8ff');
  }
 
- return {creature, drawActor, drawFragment};
+ function outlineBody(g, body, fill, rim) {
+  if(body==='facets') {
+   polygon(g, [[-15,-20],[4,-24],[19,-16],[23,0],[16,16],[-4,20],[-21,11],[-23,-7]],fill,rim,2.8);
+   return;
+  }
+  oval(g,0,-2,23,22,fill,rim,2.8);
+ }
+
+ function feetArt(g,wide,stride) {
+  const width=wide?10:8;
+  oval(g,-12+stride,18+Math.max(0,stride),width,5,'#54688c',ink,2.3);
+  oval(g,12-stride,18+Math.max(0,-stride),width,5,'#748bb2',ink,2.3);
+  oval(g,-14+stride,16+Math.max(0,stride),4,1.8,'#a5ccd4');
+  oval(g,10-stride,16+Math.max(0,-stride),4,1.8,'#badbdc');
+ }
+
+ function neuraminidase(g,clock,rank,fused) {
+  const angles=[.27,2.88,3.82,5.65].slice(0,rank>=2?4:3);
+  for(const [i,angle] of angles.entries()){
+   const bend=Math.sin(clock*3.1+i)*2.4;
+   g.save();g.rotate(angle);
+   for(const [width,color] of [[5,ink],[2.8,fused?'#dba8ff':'#a2f7eb']]){
+    g.beginPath();
+    g.moveTo(19,-1);g.quadraticCurveTo(28,-5,31,bend);
+    g.quadraticCurveTo(32,4,36,bend+5);
+    g.moveTo(31,bend);g.quadraticCurveTo(33,-4,36,bend-4);
+    g.lineWidth=width;g.strokeStyle=color;g.stroke();
+   }
+   g.restore();
+  }
+ }
+
+ function hemagglutinin(g,rank) {
+  for(const x of (rank>1?[-14,-5,5,14]:[-10,2,13])){
+   const base=-20+Math.abs(x)*.24;
+   g.beginPath();g.moveTo(x,base+2);g.lineTo(x*1.16,base-6);
+   g.strokeStyle=ink;g.lineWidth=4.6;g.stroke();
+   g.strokeStyle='#df974c';g.lineWidth=2.2;g.stroke();
+   oval(g,x*1.16,base-6,3.7,3.4,'#ffd99b',ink,1.7);
+  }
+ }
+
+ function nucleocapsid(g,genome,rank,clock) {
+  if(rank)polygon(g,[[-10,2],[-5,-2],[5,-2],[10,3],[7,12],[-7,12]],'#454263','#222542',1.8);
+  else oval(g,0,5,12,7,'rgba(82,75,108,.67)','#807e9e',1.4);
+  for(let i=0;i<genome.strands;i++){
+   const y=4+i*3;
+   g.beginPath();g.moveTo(-7,y);
+   g.bezierCurveTo(-3,y-3,1,y+3,7,y);
+   g.lineWidth=1.7;g.strokeStyle=genome.color;g.stroke();
+  }
+  if(genome.polarity){
+   g.fillStyle=genome.color;g.textAlign='left';g.textBaseline='middle';
+   g.font='800 7px system-ui, sans-serif';g.fillText(genome.polarity,6,8);
+  }
+  if(rank>1)oval(g,0,11,2.4+Math.sin(clock)*.5,1.7,'#dec8ff');
+ }
+
+ function expression(g,value,gaze) {
+  for(const x of [-7,7]){
+   oval(g,x,-7,4.8,value===2?4.9:5.8,'#fff0db',ink,1.75);
+   oval(g,x+gaze*1.15,-7,2.25,3.3,'#29203f');
+   oval(g,x+gaze*.9-.6,-8.1,.8,.8,'#fff8e9');
+   if(value){
+    const lean=x<0?1:-1;
+    g.beginPath();g.moveTo(x-lean*5,-13-value);g.lineTo(x+lean*4,-12+value*1.7);
+    g.lineWidth=value===2?2.7:2.0;g.strokeStyle=ink;g.stroke();
+   }
+  }
+  g.beginPath();g.moveTo(-2.7,-1);g.quadraticCurveTo(0,value===2?-2.4:1.4,3.3,-1.4);
+  g.lineWidth=1.45;g.strokeStyle=ink;g.stroke();
+ }
+
+ function drawVirus(g,x,y,r,appearance,pose={}) {
+  const {morph,ha=0,na=0,core=0,defense=false,magnet=false,reserve=false,fused=false}=appearance;
+  const {clock=0,stride=0,lift=0,facing=1,streak=0,flash=false,temper=viralMorphology.faces[morph.face].intensity}=pose;
+  const unit=r/24;
+  g.save();g.translate(x,y);g.scale(unit,unit);g.lineCap=g.lineJoin='round';
+  oval(g,0,19,23,7,flash?'rgba(255,219,172,.60)':'rgba(38,19,43,.32)');
+  if(fused){
+   const aura=g.createRadialGradient(0,4,10,0,4,35);
+   aura.addColorStop(0,'rgba(154,62,197,.12)');aura.addColorStop(.62,'rgba(189,87,224,.42)');
+   aura.addColorStop(1,'rgba(229,171,255,0)');
+   oval(g,0,1,36,32,aura);
+   oval(g,0,18,27,8,null,'#e8b9ff',1.6);
+  }
+  g.translate(0,-lift);g.scale(facing*(1+streak),1-streak*.55);g.rotate(stride*.022);
+  feetArt(g,morph.feet==='strong',stride);
+  if(na)neuraminidase(g,clock,na,fused);
+  if(ha)hemagglutinin(g,ha);
+  const coat=g.createLinearGradient(-14,-22,12,23);
+  coat.addColorStop(0,fused?'#8973b8':'#d1f6fb');
+  coat.addColorStop(.47,fused?'rgba(91,66,146,.88)':'rgba(100,202,230,.84)');
+  coat.addColorStop(1,fused?'#533f87':'#407ea7');
+  outlineBody(g,morph.body,coat,fused?'#302044':'#232d4d');
+  oval(g,0,-1,18.6,16.4,fused?'rgba(52,36,95,.42)':'rgba(209,247,243,.28)',
+   defense?'#d9f6f9':'rgba(209,243,252,.68)',defense?2.5:1.55);
+  oval(g,-13,-14,4.4,2.2,'rgba(246,254,255,.83)',null,0,-.43);
+  oval(g,15,-8,2.7,1.7,'rgba(246,254,255,.61)',null,0,.7);
+  nucleocapsid(g,viralMorphology.genomes[morph.genome],core,clock);
+  expression(g,temper,.4);
+  if(magnet)oval(g,-17,9,3.2,3.2,'#ffda94',ink,1.3);
+  if(reserve)oval(g,17,9,3.2,3.2,'#ffadc8',ink,1.3);
+  g.restore();
+ }
+
+ return {creature, drawActor, drawFragment, drawVirus};
 })();
