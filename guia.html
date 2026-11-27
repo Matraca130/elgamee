@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Formas y ciclo de Trypanosoma cruzi con referencias a la guía de microbiología del Atlas Viral.">
+  <title>Trypanosoma cruzi · Guía de microbiología · Atlas Viral</title>
+  <link rel="stylesheet" href="./guia-estudo.css">
+  <script defer src="./guia-estudo.js"></script>
+</head>
+<body>
+  <header class="page-head">
+    <nav aria-label="Navegación"><a href="./">Volver al juego</a><a href="#documento">Consultar el PDF</a></nav>
+    <p>Atlas Viral · Guía de microbiología</p>
+    <h1><i>Trypanosoma cruzi</i></h1>
+  </header>
+  <main>
+    <div class="lesson">
+      <section aria-labelledby="morfologia">
+        <h2 id="morfologia">Reconocé las tres formas</h2>
+        <p>En los dos esquemas alargados, el extremo anterior apunta a la derecha. Ubicá primero el núcleo y después el kinetoplasto.</p>
+        <ul class="legend" aria-label="Colores de los esquemas"><li><i class="nucleus"></i>Núcleo</li><li><i class="kinetoplast"></i>Kinetoplasto</li><li><i class="flagellum"></i>Flagelo</li></ul>
+        <div class="morphs">
+          <article><canvas data-form="epi" width="440" height="200" aria-hidden="true"></canvas><h3>Epimastigote</h3><p>Alargado, con el kinetoplasto por delante del núcleo. El flagelo queda libre hacia el extremo anterior.</p><a href="#documento" data-pdf-page="268">Guía · pág. 264</a></article>
+          <article><canvas data-form="tripo" width="440" height="200" aria-hidden="true"></canvas><h3>Tripomastigote</h3><p>Alargado, con el kinetoplasto por detrás del núcleo. El flagelo recorre el cuerpo hacia el extremo anterior.</p><a href="#documento" data-pdf-page="267">Guía · pág. 263</a></article>
+          <article><canvas data-form="ama" width="440" height="200" aria-hidden="true"></canvas><h3>Amastigote</h3><p>Redondeado, con núcleo y kinetoplasto. Se multiplica dentro de las células del mamífero.</p><a href="#documento" data-pdf-page="267">Guía · pág. 263</a></article>
+        </div>
+        <p class="note">Esquemas sin escala. Las micrografías y los dibujos de referencia están en la <a href="#documento" data-pdf-page="267">figura de la pág. 263</a>.</p>
+      </section>
+      <section aria-labelledby="ciclo">
+        <h2 id="ciclo">El ciclo entre la vinchuca y el mamífero</h2>
+        <ol class="cycle">
+          <li><strong>Intestino de la vinchuca.</strong> Después de una ingesta de sangre con tripomastigotes, aparecen los epimastigotes y se multiplican. Más adelante se forman tripomastigotes metacíclicos. <a href="#documento" data-pdf-page="268">Pág. 264</a></li>
+          <li><strong>Contacto con la piel.</strong> La vinchuca elimina la forma metacíclica en sus heces. Al rascarse, la persona puede llevar ese material a una lesión de la piel. <a href="#documento" data-pdf-page="268">Pág. 264</a></li>
+          <li><strong>Célula del mamífero.</strong> El parásito adopta la forma de amastigote y se divide dentro de la célula. <a href="#documento" data-pdf-page="269">Pág. 265</a></li>
+          <li><strong>Sangre.</strong> Vuelven a aparecer tripomastigotes, que circulan y pueden alcanzar otras células. <a href="#documento" data-pdf-page="269">Pág. 265</a></li>
+        </ol>
+        <details><summary>¿Dónde aparecen los lisosomas?</summary><p>Al describir la entrada celular, la guía menciona lisosomas, actina, endosomas tempranos y la vacuola parasitófora. <a href="#documento" data-pdf-page="271">Guía · pág. 267</a></p></details>
+      </section>
+      <section id="training" aria-labelledby="desafio" hidden>
+        <h2 id="desafio">Desafío del vector</h2>
+        <p id="challenge-intro">Reconocé las formas en cuatro momentos del ciclo. El primer acierto desbloquea una pista temporal para la escena de la vinchuca.</p>
+        <button type="button" id="start-trial">Jugar el desafío</button>
+        <div id="trial" hidden>
+          <p class="scene" id="scene"></p>
+          <h3 id="question" tabindex="-1"></h3>
+          <div id="answers" role="group" aria-labelledby="question"></div>
+          <button type="button" class="secondary" id="hint" hidden>Usar Huella de vinchuca</button>
+          <p id="hint-text" hidden>La forma que buscás tiene un nombre propio que la distingue del tripomastigote sanguíneo.</p>
+          <p id="feedback" role="status"></p>
+          <button type="button" id="advance" hidden>Continuar</button>
+        </div>
+      </section>
+    </div>
+    <aside id="documento" aria-labelledby="fuente" data-bytes="24989690">
+      <h2 id="fuente">Guía de la cursada</h2>
+      <p><strong id="source-name">GP CURSADA Microbiologia (2).pdf</strong><br>299 hojas · original en español</p>
+      <label class="file-label" for="pdf">Abrir mi copia del PDF</label>
+      <input id="pdf" type="file" accept="application/pdf,.pdf" aria-describedby="pdf-status">
+      <p class="note" id="pdf-status" role="status">Se abre en este dispositivo. Elegí el archivo para consultar las páginas junto a la ficha.</p>
+      <div id="reader" hidden>
+        <p><strong id="page-label"></strong><br><a id="new-tab" target="_blank" rel="noopener">Abrir el PDF en otra pestaña</a></p>
+        <iframe title="Página de la guía de microbiología" id="pdf-frame"></iframe>
+      </div>
+      <details><summary>Identificar esta edición</summary><p>El número de hoja incluye las cuatro páginas iniciales. La página impresa 263 corresponde a la hoja 267 del PDF.</p><p>SHA-256 del original<br><code id="source-sha">cdc2aaa6068296fc779e36e53b2700d64a7fd0f9a52035809f7a4536a598ab51</code></p></details>
+      <details id="editores"><summary>Continuar con otra IA</summary>
+        <p id="editor-prompt">Para editar Atlas Viral, leé el AGENTS.md de Matraca130/elgamee. Usá el PDF original «GP CURSADA Microbiologia (2).pdf» como única fuente de biología. Citá la página impresa y la hoja del PDF para cada dato o dibujo. Marcá como pendiente lo que la guía no confirme. Identificá las recompensas y los efectos de juego como decisiones de diseño. Si no podés abrir el PDF, pedime el archivo o un enlace con acceso.</p>
+        <p><a id="repo-rules" href="https://github.com/Matraca130/elgamee/blob/main/AGENTS.md#guia-de-microbiologia" target="_blank" rel="noopener">Instrucciones del repositorio</a></p>
+        <button type="button" class="secondary" id="copy" hidden>Copiar instrucción</button><p class="note" id="copy-status" role="status"></p>
+      </details>
+    </aside>
+  </main>
+</body>
+</html>
