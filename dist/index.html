@@ -3,90 +3,104 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Lóbulo hepático</title>
+<title>Atlas Viral · Influenza</title>
 <link rel="stylesheet" href="./jogo.css">
 </head>
 <body>
 <section id="lobulo-game" lang="pt-BR">
-<div id="app" hidden>
+<div id="app">
 <header id="hud" hidden>
- <div class="day" id="day">Semana 1<small>de 10</small></div>
+ <div class="day"><small>Região</small><span id="regionNow">Orofaringe</span></div>
  <div class="bars">
-  <div class="row"><span>Vigor do linfócito</span><span id="hpt">100/100</span></div>
+  <div class="row"><span>Integridade viral</span><span id="hpt">100/100</span></div>
   <div class="bar"><i id="hpb"></i></div>
-  <div class="row"><span id="lvt">Nível 1</span><span id="fbt">Chefes 0/3</span></div>
+  <div class="row"><span id="lvt">Nível 1</span><span id="fbt">Mal-estar 0%</span></div>
   <div class="bar"><i id="xpb"></i></div>
  </div>
- <div class="arena-tools"><button class="arena-base-button" id="crewHud">Base <i class="base-ready" id="crewHudReady" hidden></i></button><button class="icon" id="pauseBtn" aria-label="Pausar">II</button></div>
- <div class="arena-roster" id="arenaRoster" hidden>
-  <b id="arenaWeapon"></b><span id="arenaSkills"></span><span id="arenaTissue"></span>
+ <div class="arena-tools">
+  <button class="arena-base-button" id="crewHud">Base <i class="base-ready" id="crewHudReady" hidden></i></button>
+  <button class="icon" id="pauseBtn" aria-label="Pausar">II</button>
+ </div>
+ <div class="arena-roster">
+  <ol class="region-track" id="regionTrack" aria-label="Percurso da fase">
+   <li aria-current="step">Orofaringe</li><li>Traqueia</li><li>Pulmões</li>
+  </ol>
+  <p class="round-objective" id="arenaTissue"></p>
+  <span id="mucusStatus" hidden>Muco · movimento mais lento</span>
  </div>
 </header>
-<main id="stage" data-phase="intro" aria-label="Arena do lóbulo hepático">
- <canvas id="cv" width="1" height="1" role="img" aria-label="Lóbulo hepático em seis lados, com canais que convergem para a veia central e um linfócito T entre hepatócitos"></canvas>
- <img id="arenaTerrain" src="./terreno-lobulo.webp" alt="" hidden>
+<main id="stage" data-phase="intro" aria-label="Arena respiratória da influenza">
+ <canvas id="cv" width="1" height="1" tabindex="0" role="img" aria-label="Percurso contínuo da orofaringe à traqueia e aos pulmões, com bifurcação dos brônquios"></canvas>
  <div id="toast" role="status" aria-live="polite"></div>
+ <div id="bossBar" class="boss-meter" hidden><strong id="bossName"></strong><div class="bar"><i id="bossFill"></i></div></div>
+ <button class="dash-button" id="dashBtn" type="button" hidden>Dash <small id="dashTime">Pronto</small></button>
  <div class="ov" id="intro">
-  <div class="arena-card arsenal-card">
-   <div class="arena-intro">
-    <div class="hero-portrait">
-     <img id="heroPortrait" src="./linfocito-cd8.webp" width="160" height="160" alt="">
+  <div class="arena-card campaign-card">
+   <div class="campaign-layout">
+    <div class="campaign-copy">
+     <div class="arena-intro">
+      <div class="hero-portrait"><canvas id="virusPortrait" width="112" height="112" aria-hidden="true"></canvas></div>
+      <div><p class="hero-name">Atlas Viral · Fase respiratória</p><h1>Influenza</h1></div>
+     </div>
+     <p class="lead">Você controla um vírus. Aprenda novos poderes e atravesse as defesas do aparelho respiratório.</p>
+     <ol class="campaign-route" aria-label="Objetivos da fase">
+      <li><b>Orofaringe</b><span>Derrote o primeiro chefe e ganhe hemaglutinina.</span></li>
+      <li><b>Traqueia</b><span>Passe pela mucosa e desbloqueie neuraminidase.</span></li>
+      <li><b>Pulmões</b><span>Chegue aos brônquios e enfrente a defesa traqueopulmonar.</span></li>
+     </ol>
+     <p class="mut">Mova com as setas ou arraste. Seus ataques saem automaticamente. Use Espaço ou o botão Dash para desviar.</p>
+     <p class="areanotice" id="arenaNotice" role="status" hidden></p>
+     <div class="btns"><button class="arena-button" id="startBtn">Começar fase</button><button class="arena-button ghost" id="crewIntro">Base dos auxiliares</button></div>
     </div>
-    <div>
-     <h1>Arena do lóbulo</h1>
-     <p class="hero-name">Linfócito T CD8+</p>
-     <p class="lead">Escolha uma arma, monte sua combinação e derrote três chefes.</p>
-    </div>
+    <figure class="route-preview">
+     <img id="arenaTerrain" src="./terreno-respiratorio.webp" width="863" height="1164" alt="Orofaringe no alto, traqueia larga no centro e brônquios que se dividem em direção aos pulmões">
+     <figcaption>Mapa das vias respiratórias</figcaption>
+    </figure>
    </div>
-   <p class="mut">Arraste o dedo ou use as setas para mover. Você ataca automaticamente. Colete fragmentos para escolher habilidades.</p>
-   <p class="areanotice" id="arenaNotice" role="status" hidden></p>
-   <h2 class="arm-heading">Arma inicial</h2>
-   <div id="arsenalChoices" class="build-choices" role="group" aria-label="Arma inicial"></div>
-   <div class="btns"><button class="arena-button" id="startBtn">Começar na arena</button><button class="arena-button ghost" id="crewIntro">Base dos auxiliares</button><span class="mut" id="bestT"></span></div>
    <details class="arena-help">
-    <summary id="fusionCount">Fusões descobertas</summary>
-    <p><span class="rarity-badge" data-rarity="common">Comum</span> e <span class="rarity-badge" data-rarity="rare">Rara</span> aparecem ao subir de nível. As raras saem menos nas ofertas aleatórias.</p>
-    <p><span class="rarity-badge" data-rarity="special">Especial</span> aparece após um chefe. Complete uma receita para concorrer à fusão ou leve sua arma ao nível 2 para evoluí-la.</p>
-    <ul id="fusionRecipes"></ul>
+    <summary>Espaços e raridades</summary>
+    <p>O envoltório tem espaços de ataque, pulso, defesa e apoio. Nucleocapsídeo, movimento e status têm um espaço cada. Escolha uma habilidade por espaço e evolua durante a partida.</p>
+    <p><span class="rarity-badge" data-rarity="common">Comum</span> e <span class="rarity-badge" data-rarity="rare">Rara</span> aparecem nas ofertas. Duas habilidades compatíveis podem liberar uma fusão <span class="rarity-badge" data-rarity="special">Especial</span>.</p>
    </details>
+   <details class="arena-help"><summary id="fusionCount">Fusões descobertas</summary><ul id="fusionRecipes"></ul></details>
    <details class="arena-help">
-    <summary>Entender a arena</summary>
-    <p>Você é um linfócito T CD8+. Aproxime-se dos hepatócitos roxos para eliminar a infecção. Cada célula eliminada contribui para a cicatriz. O Foco viral se recupera enquanto restarem células infectadas.</p>
-    <p>No mapa, os seis espaços porta ficam nas bordas. O sangue corre pelos canais até a veia central.</p>
-   <div class="legend">
-    <div><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><g stroke="#08605f" stroke-width="2" stroke-linecap="round"><path d="M15 1.5v3M15 25.5v3M1.5 15h3M25.5 15h3M5.5 5.5l2 2M22.5 22.5l2 2M24.5 5.5l-2 2M7.5 22.5l-2 2"/></g><circle cx="15" cy="15" r="10" fill="#c9f1ee" stroke="#0e8a8c" stroke-width="2"/><path d="M21 15l-3 5.2h-6L9 15l3-5.2h6z" fill="#0e8a8c"/></svg><span><b>Partícula de Dane</b>vírion com envelope e capsídeo</span></div>
-    <div><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="10" cy="19" r="6.5" fill="#e6eff7" stroke="#8fa9c0" stroke-width="2"/><ellipse cx="20" cy="10" rx="7" ry="3.4" transform="rotate(-30 20 10)" fill="#e6eff7" stroke="#8fa9c0" stroke-width="2"/></svg><span><b>Partículas de HBsAg</b>esferas e filamentos não infecciosos</span></div>
-    <div><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="12" fill="#a77acb"/><circle cx="15" cy="15" r="4.4" fill="#3e2463"/><circle cx="21.5" cy="11" r="1.9" fill="#8fe0dc"/><circle cx="8.5" cy="19.5" r="1.9" fill="#8fe0dc"/></svg><span><b>Hepatócito infectado</b>fábrica de vírions</span></div>
-    <div><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path d="M15 3c6 0 11 4 11 10s-3 12-10 13S3 22 4 15 9 3 15 3z" fill="#e0965a"/><ellipse cx="13" cy="15" rx="5" ry="3.5" fill="#7a3b1a"/></svg><span><b>Célula de Kupffer</b>aliada, fagocita</span></div>
-   </div>
-    <p><a href="https://ictv.global/report/chapter/hepadnaviridae/hepadnaviridae" target="_blank" rel="noopener noreferrer">Morfologia do HBV no ICTV</a></p>
+    <summary>Revisão da influenza</summary>
+    <p>As perguntas trazem o tema e a dificuldade. As fichas ensinam virologia. Os poderes e as fusões fazem parte da ficção do jogo.</p>
+    <button class="arena-button ghost" id="practiceBtn" type="button">Questão fácil de epidemiologia</button>
+    <p class="study-source"><a href="https://www.cdc.gov/flu/php/viruses/antigenic.html" target="_blank" rel="noopener noreferrer">Antígenos da influenza · CDC</a></p>
+   </details>
+   <details class="arena-help study-guide">
+    <summary>43 perguntas do Taller 14</summary>
+    <p>Enunciados em espanhol para rever os temas da guia.</p>
+    <label for="guideTopic">Tema</label>
+    <select id="guideTopic" aria-controls="guideQuestions"></select>
+    <ol id="guideQuestions" class="guide-questions"></ol>
    </details>
   </div>
  </div>
  <div class="ov dim" id="lv" hidden>
   <div class="arena-card" role="dialog" aria-modal="true" aria-labelledby="qText">
-   <p class="mut" id="lvTag">Subiu de nível</p>
-   <h2 id="qText"></h2>
+   <p class="mut" id="lvTag"></p><h2 id="qText"></h2>
    <p class="mut" id="draftHint" hidden></p>
-   <div id="opts"></div>
-   <div class="fb" id="fb" hidden></div>
+   <div id="opts"></div><div class="fb" id="fb" role="status" hidden></div>
    <div id="ups" class="build-choices" hidden></div>
-   <button class="arena-button ghost arena-lesson" id="studyBtn" hidden>Responder questão de HBV</button>
+   <button class="arena-button ghost arena-lesson" id="reviewBtn" type="button" hidden>Revisar esta característica</button>
    <div class="btns stick"><button class="arena-button" id="contBtn" hidden>Continuar</button></div>
   </div>
  </div>
  <div class="ov dim" id="pause" hidden>
-  <div class="arena-card"><h2>Pausado</h2><p class="mut">Sua combinação nesta partida</p><ul class="codex" id="ctr"></ul><div class="btns"><button class="arena-button" id="resumeBtn">Continuar</button><button class="arena-button ghost" id="crewPause">Base dos auxiliares</button><button class="arena-button ghost" id="restartBtn">Nova partida</button></div></div>
+  <div class="arena-card">
+   <h2>Pausa</h2><p class="mut">Seus espaços nesta partida</p><ul class="codex" id="ctr"></ul>
+   <div class="btns"><button class="arena-button" id="resumeBtn">Continuar</button><button class="arena-button ghost" id="crewPause">Base dos auxiliares</button><button class="arena-button ghost" id="restartBtn">Nova partida</button></div>
+  </div>
  </div>
  <div class="ov dim" id="end" hidden>
   <div class="arena-card">
-   <h2 id="endH"></h2>
-   <p class="lead" id="endP"></p>
-   <div class="stats"><div><b id="sInf">0</b>infectados no fim</div><div><b id="sBoss">0/3</b>chefes derrotados</div><div><b id="sF">0%</b>fibrose</div></div>
+   <h2 id="endH"></h2><p class="lead" id="endP"></p>
+   <div class="stats"><div><b id="sInf">0</b>células enfrentadas</div><div><b id="sBoss">0/3</b>regiões concluídas</div><div><b id="sF">0%</b>mal-estar no jogo</div></div>
    <h3>Sua combinação</h3><ul class="codex" id="loadoutEnd"></ul>
-   <p class="mut">Perguntas desta partida</p>
-   <ul class="codex" id="codex"></ul>
-   <div class="btns"><button class="arena-button" id="againBtn">Jogar de novo</button><button class="arena-button ghost" id="crewEnd">Base dos auxiliares</button><span class="mut" id="bestE"></span></div>
+   <div id="runQuizLog" hidden><p class="mut">Perguntas desta partida</p><ul class="codex" id="codex"></ul></div>
+   <div class="btns"><button class="arena-button" id="againBtn">Nova partida</button><button class="arena-button ghost" id="crewEnd">Base dos auxiliares</button></div>
   </div>
  </div>
 </main>
@@ -94,7 +108,7 @@
 <section id="crewHub" aria-labelledby="crewTitle" hidden>
   <header class="crew-top">
     <div class="crew-frame crew-top-inner">
-      <div class="crew-brand"><span class="brand-stamp" aria-hidden="true"><i></i></span><span>Lóbulo hepático</span></div>
+      <div class="crew-brand"><span class="brand-stamp" aria-hidden="true"><i></i></span><span>Atlas Viral</span></div>
       <div class="crew-nav-actions">
         <span class="crew-wallet" title="Moedas da equipe"><span class="coin-mark" aria-hidden="true"></span><strong id="crewCoins">20</strong><span class="wallet-word">moedas</span></span>
         <button type="button" class="crew-arena" id="crewReturn"><span id="crewReturnLabel">Ir para a arena</span><span class="crew-arena-short" id="crewReturnShort" aria-hidden="true">Arena</span></button>
@@ -105,7 +119,7 @@
     <section class="crew-hero" id="crewHero">
       <div class="crew-hero-copy">
         <h1 id="crewTitle">Base dos auxiliares</h1>
-        <p id="crewLead">Escolha um mascote viral para acompanhar você no lóbulo ou sair em missões por moedas e experiência.</p>
+        <p id="crewLead">Escolha um mascote viral para acompanhar você na arena ou sair em missões por moedas e experiência.</p>
       </div>
       <canvas id="crewChart" width="420" height="254" aria-hidden="true"></canvas>
     </section>
@@ -122,6 +136,8 @@
 
 </section>
 <script defer src="./arte-jogo.js"></script>
+<script defer src="./fase-influenza.js"></script>
+<script defer src="./guia-respiratoria.js"></script>
 <script defer src="./jogo.js"></script>
 </body>
 </html>

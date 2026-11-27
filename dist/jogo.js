@@ -1,997 +1,755 @@
 {
 const root=document.getElementById('lobulo-game');
 const $=id=>root.querySelector('#'+id);
-const cv=$('cv'),stage=$('stage'),heroPortrait=$('heroPortrait'),terrain=$('arenaTerrain');
-let ctx=null, frameId=null, arenaObserver=null;
-let frameTime=0, frameCredit=0, cellPaths=null, cellPattern='';
-const FRAME_MS=1000/30;
-const PIXEL_BUDGET=480000;
-const R=330,A=R*Math.sqrt(3)/2,TAU=Math.PI*2,WEEK=18,END=180,MAXSEP=9,CAP=64,SPHMAX=24;
-const reduce=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
-const C={cell:'#ed9e94',cell2:'#e48a87',nuc:'#904b6b',inf:'#ad7acb',infN:'#41245d',dead:'#c74274',teal:'#0e8a8c',tealD:'#08605f',tealL:'#8fe0dc',kup:'#e0965a',cd8:'#8db1e6',cd8N:'#2f2560',fib:'#3b6fb0',fibL:'#9cc0ea',wall:'#6a4a90',ink:'#2b1633',imm:'#4f8fdc'};
-const NORM=[0,1,2,3,4,5].map(k=>[Math.cos(k*Math.PI/3),Math.sin(k*Math.PI/3)]);
-const PORTALS=NORM.map(([x,y])=>({x:y*R*.9,y:-x*R*.9}));
-const TOP=[
-{id:'mor',name:'Morfologia',ctr:'Anticorpos anti-HBs',tiers:[
- ['Mira nos vírions','Os disparos escolhem a partícula de Dane e deixam as esferas de HBsAg por último.'],
- ['Neutralização','+50% de dano nos vírions e mais dano no chefe.'],
- ['Rajada neutralizante','+1 projétil, e cada disparo atravessa um alvo.']]},
-{id:'pat',name:'Patogênese',ctr:'Linfócitos T CD8+',tiers:[
- ['Citotoxicidade','Você elimina hepatócitos infectados mais rápido e de mais longe.'],
- ['Citocinas (IFN-γ e TNF)','Curam hepatócitos infectados por perto, sem matá-los e sem cicatriz.'],
- ['Depuração ampliada','As citocinas agem num raio maior e mais depressa.']]},
-{id:'cli',name:'Clínica',ctr:'Recuperação hepática',tiers:[
- ['Regeneração','Hepatócitos mortos voltam depois de alguns segundos.'],
- ['Resolução','A fibrose recua aos poucos.'],
- ['Recuperação completa','+30 de vigor máximo, cura 30 e a regeneração fica mais rápida.']]},
-{id:'vac',name:'Vacinação',ctr:'Imunidade anti-HBs',tiers:[
- ['Vacina','30% dos hepatócitos saudáveis ficam imunes: os vírions que chegam neles são neutralizados.'],
- ['Resposta de memória','55% dos hepatócitos saudáveis ficam imunes.'],
- ['Vacina + HBIG','80% dos hepatócitos saudáveis ficam imunes.']]},
-{id:'tra',name:'Tratamento',ctr:'Análogos de nucleos(t)ídeos',tiers:[
- ['Inibe a polimerase','Hepatócitos infectados fabricam vírions na metade da velocidade.'],
- ['Supressão profunda','A produção de vírions cai 80%. As células infectadas continuam lá, com cccDNA.'],
- ['Terapia contínua','Na arena, a produção de vírions cai 90%.']]}
-];
-const Q=[
-{t:'mor',q:'Qual é o genoma do vírus da hepatite B?',a:['DNA circular, parcialmente de fita dupla (cerca de 3,2 kb)','RNA de fita simples, polaridade positiva','DNA de fita dupla linear e grande (cerca de 150 kb)'],e:'O HBV (família Hepadnaviridae) tem um genoma minúsculo: DNA circular relaxado, parcialmente de fita dupla, com cerca de 3,2 kb.'},
-{t:'mor',q:'Como se chama a partícula completa e infecciosa do HBV?',a:['Partícula de Dane, com cerca de 42 nm','Esfera de HBsAg, com cerca de 22 nm','Corpúsculo de Councilman'],e:'A partícula de Dane tem envelope com HBsAg e, dentro, um capsídeo icosaédrico com o genoma e a polimerase. O corpúsculo de Councilman é um hepatócito apoptótico, não um vírus.'},
-{t:'mor',q:'As esferas e os filamentos de 22 nm que sobram no sangue são formados por quê?',a:['Só por HBsAg, sem capsídeo nem genoma','Capsídeo com DNA viral dentro','Polimerase viral livre'],e:'Hepatócitos infectados secretam grandes quantidades dessas partículas subvirais. Sem capsídeo nem genoma, elas não infectam.'},
-{t:'mor',q:'Pela classificação de Baltimore, onde fica o HBV?',a:['Grupo VII: DNA com transcrição reversa','Grupo I: DNA de fita dupla','Grupo VI: RNA com transcrição reversa'],e:'Mesmo com genoma de DNA, o HBV replica por um intermediário de RNA (pgRNA) que a polimerase viral transcreve de volta em DNA. O HIV, que também usa transcrição reversa, é do grupo VI.'},
-{t:'mor',q:'Qual proteína forma o capsídeo icosaédrico do HBV?',a:['A proteína do core (HBcAg)','O antígeno de superfície (HBsAg)','A proteína X (HBx)'],e:'O capsídeo é montado pela proteína do core e guarda o genoma e a polimerase. O HBsAg fica no envelope.'},
-{t:'mor',q:'Quantos quadros de leitura (ORFs) o genoma do HBV tem, e o que eles codificam?',a:['Quatro, sobrepostos: core, superfície, polimerase e HBx','Um só, que gera uma poliproteína única','Dois: um pro capsídeo e outro pro envelope'],e:'A sobreposição dos quadros de leitura aproveita ao máximo um genoma de apenas cerca de 3,2 kb.'},
-{t:'pat',q:'Qual receptor do hepatócito o HBV usa para entrar na célula?',a:['NTCP, um transportador de ácidos biliares','CD4','ACE2'],e:'O domínio pré-S1 da proteína grande do envelope se liga ao NTCP, receptor específico do fígado. Isso ajuda a explicar o tropismo hepático do vírus.'},
-{t:'pat',q:'Como o HBV copia o próprio genoma dentro do capsídeo?',a:['Transcreve o pgRNA de volta em DNA, com a polimerase viral (transcriptase reversa)','Copia o DNA só pela DNA polimerase da célula, de forma semiconservativa','Copia o RNA com uma RNA polimerase dependente de RNA'],e:'O pgRNA é transcrito reversamente em DNA pela polimerase viral. Diferente dos retrovírus, a integração no genoma da célula não é uma etapa obrigatória.'},
-{t:'pat',q:'O que é o cccDNA do HBV?',a:['Um minicromossomo circular fechado no núcleo, molde da transcrição viral','O genoma em fita simples que vai dentro do vírion','Um RNA que codifica a polimerase'],e:'O DNA relaxado que vem no vírion é reparado no núcleo e vira cccDNA, molde do pgRNA e dos mRNAs. Os antivirais atuais não o eliminam, por isso a cura é rara.'},
-{t:'pat',q:'Na hepatite B, de onde vem a maior parte da lesão do hepatócito?',a:['Da resposta imune, sobretudo linfócitos T CD8+ contra hepatócitos infectados','Do efeito citopático direto do vírus','De uma toxina produzida pelo HBV'],e:'O HBV é pouco ou nada citopático. Em estudos com chimpanzés, hepatócitos já infectados não mostravam lesão antes da chegada dos linfócitos T específicos.'},
-{t:'pat',q:'Qual vírus precisa do HBsAg do HBV para formar o próprio envelope?',a:['Vírus da hepatite D (delta)','Vírus da hepatite C','Vírus da hepatite E'],e:'O HDV é um vírus defeituoso: usa o HBsAg como envelope e só infecta quem tem HBV, por coinfecção ou superinfecção. Ele também entra pelo NTCP.'},
-{t:'pat',q:'Na hepatite B crônica, o que acontece com os linfócitos T CD8+ específicos contra o vírus?',a:['Ficam exauridos e respondem mal','Se multiplicam sem controle e eliminam o vírus','Desaparecem do fígado por completo'],e:'A exposição prolongada ao antígeno viral leva à exaustão das células T HBV-específicas, e a resposta fica fraca.'},
-{t:'cli',q:'Em que fase da vida a infecção pelo HBV mais costuma cronificar?',a:['Em recém-nascidos (cerca de 90% cronificam)','Em adultos jovens (cerca de 90% cronificam)','Em idosos (quase todos cronificam)'],e:'Pelo CDC, cerca de 90% dos lactentes infectados e cerca de 30% das crianças infectadas entre 1 e 5 anos ficam cronicamente infectados. Entre adultos, cerca de 95% se recuperam.'},
-{t:'cli',q:'Qual padrão sorológico indica hepatite B aguda?',a:['HBsAg positivo e anti-HBc IgM positivo','HBsAg negativo e anti-HBs positivo','HBsAg positivo e anti-HBc IgM negativo'],e:'O anti-HBc IgM indica infecção recente (menos de 6 meses). HBsAg positivo com IgM negativo sugere infecção crônica; anti-HBs com HBsAg negativo indica imunidade.'},
-{t:'cli',q:'Qual padrão indica imunidade só por vacina, sem infecção prévia?',a:['Anti-HBs positivo, com anti-HBc total negativo','Anti-HBs positivo, com anti-HBc total positivo','HBsAg positivo, com anti-HBs negativo'],e:'A vacina só tem HBsAg, então gera anti-HBs mas não anti-HBc. Anti-HBs com anti-HBc positivo indica imunidade por infecção natural resolvida.'},
-{t:'cli',q:'Na janela imunológica da hepatite B aguda (HBsAg já negativo e anti-HBs ainda negativo), qual marcador costuma estar positivo?',a:['Anti-HBc IgM','Anti-HBe','Anti-HBs'],e:'O anti-HBc IgM fecha o diagnóstico de infecção aguda quando o HBsAg já sumiu e o anti-HBs ainda não apareceu.'},
-{t:'cli',q:'Qual destas NÃO é uma via de transmissão do HBV?',a:['Fecal-oral, por água e alimentos','Sexual','Perinatal, de mãe para filho'],e:'O HBV passa por sangue e fluidos corporais: vias parenteral, sexual e perinatal. A via fecal-oral é a das hepatites A e E.'},
-{t:'cli',q:'O que a presença do HBeAg sugere?',a:['Replicação viral ativa e maior infectividade','Imunidade pela vacina','Cura da infecção'],e:'O HBeAg vem da proteína pré-core e é secretado. Sua presença marca replicação ativa; a perda do HBeAg com surgimento de anti-HBe (soroconversão) costuma acompanhar menor replicação.'},
-{t:'vac',q:'Qual é o antígeno da vacina contra hepatite B?',a:['HBsAg recombinante','Vírus inteiro vivo atenuado','HBcAg purificado'],e:'A vacina é de subunidade: HBsAg recombinante, que induz anticorpos anti-HBs. Não contém vírus vivo nem o core.'},
-{t:'vac',q:'Que nível de anti-HBs costuma indicar proteção após a vacina?',a:['Pelo menos 10 mUI/mL','Qualquer valor detectável, mesmo 1 mUI/mL','Acima de 10.000 mUI/mL'],e:'Em pessoas imunocompetentes, anti-HBs de 10 mUI/mL ou mais, medido 1 a 2 meses após o esquema completo, indica resposta protetora.'},
-{t:'vac',q:'Como se previne a hepatite D?',a:['Vacinando contra a hepatite B','Com uma vacina específica contra o HDV','Com imunoglobulina anti-HDV'],e:'O HDV depende do HBsAg do HBV pra formar o envelope, então só infecta quem tem HBV. Prevenir a hepatite B previne a D.'},
-{t:'vac',q:'Que tipo de imunidade a vacina dá?',a:['Ativa: anticorpos anti-HBs e memória imunológica','Passiva: anticorpos prontos de outra pessoa','Nenhuma imunidade humoral, só celular'],e:'A vacina estimula o próprio organismo a produzir anti-HBs e células de memória. Anticorpos prontos, como na HBIG, são imunidade passiva.'},
-{t:'vac',q:'O que é a HBIG?',a:['Imunoglobulina com anticorpos anti-HBs prontos (imunidade passiva)','Uma vacina de vírus atenuado','Um antiviral oral'],e:'A imunoglobulina anti-hepatite B dá proteção imediata, mas temporária, porque os anticorpos já vêm prontos.'},
-{t:'tra',q:'Qual é o alvo do tenofovir e do entecavir contra o HBV?',a:['A polimerase viral, na etapa de transcrição reversa','A protease viral','A integrase viral'],e:'São análogos de nucleos(t)ídeos que bloqueiam a transcrição reversa do pgRNA. Protease e integrase são alvos de antivirais contra outros vírus, como o HIV.'},
-{t:'tra',q:'Os antivirais orais atuais costumam curar a hepatite B crônica?',a:['Não: suprimem o vírus, mas o cccDNA persiste','Sim, em seis meses de tratamento','Sim, eliminam o HBsAg na maioria dos casos'],e:'Eles reduzem a replicação e o risco de cirrose e câncer, mas não eliminam o cccDNA. Pela OMS, a maioria precisa manter o tratamento por toda a vida.'},
-{t:'tra',q:'Qual é o tratamento específico da hepatite B aguda na maioria dos casos?',a:['Suporte clínico: não há antiviral específico de rotina','Tenofovir por 6 meses','Corticoide em doses altas'],e:'Segundo a OMS, não há tratamento específico para a hepatite B aguda: o cuidado é de suporte, e a maioria dos adultos se recupera.'},
-{t:'tra',q:'Por que o tratamento da hepatite B crônica costuma ser tão prolongado?',a:['O cccDNA continua nos hepatócitos e pode reativar a replicação se o tratamento parar','O vírus fica latente no sangue, fora das células','Os antivirais só agem por poucas semanas'],e:'O cccDNA persiste no núcleo e serve de molde pra novas rodadas de replicação. Por isso o tratamento costuma ser longo, muitas vezes por tempo indefinido.'}
-];
-const COMBO={q:'Um recém-nascido de mãe HBsAg positiva: o que fazer logo ao nascer?',a:['Vacina e HBIG, em até 12 horas de vida','Só a vacina, a partir do segundo mês','Só observar e testar o bebê aos 6 meses'],e:'Segundo o CDC, vacina e HBIG nas primeiras 12 horas, em locais de aplicação diferentes. A vacina dá proteção duradoura; a HBIG cobre o intervalo até a vacina funcionar.'};
-let S=null,W=1,H=1,dpr=1,sc=1,ox=0,oy=0,bg=null,best=0,curQ=null,curT=null,curCombo=false,answered=false,last=performance.now(),lastH='';
-let seed=1;
-const rnd=()=>(seed=seed*16807%2147483647)/2147483647;
-const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-const joy={on:false,id:null,ox:0,oy:0,x:0,y:0};
+const cv=$('cv'), stage=$('stage'), terrain=$('arenaTerrain');
+const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const TAU=Math.PI*2, FRAME_MS=1000/30;
 const keys=new Set();
-const tEl=$('toast');
-let toastQ=[],toastT=0,toastGap=0;
-const hEl={day:$('day'),hpt:$('hpt'),hpb:$('hpb'),lvt:$('lvt'),fbt:$('fbt'),xpb:$('xpb')};
+const joy={on:false,id:null,ox:0,oy:0,x:0,y:0};
+const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
+const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 
-function inset(x,y){let m=1e9;for(const[nx,ny]of NORM)m=Math.min(m,A-(x*nx+y*ny));return m}
-function clampHex(o,m){for(const[nx,ny]of NORM){const d=A-(o.x*nx+o.y*ny);if(d<m){o.x-=(m-d)*nx;o.y-=(m-d)*ny}}}
-function edgeR(a){const cx=Math.cos(a),cy=Math.sin(a);let m=1e9;for(const[nx,ny]of NORM){const d=cx*nx+cy*ny;if(d>1e-6)m=Math.min(m,A/d)}return m}
-function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function fibPct(){return Math.round(100*S.sep.length/MAXSEP)}
-function pips(n){return '●'.repeat(n)+'○'.repeat(3-n)}
-
-function setInf(s,c){if(c.st!==0)return false;c.st=1;c.p=0;c.imm=false;c.prod=4+rnd()*6;c.dec=1+rnd()*2;c.kt=0;c.cy=0;s.infected++;s.totalInf++;return true}
-function newState(weapon=selectedWeapon){
- seed=(Date.now()%2147483646)+1;
- const tri=PORTALS;
- const cells=[];
- for(let k=0;k<24;k++){const a=k*TAU/24,ca=Math.cos(a),sa=Math.sin(a);for(let r=62,i=0;r<R;r+=24,i++){const j=(rnd()-.5)*6,x=ca*r-sa*j,y=sa*r+ca*j;if(inset(x,y)>18&&tri.every(t=>Math.hypot(t.x-x,t.y-y)>40))cells.push({x,y,r:7.4+rnd()*1.6,st:0,p:0,ph:rnd()*TAU,alt:(i+k)%2,imm:false,prod:0,dec:0,kt:0,cy:0,rg:0})}}
- const kup=[];let tries=0;
- while(kup.length<7&&tries++<500){const a=(Math.floor(rnd()*24)+.5)*TAU/24,r=110+rnd()*150,x=Math.cos(a)*r,y=Math.sin(a)*r;if(inset(x,y)>40&&kup.every(k=>Math.hypot(k.x-x,k.y-y)>95)&&Math.hypot(x,y+95)>120)kup.push({x,y,r:21,reach:64,ph:rnd()*TAU,grab:0,hit:0,cd:0,tg:null})}
- const rbc=[];
- for(let i=0;i<(reduce?0:24);i++){
-  const a=(Math.floor(rnd()*24)+.5)*TAU/24,length=edgeR(a)-11;
-  rbc.push({a,length,r:30+rnd()*(length-30),sp:26+rnd()*22});
- }
- const p={x:0,y:-95,r:15,hp:100,max:100,fx:0,fy:1,
-  facing:1,walk:0,castAt:-1,castFacing:1};
- const s={phase:'intro',t:0,clock:0,tri,cells,kup,rbc,p,en:[],pr:[],orbs:[],sep:[],puff:[],
-  build:createBuild(weapon),chest:null,draft:null,bossWins:0,nextBoss:0,
-  st:{spd:145,cd:.20,shots:1,reach:13,mag:76,lvl:1,xp:0,need:3,aim:0,dmgE:1,pierce:0,bm:.8,killT:.7,cytoR:0,cytoT:3.2,regen:0,sepT:0,prodMul:1,immP:0},
-  tier:{mor:0,pat:0,cli:0,vac:0,tra:0},
-  pending:0,infected:0,totalInf:0,killsC:0,cured:0,kills:0,nSph:0,log:[],seen:{},hurt:0,used:new Set(),comboDone:false,immAll:0,
-  waveT:7,boss:null,bossDown:false,cirr:false,sepClock:0};
- for(const k of shuffle([0,1,2,3,4,5]).slice(0,3)){const t=tri[k],near=cells.filter(c=>c.st===0&&Math.hypot(c.x-t.x,c.y-t.y)<120);if(near.length)setInf(s,near[Math.floor(rnd()*near.length)])}
- for(let i=0;i<2;i++)s.orbs.push({x:p.x+(rnd()-.5)*75,y:p.y+40+(rnd()-.5)*34,t:rnd()*TAU});
- s.orbs.push({x:p.x,y:p.y+110,t:rnd()*TAU});
- return s;
-}
-function mkDane(x,y){return{type:'dane',x,y,r:11,hp:20,max:20,sp:46+rnd()*12,dps:6,tgt:null,bind:0,rt:rnd()*.4,hit:0,ph:rnd()*TAU}}
-function mkSph(x,y){const f=rnd()<.35;return{type:'sph',x,y,r:f?10:8.5,hp:12,max:12,sp:24+rnd()*10,dps:2.5,fil:f,hit:0,ph:rnd()*TAU,wob:rnd()*TAU}}
-function mkBoss(x,y){
- const index=S.nextBoss;
- const boss=BOSSES[index];
- return {type:'boss',index,x,y,r:boss.radius,hp:boss.hp,max:boss.hp,sp:boss.speed,dps:boss.damage,
-  hit:0,ph:0,windup:0,charge:2.3};
-}
-function posed(){S.en.push(mkDane(S.tri[0].x,S.tri[0].y+30),mkDane(S.tri[3].x,S.tri[3].y-30))}
-function spawn(type){
- let t=null;for(let i=0;i<8;i++){const c=S.tri[Math.floor(rnd()*6)];if(dist(c,S.p)>150){t=c;break}}
- if(!t)return null;
- const e=type==='boss'?mkBoss(t.x*.69,t.y*.69):mkDane(t.x+(rnd()-.5)*24,t.y+(rnd()-.5)*24);
- S.en.push(e);return e;
-}
-function once(k,m){if(!S.seen[k]){S.seen[k]=1;toast(m)}}
-
-function toast(m){toastQ.push(m)}
-function tickToast(dt){if(toastT>0){toastT-=dt;if(toastT<=0){tEl.classList.remove('show');toastGap=.4}}else if(toastGap>0)toastGap-=dt;else if(toastQ.length){tEl.textContent=toastQ.shift();tEl.classList.add('show');toastT=2.8}}
-
-function push(o,k,kr){const dx=o.x-k.x,dy=o.y-k.y,d=Math.hypot(dx,dy),m=o.r+kr;if(d>0&&d<m){o.x+=dx/d*(m-d);o.y+=dy/d*(m-d)}}
-function pushWalls(o){for(const s of S.sep){const n=Math.floor(s.shown);for(let i=0;i<n;i++)push(o,s.nodes[i],8)}}
-function wallHit(b){for(const s of S.sep){const n=Math.floor(s.shown);for(let i=0;i<n;i++){const w=s.nodes[i];if(Math.hypot(w.x-b.x,w.y-b.y)<10)return true}}return false}
-function nearHealthy(e,md){let bc=null,bd=md;for(const c of S.cells)if(c.st===0){const d=dist(c,e);if(d<bd){bd=d;bc=c}}return bc}
-function drop(x,y,n){for(let i=0;i<n;i++)S.orbs.push({x:x+(rnd()-.5)*14,y:y+(rnd()-.5)*14,t:rnd()*TAU})}
-function kill(c){c.st=2;c.kt=0;c.cy=0;c.rg=S.st.regen||0;S.infected--;S.killsC++;drop(c.x,c.y,3);once('dead','Hepatócito infectado morto pela resposta imune: vira corpúsculo de Councilman, encolhido e bem eosinofílico.');if(S.killsC%6===0)addSeptum()}
-function cure(c){c.st=0;c.kt=0;c.cy=0;S.infected--;S.cured++;drop(c.x,c.y,1);once('cure','As citocinas curaram o hepatócito sem matá-lo: nada de cicatriz.')}
-function regrow(c){c.st=0;c.rg=0;c.imm=rnd()<S.st.immP}
-function addSeptum(){if(S.sep.length>=MAXSEP){S.cirr=true;return}const i=Math.floor(rnd()*6),a=S.tri[i];const b=rnd()<.6?S.tri[(i+(rnd()<.5?1:5))%6]:{x:a.x*.38,y:a.y*.38};const L=dist(a,b),n=Math.floor(L/15),nodes=[];
- for(let s=1;s<n;s++){const x=a.x+(b.x-a.x)*s/n,y=a.y+(b.y-a.y)*s/n;if(Math.hypot(x-S.p.x,y-S.p.y)>50)nodes.push({x:x+(rnd()-.5)*4,y:y+(rnd()-.5)*4})}
- S.sep.push({nodes,shown:0});once('fib','Células estreladas ativadas: com a lesão vem a fibrose. Em azul, como no tricrômico de Masson.')}
-function gain(n){
- const st=S.st;st.xp+=n;
- while(st.xp>=st.need){st.xp-=st.need;st.lvl++;st.need=Math.min(11,3+st.lvl);S.pending++}
-}
-function bind(e){
- const c=e.tgt;e.hp=0;e.gone=true;
- if(c.imm||S.immAll>0){S.puff.push({x:e.x,y:e.y,t:.5});once('imm','Anticorpos anti-HBs neutralizaram o vírion antes de ele infectar o hepatócito.');return}
- if(!setInf(S,c))return;once('inf','Um vírion se ligou ao NTCP e infectou um hepatócito: agora ele fabrica mais vírions.');
-}
-function reimmunize(){const hl=S.cells.filter(c=>c.st===0),want=Math.round(hl.length*S.st.immP);let have=hl.filter(c=>c.imm).length;for(const c of shuffle(hl.filter(c=>!c.imm))){if(have>=want)break;c.imm=true;have++}}
-function applyTier(id,n){
- const st=S.st,P=S.p;
- if(id==='mor'){if(n===1){st.aim=1;st.bm=.94}else if(n===2){st.dmgE=1.35;st.bm=1}else{st.shots+=1;st.pierce=1;st.bm=1.1}}
- else if(id==='pat'){if(n===1){st.killT=.45;st.reach=22}else if(n===2){st.cytoR=60;st.cytoT=3.2}else{st.cytoR=95;st.cytoT=1.8}}
- else if(id==='cli'){if(n===1){st.regen=28;for(const c of S.cells)if(c.st===2)c.rg=st.regen}else if(n===2){st.sepT=20}else{P.max+=30;P.hp=Math.min(P.max,P.hp+30);st.regen=14}}
- else if(id==='vac'){st.immP=[0,.3,.55,.8][n];reimmunize()}
- else if(id==='tra'){st.prodMul=[1,.5,.2,.1][n]}
-}
-
-const WEAPONS = {
- dart: {name:'Dardo', icon:'➤', color:'#3663bd', desc:'Disparo preciso de longo alcance.',
-  range:250, speed:370, damage:17, interval:.59, shots:1, spread:0,
-  evolution:{name:'Dardo Cometa', desc:'Os dardos atravessam até dois alvos extras e chegam mais longe.'}},
- fan: {name:'Leque', icon:'⋔', color:'#aa501c', desc:'Três disparos em cone. Forte de perto.',
-  range:178, speed:340, damage:12, interval:.72, shots:3, spread:.28,
-  evolution:{name:'Leque Solar', desc:'Cinco disparos atravessam um alvo extra e cobrem um cone mais largo.'}},
- orbit: {name:'Órbita', icon:'◎', color:'#316b5d', desc:'Anel de energia que acerta ao redor.',
-  range:97, speed:0, damage:19, interval:.70, shots:0, spread:0,
-  evolution:{name:'Órbita Gêmea', desc:'Dois anéis. O segundo alcança mais longe e empurra os inimigos.'}}
-};
-const RARITIES = {
- common: {label:'Comum', weight:3},
- rare: {label:'Rara', weight:1},
- special: {label:'Especial'}
-};
-const SKILLS = {
- mark: {rarity:'common', name:'Marca', icon:'◇', color:'#8d4384', line:'Acertos marcam o alvo. Acertos seguintes dão +25% de dano.',
-  next:'Marcas duram 5 segundos e dão +40% de dano.'},
- link: {rarity:'rare', name:'Ricochete', icon:'↝', color:'#4363ad', line:'Um disparo da rajada salta para um inimigo próximo, com 35% do dano.',
-  next:'O salto alcança mais longe e causa 55% do dano.'},
- shield: {rarity:'rare', name:'Barreira', icon:'⬡', color:'#32776b', line:'Bloqueia um golpe e protege por 1 segundo. Recarga de 13 segundos.',
-  next:'A Barreira recarrega em 9 segundos.'},
- pulse: {rarity:'rare', name:'Pulso', icon:'◉', color:'#7849a4', line:'A cada terceiro ataque, uma onda de dano sai de você.',
-  next:'As ondas ficam maiores e causam mais dano.'},
- magnet: {rarity:'common', name:'Ímã', icon:'∪', color:'#87601b', line:'Atrai os fragmentos a uma distância maior.',
-  next:'O alcance de coleta aumenta mais uma vez.'},
- reserve: {rarity:'common', name:'Reserva', icon:'✦', color:'#a34656', line:'Cada fragmento recupera 2 pontos de vigor.',
-  next:'Cada fragmento recupera 3 pontos de vigor.'}
-};
-const FUSIONS = {
- constellation: {name:'Constelação', needs:['mark','link'], icon:'✧', color:'#7a45a4',
-  desc:'Acertar um alvo marcado faz a rajada saltar e marcar até dois inimigos.'},
- counter: {name:'Contrapulso', needs:['shield','pulse'], icon:'⬡', color:'#286a69',
-  desc:'Quando a Barreira bloqueia um golpe, solta uma onda forte que empurra os inimigos.'},
- amber: {name:'Circuito de Âmbar', needs:['magnet','reserve'], icon:'✦', color:'#976019',
-  desc:'A cada quatro fragmentos, recupera 4 de vigor e dispara até três dardos.'},
- guided: {name:'Pulso Guiado', needs:['mark','pulse'], icon:'⊙', color:'#924265',
-  desc:'O Pulso explode no alvo marcado da rajada e causa dano extra naquela área.'}
-};
-const BOSSES = [
- {name:'Sentinela', art:'sentinel', at:24, hp:129, speed:46, damage:12, radius:28, wave:89, period:4.1, color:'#a85d27',
-  cue:'A Sentinela prepara um golpe circular. Saia do anel antes que ele feche.'},
- {name:'Guardião da Colmeia', art:'guardian', at:69, hp:234, speed:39, damage:15, radius:35, wave:106, period:3.8, color:'#814b9a',
-  cue:'O Guardião chama reforços. Desvie da onda e limpe o espaço ao redor.'},
- {name:'Foco viral', art:'focus', at:114, hp:342, speed:35, damage:17, radius:42, wave:117, period:3.5, color:'#0e8a8c',
-  cue:'Chegou o Foco viral. Reduza os hepatócitos infectados para desacelerar a recuperação dele.'}
+const SLOTS=[
+ ['ataque','Envoltório · ataque'],
+ ['pulso','Envoltório · pulso'],
+ ['defesa','Envoltório · defesa'],
+ ['apoio','Envoltório · apoio'],
+ ['nucleo','Nucleocapsídeo'],
+ ['movimento','Movimento'],
+ ['status','Status']
 ];
-let selectedWeapon='dart';
-const currentWeapon=()=>WEAPONS[S.build.weapon];
-const skillRank=id=>S.build.skills[id]||0;
-const ownsFusion=id=>S.build.fusions.has(id);
-const weaponName=()=>S.build.evolved?currentWeapon().evolution.name:currentWeapon().name;
+const RARITIES={common:{label:'Comum',weight:3},rare:{label:'Rara',weight:1},special:{label:'Especial'}};
+const TRAITS={
+ ha:{slot:'ataque',name:'Hemaglutinina',icon:'✺',color:'#a45826',rarity:'common',
+  desc:'Fortalece o disparo automático da partida.',
+  study:'A hemaglutinina (HA) é uma proteína do envoltório. Ela ajuda o influenza a se ligar à célula. Anticorpos contra HA podem neutralizar o vírus.'},
+ na:{slot:'pulso',name:'Neuraminidase',icon:'◎',color:'#26797b',rarity:'common',
+  desc:'Solta um pulso em área a cada três ataques.',
+  study:'A neuraminidase (NA) também fica no envoltório. Ela ajuda a liberar as novas partículas virais. Anticorpos contra NA podem contribuir para a proteção e reduzir a gravidade.'},
+ shell:{slot:'defesa',name:'Membrana firme',icon:'⬡',color:'#396586',rarity:'rare',
+  desc:'Amortece parte do dano dos ataques da arena.'},
+ veil:{slot:'defesa',name:'Véu cintilante',icon:'✧',color:'#7a4793',rarity:'common',
+  desc:'Aumenta a integridade máxima e recupera parte dela ao subir de nível.'},
+ magnet:{slot:'apoio',name:'Anel coletor',icon:'∪',color:'#8c621e',rarity:'common',
+  desc:'Atrai fragmentos de mais longe.'},
+ core:{slot:'nucleo',name:'Núcleo estável',icon:'◇',color:'#705196',rarity:'rare',
+  desc:'Aumenta o dano dos disparos e dos pulsos.'},
+ dash:{slot:'movimento',name:'Impulso',icon:'»',color:'#3f658a',rarity:'common',
+  desc:'Dash curto. As melhorias reduzem a recarga.'},
+ reserve:{slot:'status',name:'Reserva de energia',icon:'✦',color:'#a34864',rarity:'common',
+  desc:'Recupera integridade lentamente durante a partida.'}
+};
+const FUSIONS={
+ resonancia:{name:'Ressonância violeta',needs:['ha','na'],icon:'✹',color:'#7a43a8',
+  desc:'Os pulsos ganham um segundo anel violeta, de alcance maior.'}
+};
+const SLOT_NAMES=Object.fromEntries(SLOTS);
+const OPTIONAL=['shell','veil','magnet','core','dash','reserve'];
+const playerArt={look:'orbit',colors:['#ff916f','#a4405d','#ffd4a3']};
+const defenseArt={
+ cell:{look:'box',colors:['#efb084','#bd6679','#ffe5c3']},
+ patrol:{look:'tuft',colors:['#85bbdd','#485b96','#d1eff0']},
+ watch:{look:'shell',colors:['#9bd9c5','#458787','#e4f5c6']},
+ airway:{look:'spark',colors:['#79b2d6','#4d5d98','#deefff']},
+ lungs:{look:'scallop',colors:['#bb7ec2','#663b87','#f8cae8']}
+};
+const bodyCache=new Map();
+const mapCache=document.createElement('canvas');
+mapCache.width=respiratory.width;mapCache.height=respiratory.height;
 
-function createBuild(weapon){
- return {weapon,rank:1,evolved:false,skills:{},fusions:new Set(),casts:0,fragments:0,
-  barrierReady:0,barrierUntil:0,fusionMissed:false,effects:[]};
-}
-function armStats(){
- const arm=currentWeapon(),build=S.build;
- const evolved=build.evolved;
- return {range:arm.range+(build.rank-1)*9+(evolved?29:0),
-  speed:arm.speed, damage:arm.damage*(1+.24*(build.rank-1)+(evolved ? .40 : 0)),
-  interval:arm.interval/(1+.12*(build.rank-1)+(evolved ? .18 : 0)),
-  shots:arm.shots ? arm.shots+2*(S.st.shots-1)+(evolved&&build.weapon==='fan'?2:0) : 0,
-  spread:arm.spread+(evolved&&build.weapon==='fan' ? .035 : 0),
-  pierce:S.st.pierce+(evolved?(build.weapon==='dart'?2:1):0),color:arm.color};
-}
-function mend(amount){S.p.hp=Math.min(S.p.max,S.p.hp+amount)}
-function enemiesNear(point,radius,skip=null){
- return S.en.filter(e=>e!==skip&&e.hp>0&&dist(e,point)<radius+e.r)
-  .sort((a,b)=>dist(a,point)-dist(b,point));
-}
-function effect(visual){
- if(S.build.effects.length>=24)S.build.effects.shift();
- const duration=reduce ? .16 : .30;
- S.build.effects.push({...visual,life:duration,max:duration});
-}
-function ring(point,r,color){effect({x:point.x,y:point.y,r,color})}
-function spark(from,to,color){effect({x:from.x,y:from.y,x2:to.x,y2:to.y,color})}
-function harm(enemy,damage){
- const {dmgE,bm}=S.st;
- const modifier=enemy.type==='boss'?dmgE*bm:enemy.type==='dane'?dmgE:1;
- enemy.hp-=damage*modifier;enemy.hit=.10;
-}
-function strike(enemy,damage,canJump){
- const mark=skillRank('mark'),link=skillRank('link');
- const marked=mark&&enemy.markedUntil>S.t;
- harm(enemy,damage*(marked?(mark===1?1.25:1.40):1));
- if(mark)enemy.markedUntil=S.t+(mark===1?3:5);
- if(!link||!canJump)return;
- const constellation=marked&&ownsFusion('constellation');
- const nearby=enemiesNear(enemy,link===1?108:145,enemy).slice(0,constellation?2:1);
- for(const other of nearby){
-  const factor=constellation ? .66 : link===1 ? .35 : .55;
-  harm(other,damage*factor);
-  if(constellation)other.markedUntil=S.t+(mark===1?3:5);
-  spark(enemy,other,constellation?'#884ab3':'#4c77cd');
+let S=null, ctx=null, frameId=null, observer=null;
+let W=1,H=1,dpr=1,scale=1,ox=0,oy=0,lastFrame=0,lastHud='';
+let toastUntil=0;
+
+function sprite(type,rank=0) {
+ const key=type+'-'+rank;
+ if(!bodyCache.has(key)) {
+  const art=type==='player'?playerArt:defenseArt[type];
+  bodyCache.set(key,arenaArt.creature(art,rank,type!=='player'));
  }
+ return bodyCache.get(key);
 }
-function areaHit(point,radius,damage,color,pushBack=false){
- ring(point,radius,color);
- for(const enemy of enemiesNear(point,radius)){
-  harm(enemy,damage);
-  if(pushBack&&enemy.type!=='boss'){
-   const distance=dist(enemy,point)||1;
-   enemy.x+=(enemy.x-point.x)/distance*17;
-   enemy.y+=(enemy.y-point.y)/distance*17;
-   enemy.slowUntil=S.t+1.4;
-   clampHex(enemy,enemy.r);
-  }
+
+function traitRank(id) {
+ const held=S.slots[TRAITS[id].slot];
+ return held?.id===id?held.rank:0;
+}
+
+function canEquip(id) {
+ const held=S.slots[TRAITS[id].slot];
+ return !held||(held.id===id&&held.rank<3);
+}
+
+function equip(id) {
+ if(!canEquip(id))return false;
+ const level=traitRank(id)+1;
+ S.slots[TRAITS[id].slot]={id,rank:level};
+ if(id==='veil'){
+  S.p.max+=12;
+  S.p.hp=Math.min(S.p.max,S.p.hp+18);
  }
+ return true;
 }
-function projectile(from,angle,stats,canJump){
- if(S.pr.length>=72)return;
- S.pr.push({x:from.x,y:from.y,vx:Math.cos(angle)*stats.speed,vy:Math.sin(angle)*stats.speed,
-  life:(stats.range+8)/stats.speed,dmg:stats.damage,pl:stats.pierce,hit:new Set(),
-  color:stats.color,canJump});
+
+function canFuse(id) {
+ return !S.fusions.has(id)&&FUSIONS[id].needs.every(traitRank);
 }
-function fireWeapon(dt){
- const st=S.st;st.cd-=dt;
- if(st.cd>0)return;
- const p=S.p, build=S.build, stats=armStats();
- const nearby=enemiesNear(p,stats.range);
- let target=nearby[0];
- if(st.aim)target=nearby.find(e=>e.type!=='sph')||target;
- if(!target){st.cd=.12;return}
- if(stats.shots){
-  const angle=Math.atan2(target.y-p.y,target.x-p.x),mid=(stats.shots-1)/2;
-  for(let i=0;i<stats.shots;i++)projectile(p,angle+(i-mid)*stats.spread,stats,i===mid);
- }else{
-  ring(p,stats.range,stats.color);
-  for(const e of nearby)strike(e,stats.damage,e===target);
-  if(build.evolved)areaHit(p,stats.range+38,stats.damage*.47,'#57a78a',true);
- }
- p.castAt=S.t;
- p.castFacing=Math.sign(target.x-p.x)||p.facing;
- st.cd=stats.interval;
- build.casts++;
- const pulse=skillRank('pulse');
- if(pulse&&build.casts%3===0){
-  const guided=ownsFusion('guided')&&target.markedUntil>S.t;
-  areaHit(guided?target:p,pulse===1?79:111,(pulse===1?10:16)*(guided?1.75:1),
-   guided?'#ab538d':'#8354ae');
- }
+
+function traitCard(id) {
+ const trait=TRAITS[id], level=traitRank(id)+1;
+ return {...trait,id,kind:'trait',rarity:level===1?trait.rarity:'rare',level};
 }
-function gainFragment(){
- const reserve=skillRank('reserve');
- if(reserve)mend(reserve+1);
- S.build.fragments++;
- if(ownsFusion('amber')&&S.build.fragments%4===0){
-  mend(4);ring(S.p,91,'#bc8125');
-  const stats={range:188,speed:340,damage:15,pierce:0,color:'#b87c1d'};
-  for(const e of enemiesNear(S.p,stats.range).slice(0,3)){
-   projectile(S.p,Math.atan2(e.y-S.p.y,e.x-S.p.x),stats,false);
-  }
- }
- gain(1);
+
+function fusionCard(id) {
+ return {...FUSIONS[id],id,kind:'fusion',rarity:'special'};
 }
-function hurtPlayer(damage){
- const shield=skillRank('shield'), b=S.build;
- if(shield&&S.t<b.barrierUntil)return;
- if(shield&&S.t>=b.barrierReady){
-  b.barrierReady=S.t+(shield===1?13:9);b.barrierUntil=S.t+1;
-  if(ownsFusion('counter'))areaHit(S.p,136,34,'#367f77',true);
-  else ring(S.p,42,'#458475');
-  return;
- }
- S.p.hp-=damage;S.hurt=.18;
-}
-function drawBuild(){
- const p=S.p,b=S.build;
- if(b.weapon==='orbit'){
-  ctx.strokeStyle=b.evolved?'rgba(36,109,86,.68)':'rgba(44,110,85,.38)';
-  ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,armStats().range,0,TAU);ctx.stroke();
- }
- if(skillRank('shield')&&(S.t>=b.barrierReady||S.t<b.barrierUntil)){
-  ctx.strokeStyle='#237260';ctx.lineWidth=2.2;ctx.beginPath();ctx.arc(p.x,p.y,24,0,TAU);ctx.stroke();
- }
- for(const fx of b.effects){
-  ctx.save();ctx.globalAlpha=Math.min(1,fx.life/fx.max+.13);ctx.strokeStyle=fx.color;
-  ctx.lineWidth=fx.r?3.6:4;ctx.beginPath();
-  if(fx.r)ctx.arc(fx.x,fx.y,fx.r*(reduce?1:1-.31*(fx.life/fx.max)),0,TAU);
-  else{ctx.moveTo(fx.x,fx.y);ctx.lineTo(fx.x2,fx.y2)}
-  ctx.stroke();ctx.restore();
- }
-}
-function tickBuild(dt){
- for(const fx of S.build.effects)fx.life-=dt;
- S.build.effects=S.build.effects.filter(fx=>fx.life>0);
-}
-function moveBoss(e,dt){
- const boss=BOSSES[e.index],p=S.p;
- if(e.windup>0){
-  e.windup-=dt;
-  if(e.windup<=0){
-   ring(e,boss.wave,boss.color);
-   if(dist(e,p)<boss.wave+p.r)hurtPlayer(boss.damage);
-   if(e.index>0){
-    for(let i=0;i<2&&S.en.length<CAP;i++){
-     const a=rnd()*TAU;S.en.push(mkSph(e.x+Math.cos(a)*e.r,e.y+Math.sin(a)*e.r));
-    }
-   }
-  }
-  return;
- }
- e.charge-=dt;
- if(e.charge<=0&&dist(e,p)<boss.wave+42){
-  e.charge=boss.period;e.windup=.87;return;
- }
- const distance=dist(e,p)||1;
- const speed=e.sp*(e.slowUntil>S.t ? .6 : 1);
- e.x+=(p.x-e.x)/distance*speed*dt;e.y+=(p.y-e.y)/distance*speed*dt;
- if(e.index===BOSSES.length-1)e.hp=Math.min(e.max,e.hp+Math.min(2.7,.29*S.infected)*dt);
-}
-function skillCard(id){
- const s=SKILLS[id],rank=skillRank(id);
- const partner=Object.values(FUSIONS).find(f=>!rank&&f.needs.includes(id)&&
-  f.needs.some(need=>need!==id&&skillRank(need)));
- return {kind:'skill',id,rarity:s.rarity,title:s.name,label:rank?'Nível 2':'Nova habilidade',
-  desc:(rank?s.next:s.line)+(partner?' Completa a receita de '+partner.name+'.':''),icon:s.icon,color:s.color};
-}
-function trainingCard(){
- return {kind:'train',rarity:'common',title:'Afiar '+currentWeapon().name,label:'Arma · nível '+(S.build.rank+1),
-  desc:'Mais dano, alcance e frequência de ataque.',icon:currentWeapon().icon,color:currentWeapon().color};
-}
-const recoveryCard=()=>({kind:'recover',title:'Fôlego extra',label:'Vigor',desc:'Recupere 30 de vigor e aumente seu máximo em 8.',
- icon:'＋',color:'#ae4a56'});
-const coinCard=()=>({kind:'coins',title:'Bolsa da equipe',label:'Recompensa',desc:'18 moedas para recrutar e treinar na base.',
- icon:'●',color:'#92701e'});
-function availableSkills(){
- return Object.keys(SKILLS).filter(id=>skillRank(id)<2);
-}
-function rollSkills(ids,count){
- const pool=ids.slice();
- const picks=[];
- while(pool.length&&picks.length<count){
-  const weight=id=>RARITIES[SKILLS[id].rarity].weight;
-  let roll=rnd()*pool.reduce((total,id)=>total+weight(id),0);
-  const index=pool.findIndex(id=>{roll-=weight(id);return roll<0});
-  picks.push(pool.splice(index,1)[0]);
- }
- return picks;
-}
-function draftSkills(){
- const pool=availableSkills();
- const partners=shuffle([...new Set(Object.values(FUSIONS).flatMap(f=>
-  f.needs.filter(id=>!skillRank(id)&&f.needs.some(other=>skillRank(other)))))]);
- const lead=partners[0];
- const cards=rollSkills(pool.filter(id=>id!==lead),lead?2:3).map(skillCard);
- if(lead)cards.unshift(skillCard(lead));
- if(S.build.rank<3&&(S.st.lvl>=3||cards.length<3))cards.splice(2,1,trainingCard());
- if(cards.length<3)cards.push(recoveryCard());
- if(cards.length<3)cards.push(coinCard());
- return cards;
-}
-function bossCards(){
- const eligible=shuffle(Object.keys(FUSIONS).filter(id=>!ownsFusion(id)&&FUSIONS[id].needs.every(skillRank)));
+
+function chooseTraits(ids, count) {
+ const pool=ids.filter(canEquip).map(traitCard);
  const cards=[];
- if(eligible.length){
-  if(S.build.fusionMissed||S.chest.index===BOSSES.length-1||rnd()<.40){
-   const id=eligible[0], f=FUSIONS[id];
-   cards.push({kind:'fusion',id,rarity:'special',title:f.name,label:'Fusão',desc:f.desc,icon:f.icon,color:f.color});
-   S.build.fusionMissed=false;
-  }else S.build.fusionMissed=true;
+ while(pool.length&&cards.length<count) {
+  const total=pool.reduce((sum,card)=>sum+RARITIES[card.rarity].weight,0);
+  let roll=Math.random()*total;
+  const index=pool.findIndex(card=>(roll-=RARITIES[card.rarity].weight)<0);
+  cards.push(pool.splice(index,1)[0]);
  }
- const arm=currentWeapon();
- if(!S.build.evolved&&S.build.rank>=2){
-  cards.push({kind:'evolve',rarity:'special',title:arm.evolution.name,label:'Evolução da arma',desc:arm.evolution.desc,icon:arm.icon,color:arm.color});
- }
- const pool=[recoveryCard(),coinCard()];
- if(S.build.rank<3)pool.push(trainingCard());
- const [next]=rollSkills(availableSkills(),1);
- if(next)pool.push(skillCard(next));
- if(cards.length<2)cards.push(...shuffle(pool).slice(0,2-cards.length));
- cards.push({kind:'surprise',title:'Baú fechado',label:'Sorteio',desc:'Pode trazer vigor, moedas, uma habilidade ou um treino de arma.',
-  icon:'✧',color:'#6a548d'});
  return cards;
 }
-function learn(card){
- const b=S.build;
- switch(card.kind){
-  case 'skill':
-   b.skills[card.id]=skillRank(card.id)+1;
-   return SKILLS[card.id].name+' · nível '+b.skills[card.id];
-  case 'train':
-   b.rank++;
-   return currentWeapon().name+' · nível '+b.rank;
-  case 'fusion':
-   if(card.id==='amber')b.fragments=0;
-   b.fusions.add(card.id);crew.discoverFusion(card.id);
-   return FUSIONS[card.id].name+' · fusão';
-  case 'evolve':
-   b.evolved=true;
-   return weaponName()+' · evolução';
-  case 'recover':
-   S.p.max+=8;mend(30);
-   return 'Fôlego extra · +8 vigor máximo';
-  case 'coins':
-   crew.rewardCoins(18);
-   return '+18 moedas para a equipe';
-  case 'surprise': {
-   const pool=[recoveryCard(),coinCard()];
-   if(b.rank<3)pool.push(trainingCard());
-   const [next]=rollSkills(availableSkills(),1);
-   if(next)pool.push(skillCard(next));
-   return 'Baú: '+learn(shuffle(pool)[0]);
+
+function encounterCards(ids,preferred=[]) {
+ const fusions=Object.keys(FUSIONS).filter(canFuse).map(fusionCard);
+ const featured=preferred.filter(canEquip).map(traitCard);
+ const spare=3-fusions.length-featured.length;
+ const rest=chooseTraits(ids.filter(id=>!preferred.includes(id)),spare);
+ return [...fusions,...featured,...rest];
+}
+
+function actor(type,x,y,required=false) {
+ const setup=respiratory.bosses[type];
+ const hp=setup?.health??(type==='cell'?28:31);
+ return {type,x,y,hp,max:hp,r:setup?.r??(type==='cell'?15:13),
+  speed:setup?.speed??(type==='cell'?0:43+Math.random()*12),
+  hitAt:-1,required,phase:Math.random()*TAU,charge:1.8,windup:0,waves:0};
+}
+
+function addTargets() {
+ const stop=respiratory.stages[S.step];
+ for(const [x,y] of stop.targets)S.enemies.push(actor('cell',x,y,true));
+}
+
+function createState() {
+ return {
+  phase:'play',clock:0,step:0,regions:0,impact:0,cells:0,level:1,xp:0,
+  p:{x:0,y:71,r:14,hp:100,max:100,fx:0,fy:1,facing:1,walk:0,dash:0,cooldown:0,hitAt:-2,castAt:-1},
+  slots:{movimento:{id:'dash',rank:1}},fusions:new Set(),enemies:[],orbs:[],effects:[],
+  nextAttack:.35,casts:0,nextPatrol:5.5,encounter:null,round:null,history:[],
+  mucus:-1,mucusTime:0,mucusAnswered:false
+ };
+}
+
+function currentBoss() {
+ return S.enemies.find(e=>e.hp>0&&Object.hasOwn(respiratory.bosses,e.type));
+}
+
+function announce(message) {
+ const toast=$('toast');
+ toast.textContent=message;
+ toast.classList.add('show');
+ toastUntil=S.clock+3.8;
+}
+
+function clearInput() {
+ joy.on=false;joy.id=null;keys.clear();
+}
+
+function dash() {
+ if(S?.phase!=='play'||S.p.cooldown>0)return;
+ S.p.dash=.16;
+ S.p.cooldown=2.55-(traitRank('dash')-1)*.42;
+}
+
+function move(dt) {
+ const p=S.p;
+ let x=0,y=0;
+ if(joy.on) {
+  const dx=joy.x-joy.ox,dy=joy.y-joy.oy,length=Math.hypot(dx,dy);
+  if(length>5){const power=Math.min(1,length/37);x=dx/length*power;y=dy/length*power;}
+ }
+ x+=Number(keys.has('arrowright')||keys.has('d'))-Number(keys.has('arrowleft')||keys.has('a'));
+ y+=Number(keys.has('arrowdown')||keys.has('s'))-Number(keys.has('arrowup')||keys.has('w'));
+ const length=Math.max(1,Math.hypot(x,y));x/=length;y/=length;
+ p.walk=Math.hypot(x,y);
+ if(p.walk>.1){p.fx=x/p.walk;p.fy=y/p.walk;}
+ if(Math.abs(x)>.08)p.facing=Math.sign(x);
+ const speed=S.mucus===-1?152:77;
+ const dashing=p.dash>0;
+ p.x+=(dashing?p.fx*speed*2.9:x*speed)*dt;
+ p.y+=(dashing?p.fy*speed*2.9:y*speed)*dt;
+ p.dash=Math.max(0,p.dash-dt);
+ p.cooldown=Math.max(0,p.cooldown-dt);
+ respiratory.confine(p,respiratory.stages[S.step].gate);
+}
+
+function harm(amount) {
+ const p=S.p;
+ if(S.clock-p.hitAt<.78||p.dash>0)return;
+ p.hp=Math.max(0,p.hp-amount*(1-traitRank('shell')*.14));
+ p.hitAt=S.clock;
+}
+
+function addEffect(effect) {
+ if(S.effects.length>=32)S.effects.shift();
+ S.effects.push({...effect,born:S.clock});
+}
+
+function hit(enemy,damage) {
+ if(enemy.hp<=0)return;
+ enemy.hp-=damage;enemy.hitAt=S.clock;
+ if(enemy.hp>0)return;
+ const total=enemy.required?3:2;
+ for(let i=0;i<total;i++) {
+  S.orbs.push({x:enemy.x+(i-1)*10,y:enemy.y+(i%2?7:-3),t:Math.random()*TAU});
+ }
+ if(enemy.type==='cell'){S.cells++;S.impact=Math.min(96,S.impact+9);}
+}
+
+function attack(dt) {
+ S.nextAttack-=dt;
+ if(S.nextAttack>0)return;
+ const p=S.p,ha=traitRank('ha'),na=traitRank('na'),core=traitRank('core');
+ const reach=171+ha*12;
+ const enemies=S.enemies.filter(e=>e.hp>0&&distance(p,e)<reach+e.r).sort((a,b)=>distance(p,a)-distance(p,b));
+ if(!enemies.length)return;
+ S.nextAttack=.56-ha*.035;
+ S.casts++;
+ p.castAt=S.clock;
+ if(p.walk<.1&&Math.abs(enemies[0].x-p.x)>3)p.facing=Math.sign(enemies[0].x-p.x);
+ for(const enemy of enemies.slice(0,ha>=2?2:1)) {
+  addEffect({type:'strike',x:p.x,y:p.y,x2:enemy.x,y2:enemy.y,color:ha?'#ffe1a0':'#ffd2bb',life:.18});
+  hit(enemy,15+ha*4+core*4);
+ }
+ if(na&&S.casts%3===0) {
+  const range=91+na*15;
+  const fused=S.fusions.has('resonancia');
+  addEffect({type:'pulse',x:p.x,y:p.y,r:range,color:'#a3f7de',life:.34});
+  if(fused)addEffect({type:'pulse',x:p.x,y:p.y,r:range+39,color:'#edb4ff',life:.46});
+  for(const enemy of enemies) {
+   const rangeToEnemy=distance(enemy,p);
+   if(rangeToEnemy<range+enemy.r)hit(enemy,9+na*4+core*4);
+   if(fused&&rangeToEnemy<range+39+enemy.r)hit(enemy,10+na*2);
   }
  }
 }
-function showIntro(){
- if(S?.phase==='play')return;
- S=null;lastH='';keys.clear();joy.on=false;
- toastQ=[];toastT=0;toastGap=0;tEl.classList.remove('show');
- $('intro').hidden=false;$('lv').hidden=true;$('pause').hidden=true;$('end').hidden=true;
- $('pauseBtn').disabled=true;$('crewHud').disabled=false;
- $('arenaNotice').hidden=true;$('arenaRoster').hidden=true;$('hud').hidden=true;
- hEl.day.textContent='Semana 1';hEl.hpt.textContent='100/100';hEl.hpb.style.width='100%';
- hEl.lvt.textContent='Nível 1';hEl.xpb.style.width='0%';hEl.fbt.textContent='Chefes 0/'+BOSSES.length;
- renderArsenal();syncArena();
+
+function moveDefenses(dt) {
+ const p=S.p;
+ S.nextPatrol-=dt;
+ if(S.nextPatrol<=0){
+  S.nextPatrol=4.7-S.step*.46;
+  if(S.enemies.length<13){
+   const y=p.y+86, sign=Math.random()<.5?-1:1;
+   const enemy=actor('patrol',sign*(respiratory.halfWidth(y)-22),y);
+   respiratory.confine(enemy,respiratory.stages[S.step].gate);
+   S.enemies.push(enemy);
+  }
+ }
+ for(const enemy of S.enemies) {
+  if(enemy.hp<=0||enemy.type==='cell')continue;
+  const boss=respiratory.bosses[enemy.type], d=distance(p,enemy);
+  if(enemy.windup>0) {
+   enemy.windup=Math.max(0,enemy.windup-dt);
+   if(enemy.windup===0) {
+    const antibody=enemy.type==='lungs'&&enemy.waves%2===0;
+    enemy.waves++;
+    addEffect({type:'pulse',x:enemy.x,y:enemy.y,r:boss.wave,
+     color:antibody?'#e2c4ff':'#ff8e9e',antibody,life:.36});
+    if(d<boss.wave+p.r)harm(S.step===0?14:19);
+    enemy.charge=2.65;
+   }
+   continue;
+  }
+  if(boss&&d<boss.wave+90) {
+   enemy.charge-=dt;
+   if(enemy.charge<=0){enemy.windup=.85;continue;}
+  }
+  if(d>.01) {
+   enemy.x+=(p.x-enemy.x)/d*enemy.speed*dt;
+   enemy.y+=(p.y-enemy.y)/d*enemy.speed*dt;
+   respiratory.confine(enemy,respiratory.stages[S.step].gate);
+  }
+  if(d<enemy.r+p.r)harm(boss?13:8);
+ }
 }
-function rarityBadge(rarity){
+
+function collect(dt) {
+ const p=S.p, reach=65+traitRank('magnet')*27+crew.extraReach();
+ for(let i=S.orbs.length-1;i>=0;i--) {
+  const orb=S.orbs[i],d=distance(orb,p);
+  if(d>reach)continue;
+  if(d<20){S.orbs.splice(i,1);S.xp++;continue;}
+  const move=Math.min(1,(78+(1-d/reach)*185)*dt/d);
+  orb.x+=(p.x-orb.x)*move;orb.y+=(p.y-orb.y)*move;
+ }
+}
+
+function spawnBoss(id) {
+ const {x,y,name}=respiratory.bosses[id];
+ S.enemies.push(actor(id,x,y,true));
+ S.encounter=id;
+ const cue=id==='lungs'?'Pulmões · macrófago alveolar e ondas de anticorpos anti-HA. Desvie dos anéis.':
+  name+' entrou na arena. Saia do anel quando ele se acender.';
+ announce(cue);
+}
+
+function checkpoint() {
+ if(S.enemies.some(e=>e.required))return false;
+ const stop=respiratory.stages[S.step];
+ if(!S.encounter&&distance(stop,S.p)>58)return false;
+ if(S.step===0&&!S.encounter){spawnBoss('watch');return false;}
+ if(S.step===2) {
+  if(!S.encounter){spawnBoss('airway');return false;}
+  if(S.encounter==='airway'){spawnBoss('lungs');return false;}
+  finish(true);return true;
+ }
+ const reward=S.step===0?'ha':'na';
+ equip(reward);
+ S.step++;S.regions++;
+ S.encounter=null;
+ S.impact=Math.min(96,S.impact+12);
+ S.p.hp=Math.min(S.p.max,S.p.hp+14);
+ addTargets();
+ const ids=S.step===1?['shell','core','reserve']:[...OPTIONAL,'ha','na'];
+ const cards=S.step===1?ids.filter(canEquip).map(traitCard):encounterCards(ids,['na']);
+ showDraft(cards,TRAITS[reward].name+' entrou no envoltório',
+  S.step===1?'Recompensa do primeiro chefe':'Marco da traqueia',TRAITS[reward].study,reward);
+ return true;
+}
+
+function mucusCheck(dt) {
+ const index=respiratory.mucusAt(S.p);
+ if(index!==S.mucus) {
+  S.mucus=index;S.mucusTime=0;S.mucusAnswered=false;
+  if(index>=0)announce('Muco espesso: seu movimento ficou mais lento.');
+ }
+ if(index<0||S.mucusAnswered)return false;
+ S.mucusTime+=dt;
+ if(S.mucusTime<.36)return false;
+ S.mucusAnswered=true;
+ const pool=index<2?[respiratory.questions[index],...respiratory.influenzaBank]:[respiratory.questions[2]];
+ const unseen=pool.filter(question=>!S.history.some(item=>item.question===question.q));
+ const options=unseen.length?unseen:pool;
+ openQuiz(options[Math.floor(Math.random()*options.length)],'mucus');
+ return true;
+}
+
+function update(dt) {
+ S.clock+=dt;
+ move(dt);
+ if(mucusCheck(dt))return;
+ attack(dt);
+ moveDefenses(dt);
+ collect(dt);
+ const regeneration=traitRank('reserve')*.76;
+ S.p.hp=Math.min(S.p.max,S.p.hp+dt*regeneration);
+ S.effects=S.effects.filter(effect=>S.clock-effect.born<effect.life);
+ S.enemies=S.enemies.filter(enemy=>enemy.hp>0);
+ if(S.p.hp<=0){finish(false);return;}
+ if(checkpoint())return;
+ const threshold=4+S.level*2;
+ if(S.xp>=threshold){
+  S.xp-=threshold;S.level++;
+  const cards=encounterCards([...OPTIONAL,...['ha','na'].filter(traitRank)]);
+  if(cards.length)showDraft(cards,'Escolha uma evolução','Nível '+S.level,'Cada habilidade sobe de nível no próprio espaço.');
+ }
+}
+
+function rarityBadge(rarity) {
  const badge=document.createElement('span');
  badge.className='rarity-badge';badge.dataset.rarity=rarity;
  badge.textContent=RARITIES[rarity].label;
  return badge;
 }
-function optionButton(card,handler){
- const button=document.createElement('button');button.type='button';
- button.className='build-card';button.dataset.kind=card.kind||'';
- if(card.id)button.dataset.choice=card.id;
- if(card.rarity)button.dataset.rarity=card.rarity;
+
+function buttonCard(card, onChoose) {
+ const button=document.createElement('button');
+ button.type='button';button.className='build-card';
+ button.dataset.rarity=card.rarity;button.dataset.choice=card.id;
  button.style.setProperty('--ability-color',card.color);
- const icon=document.createElement('span');icon.className='build-icon';icon.setAttribute('aria-hidden','true');icon.textContent=card.icon;
- const title=document.createElement('strong');title.textContent=card.title;
- const desc=document.createElement('span');desc.className='build-desc';desc.textContent=card.desc;
- const text=document.createElement('span');text.className='build-copy';
- if(card.rarity||card.label){
-  const meta=document.createElement('span');meta.className='build-meta';
-  if(card.rarity)meta.append(rarityBadge(card.rarity));
-  if(card.label){
-   const label=document.createElement('span');label.className='build-kicker';label.textContent=card.label;
-   meta.append(label);
-  }
-  text.append(meta);
- }
- text.append(title,desc);button.append(icon,text);
- button.addEventListener('click',handler);return button;
+ const icon=document.createElement('span');
+ icon.className='build-icon';icon.setAttribute('aria-hidden','true');icon.textContent=card.icon;
+ const content=document.createElement('span');content.className='build-copy';
+ const meta=document.createElement('span');meta.className='build-meta';
+ const location=document.createElement('span');location.className='build-kicker';
+ location.textContent=card.kind==='fusion'?'Fusão':SLOT_NAMES[card.slot]+' · nível '+card.level;
+ meta.append(rarityBadge(card.rarity),location);
+ const title=document.createElement('strong');title.textContent=card.name;
+ const body=document.createElement('span');body.className='build-desc';body.textContent=card.desc;
+ content.append(meta,title,body);button.append(icon,content);
+ button.addEventListener('click',onChoose);
+ return button;
 }
-function renderArsenal(){
- const list=$('arsenalChoices');list.textContent='';
- for(const [id,arm] of Object.entries(WEAPONS)){
-  const button=optionButton({kind:'arm',id,title:arm.name,desc:arm.desc,color:arm.color,icon:arm.icon},()=>{
-   selectedWeapon=id;
-   for(const current of list.children)current.setAttribute('aria-pressed',String(current.dataset.choice===id));
-  });
-  button.setAttribute('aria-pressed',String(selectedWeapon===id));list.append(button);
- }
- const found=crew.fusionsFound();
- $('fusionCount').textContent='Fusões descobertas '+found.length+'/'+Object.keys(FUSIONS).length;
- const recipes=$('fusionRecipes');recipes.textContent='';
+
+function setPanel(phase) {
+ stage.dataset.phase=phase;
+ for(const [id,state] of [['intro','intro'],['lv','level'],['pause','pause'],['end','end']])$(id).hidden=phase!==state;
+ $('hud').hidden=phase==='intro';
+ $('dashBtn').hidden=phase!=='play';
+ $('bossBar').hidden=true;
+ $('crewHud').disabled=phase==='level';
+ $('pauseBtn').disabled=phase!=='play'&&phase!=='pause';
+ if(phase!=='play')$('toast').classList.remove('show');
+}
+
+function showIntro() {
+ S=null;lastHud='';clearInput();
+ setPanel('intro');syncArena();
+ $('arenaNotice').hidden=true;
+ renderIntroduction();
+}
+
+function renderIntroduction() {
+ $('fusionCount').textContent='Fusões descobertas '+crew.fusionsFound().length+'/'+Object.keys(FUSIONS).length;
+ const list=$('fusionRecipes');
+ list.replaceChildren();
  for(const [id,fusion] of Object.entries(FUSIONS)){
-  const li=document.createElement('li');
-  const combination=fusion.needs.map(skill=>SKILLS[skill].name).join(' + ');
-  li.textContent=found.includes(id)?fusion.name+' · '+combination:combination;
-  recipes.append(li);
+  const row=document.createElement('li');
+  const recipe=fusion.needs.map(key=>TRAITS[key].name).join(' + ');
+  row.textContent=crew.fusionsFound().includes(id)?fusion.name+' · '+recipe:recipe;
+  list.append(row);
  }
 }
-function setupChoice(title,label,hint){
- S.phase='level';joy.on=false;answered=false;
- $('lvTag').textContent=label;$('qText').textContent=title;
- $('draftHint').textContent=hint;$('draftHint').hidden=!hint;
- $('opts').textContent='';$('fb').hidden=true;$('fb').textContent='';$('contBtn').hidden=true;
- $('studyBtn').hidden=true;
- const box=$('ups');box.textContent='';box.hidden=false;
- $('lv').hidden=false;syncArena();return box;
+
+function setupGuide() {
+ const select=$('guideTopic'), list=$('guideQuestions');
+ const topics=[...new Set(guiaRespiratoria.map(item=>item.topic))];
+ for(const topic of ['Todos os temas',...topics]){
+  const option=document.createElement('option');
+  option.value=topic;option.textContent=topic;select.append(option);
+ }
+ select.value='Influenza';
+ function renderQuestions(){
+  list.replaceChildren();
+  for(const entry of guiaRespiratoria){
+   if(select.value!=='Todos os temas'&&entry.topic!==select.value)continue;
+   const row=document.createElement('li');
+   row.value=entry.number;
+   const level=document.createElement('strong');level.textContent=entry.level;
+   const text=document.createElement('p');text.lang='es';text.textContent=entry.prompt;
+   row.append(level,text);list.append(row);
+  }
+ }
+ select.addEventListener('change',renderQuestions);
+ renderQuestions();
 }
-function showDraft(cards,chest=null){
- const draft={cards,chest,chosen:false};S.draft=draft;
- const ready=Object.entries(FUSIONS).filter(([id,f])=>!ownsFusion(id)&&f.needs.every(skillRank)).map(([,f])=>f.name);
- const hint=ready.length?'Pode aparecer após um chefe: '+ready.join(', ')+'.':
-  'Combine habilidades para abrir fusões nos chefes.';
- const box=setupChoice(chest?chest.name+' caiu':'Escolha uma melhoria',
-  chest?'Recompensa do chefe':'Nível '+(S.st.lvl-S.pending+1),
-  chest?'Escolha uma recompensa.':hint);
- for(const card of cards)box.append(optionButton(card,()=>{
-  if(S.phase!=='level'||S.draft!==draft||draft.chosen)return;
-  draft.chosen=true;
-  toast(learn(card));
-  if(chest){S.chest=null;continueRun()}
-  else closeLevel();
+
+function startRun() {
+ S=createState();lastHud='';clearInput();addTargets();
+ setPanel('play');syncArena();
+ if(S)cv.focus({preventScroll:true});
+}
+
+function setupChoice(title,label,note) {
+ S.phase='level';clearInput();setPanel('level');syncArena();
+ $('qText').textContent=title;$('lvTag').textContent=label;
+ $('draftHint').hidden=!note;$('draftHint').textContent=note;
+ $('opts').replaceChildren();
+ $('ups').replaceChildren();$('ups').hidden=true;
+ $('fb').hidden=true;$('contBtn').hidden=true;$('reviewBtn').hidden=true;
+}
+
+function showDraft(cards,title,label,note,topic=null) {
+ S.round={kind:'draft',cards,title,label,note,topic};
+ setupChoice(title,label,note);
+ $('reviewBtn').hidden=!topic;
+ if(!cards.length){$('contBtn').hidden=false;$('contBtn').focus();return;}
+ const panel=$('ups');panel.hidden=false;
+ for(const card of cards)panel.append(buttonCard(card,()=>{
+  if(S?.phase!=='level'||S.round?.kind!=='draft')return;
+  if(card.kind==='trait') {
+   if(!equip(card.id))return;
+  }else{
+   if(!canFuse(card.id))return;
+   S.fusions.add(card.id);crew.discoverFusion(card.id);
+  }
+  continueRun();
  }));
- $('studyBtn').hidden=!!chest||!TOP.some(t=>S.tier[t.id]<3);
- box.firstElementChild?.focus({preventScroll:true});
+ panel.firstElementChild?.focus({preventScroll:true});
 }
-function openLevel(){showDraft(draftSkills())}
-function openStudy(){
- if(S.phase!=='level'||!S.draft||S.draft.chest||S.draft.chosen)return;
- const draft=S.draft;
- const box=setupChoice('Escolha um tema de HBV','Pergunta de virologia','Um acerto vale uma contramedida e 4 moedas.');
- for(const t of TOP.filter(t=>S.tier[t.id]<3)){
-  const tier=t.tiers[S.tier[t.id]];
-  box.append(optionButton({title:t.name,desc:tier[0]+' · '+tier[1],color:'#665199',icon:'?'},()=>{
-   if(S.phase!=='level'||S.draft!==draft||draft.chosen)return;
-   draft.chosen=true;startQ({t});
-  }));
+
+function openQuiz(question,mode,returnTo=null) {
+ S.round={kind:'quiz',mode,returnTo,answered:false};
+ const note=mode==='mucus'?'Uma resposta certa protege sua integridade. Um erro custa 26 pontos.':'';
+ const source=question.guide?' · Taller 14, questão '+question.guide:'';
+ setupChoice(question.q,question.level+' · '+question.topic+source,note);
+ if(mode==='practice')$('hud').hidden=true;
+ const order=[0,1,2];
+ for(let i=order.length-1;i>0;i--) {
+  const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];
  }
- if(!S.comboDone&&S.tier.vac>0&&S.tier.mor>0){
-  box.append(optionButton({title:'Profilaxia neonatal',desc:'Pergunta especial sobre vacinação e imunoglobulina.',
-   color:'#316b5d',icon:'＋'},()=>{
-   if(S.phase!=='level'||S.draft!==draft||draft.chosen)return;
-   draft.chosen=true;startQ({combo:true});
-  }));
+ for(const index of order){
+  const option=document.createElement('button');
+  option.type='button';option.className='opt';option.textContent=question.answers[index];
+  option.dataset.correct=String(index===0);
+  option.addEventListener('click',()=>answerQuiz(index,question,option));
+  $('opts').append(option);
  }
- const back=document.createElement('button');back.type='button';back.className='arena-button ghost';
- back.textContent='Voltar às melhorias';back.addEventListener('click',()=>showDraft(draft.cards));box.append(back);
- box.firstElementChild?.focus({preventScroll:true});
+ $('opts').firstElementChild?.focus({preventScroll:true});
 }
-function continueRun(){
- S.draft=null;
- if(S.chest){showDraft(bossCards(),S.chest);return}
- if(S.pending>0){openLevel();return}
- $('lv').hidden=true;S.phase='play';syncArena();
-}
-function describeBuild(list){
- list.textContent='';
- const rows=[{title:weaponName()+' · nível '+S.build.rank,rarity:S.build.evolved?'special':null}];
- for(const [id,skill] of Object.entries(SKILLS)){
-  const rank=skillRank(id);
-  if(rank)rows.push({title:skill.name+' · nível '+rank,rarity:skill.rarity});
+
+function answerQuiz(index,question,option) {
+ if(S?.phase!=='level'||S.round?.kind!=='quiz'||S.round.answered)return;
+ S.round.answered=true;
+ const correct=index===0,mucus=S.round.mode==='mucus';
+ S.history.push({question:question.q,correct});
+ if(mucus) {
+  if(correct)crew.rewardAnswer();
+  else S.p.hp=Math.max(0,S.p.hp-26);
  }
- for(const id of S.build.fusions)rows.push({title:FUSIONS[id].name+' · fusão',rarity:'special'});
- for(const t of TOP)if(S.tier[t.id])rows.push({title:t.tiers[S.tier[t.id]-1][0]+' · revisão de HBV'});
- for(const {title,rarity} of rows){
-  const li=document.createElement('li');li.className='none';li.textContent=title;
-  if(rarity)li.append(' ',rarityBadge(rarity));
-  list.append(li);
+ for(const button of $('opts').children) {
+  button.disabled=true;
+  if(button.dataset.correct==='true')button.classList.add('ok');
+ }
+ if(!correct)option.classList.add('no');
+ const feedback=$('fb');
+ feedback.className='fb '+(correct?'good':'bad');
+ const headline=document.createElement('p');
+ headline.className='fbh';
+ headline.textContent=mucus?(correct?'Integridade preservada':'Você perdeu 26 pontos de integridade'):
+  (correct?'Resposta certa':'Confira a resposta');
+ const explanation=document.createElement('p');explanation.textContent=question.note;
+ feedback.replaceChildren(headline,explanation);feedback.hidden=false;
+ $('contBtn').hidden=false;$('contBtn').focus({preventScroll:true});hud();
+}
+
+function reviewTrait() {
+ const draft=S?.round;
+ if(draft?.kind==='draft'&&draft.topic)openQuiz(respiratory.review[draft.topic],'review',draft);
+}
+
+function practice() {
+ S=createState();lastHud='';
+ openQuiz(respiratory.review.epidemiology,'practice',{kind:'intro'});
+}
+
+function continueRun() {
+ if(S?.phase!=='level')return;
+ const round=S.round;
+ if(round?.kind==='quiz'&&!round.answered)return;
+ const destination=round?.returnTo;
+ if(destination?.kind==='intro'){showIntro();$('practiceBtn').focus();return;}
+ if(destination?.kind==='draft'){
+  showDraft(destination.cards,destination.title,destination.label,destination.note);
+  return;
+ }
+ S.round=null;
+ if(S.p.hp<=0){finish(false);return;}
+ S.phase='play';clearInput();setPanel('play');syncArena();cv.focus({preventScroll:true});
+}
+
+function describeBuild(list) {
+ list.replaceChildren();
+ for(const [key,label] of SLOTS) {
+  const item=document.createElement('li');item.className='none';
+  const held=S.slots[key];
+  item.textContent=label+' · '+(held?TRAITS[held.id].name+' '+held.rank:'Livre');
+  list.append(item);
+ }
+ for(const id of S.fusions){
+  const item=document.createElement('li');item.className='none';
+  item.append(FUSIONS[id].name+' ',rarityBadge('special'));list.append(item);
  }
 }
 
-
-function update(dt){
- const P=S.p,st=S.st;S.t+=dt;S.hurt=Math.max(0,S.hurt-dt);S.immAll=Math.max(0,S.immAll-dt);
- let mx=0,my=0;
- if(joy.on){const dx=joy.x-joy.ox,dy=joy.y-joy.oy,l=Math.hypot(dx,dy);if(l>6){const m=Math.min(1,l/42);mx=dx/l*m;my=dy/l*m}}
- if(keys.has('arrowleft')||keys.has('a'))mx-=1;
- if(keys.has('arrowright')||keys.has('d'))mx+=1;
- if(keys.has('arrowup')||keys.has('w'))my-=1;
- if(keys.has('arrowdown')||keys.has('s'))my+=1;
- const ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml}
- P.x+=mx*st.spd*dt;P.y+=my*st.spd*dt;
- P.walk=Math.min(1,ml);
- if(ml>.1){P.fx=mx;P.fy=my}
- if(Math.abs(mx)>.1)P.facing=Math.sign(mx);
- for(const k of S.kup)push(P,k,k.r);
- pushWalls(P);clampHex(P,P.r+4);
- if(S.hurt<=0)P.hp=Math.min(P.max,P.hp+dt);
- const reach=P.r+st.reach, pickupRange=st.mag+crew.extraReach()+skillRank('magnet')*38;
- for(const c of S.cells){
-  if(c.st===1){
-   c.prod-=dt;if(c.prod<=0){c.prod=(9+rnd()*5)/st.prodMul;if(S.en.length<CAP)S.en.push(mkDane(c.x+(rnd()-.5)*8,c.y+(rnd()-.5)*8))}
-   c.dec-=dt;if(c.dec<=0){c.dec=3.4+rnd()*2.4;if(S.en.length<CAP&&S.nSph<SPHMAX)S.en.push(mkSph(c.x+(rnd()-.5)*8,c.y+(rnd()-.5)*8))}
-   const d=dist(c,P);
-   if(d<reach+c.r){c.kt+=dt;if(c.kt>=st.killT){kill(c);continue}}else if(c.kt>0)c.kt=Math.max(0,c.kt-dt*1.5);
-   if(st.cytoR>0){if(d<st.cytoR+c.r){c.cy+=dt;if(c.cy>=st.cytoT){cure(c);continue}}else if(c.cy>0)c.cy=Math.max(0,c.cy-dt*.7)}
-  }else if(c.st===2&&st.regen>0){c.rg-=dt;if(c.rg<=0)regrow(c)}
- }
- if(st.sepT>0){S.sepClock+=dt;if(S.sepClock>=st.sepT){S.sepClock=0;if(S.sep.length){S.sep.pop();once('res','Resolução: a fibrose recuou um pouco.')}}}
- for(let i=S.orbs.length-1;i>=0;i--){const o=S.orbs[i],d=dist(o,P);if(d<pickupRange){const f=Math.min(1,(90+300*(1-d/pickupRange))*dt/Math.max(d,1));o.x+=(P.x-o.x)*f;o.y+=(P.y-o.y)*f}if(dist(o,P)<P.r+6){S.orbs.splice(i,1);gainFragment()}}
- if(!S.bossDown){S.waveT-=dt;if(S.waveT<=0){const n=2+Math.floor(S.t/25)+Math.min(3,Math.floor(S.infected/5));for(let i=0;i<n&&S.en.length<CAP;i++)spawn('dane');S.waveT=Math.max(5,9-3*S.t/END)}}
- const encounter=BOSSES[S.nextBoss];
- if(!S.boss&&encounter&&S.t>=encounter.at){
-  const boss=spawn('boss');
-  if(boss){S.boss=boss;S.nextBoss++;toast(encounter.cue)}
- }
- for(const e of S.en){
-  if(e.hp<=0)continue;
-  const speed=e.sp*(e.slowUntil>S.t ? .60 : 1);
-  e.ph+=dt*3;e.hit=Math.max(0,e.hit-dt);
-  if(e.type==='dane'){
-   if(e.tgt&&e.tgt.st!==0){e.tgt=null;e.bind=0;e.rt=0}
-   if(!e.tgt){e.rt-=dt;if(e.rt<=0){e.tgt=nearHealthy(e,300);e.rt=.5}}
-   let tx=P.x,ty=P.y;if(e.tgt){tx=e.tgt.x;ty=e.tgt.y}
-   const dx=tx-e.x,dy=ty-e.y,l=Math.hypot(dx,dy)||1;
-   if(!(e.tgt&&l<e.r+e.tgt.r+1)){e.x+=dx/l*speed*dt;e.y+=dy/l*speed*dt}
-   if(e.tgt&&l<e.r+e.tgt.r+3){e.bind+=dt;if(e.bind>.9)bind(e)}else e.bind=Math.max(0,e.bind-dt);
-  }else if(e.type==='sph'){
-   e.wob+=dt*1.6;const dx=P.x-e.x,dy=P.y-e.y,l=Math.hypot(dx,dy)||1;
-   e.x+=(dx/l+Math.cos(e.wob)*.6)*speed*dt;e.y+=(dy/l+Math.sin(e.wob)*.6)*speed*dt;
-  }else moveBoss(e,dt);
-  if(e.hp>0&&dist(e,P)<e.r+P.r)hurtPlayer(e.dps*dt);
-  pushWalls(e);clampHex(e,e.r);
- }
- for(let i=0;i<S.en.length;i++)for(let j=i+1;j<S.en.length;j++){const a=S.en[i],b=S.en[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),m=a.r+b.r;if(d>0&&d<m){const k=(m-d)/2/d;a.x-=dx*k;a.y-=dy*k;b.x+=dx*k;b.y+=dy*k}}
- for(const k of S.kup){
-  k.hit=Math.max(0,k.hit-dt);k.ph+=dt;k.cd-=dt;
-  let tg=null,bd=k.reach;for(const e of S.en){const d=dist(k,e);if(d<bd){bd=d;tg=e}}
-  k.tg=tg;k.grab=tg?Math.min(1,k.grab+dt*4):Math.max(0,k.grab-dt*3);
-  if(tg&&k.cd<=0){tg.hp-=tg.type==='boss'?5:40;tg.hit=.12;k.cd=1.1;once('kup','Célula de Kupffer: macrófago do sinusoide. Ela fagocita o que chega perto, e está do seu lado.')}
- }
- fireWeapon(dt);
- for(let i=S.pr.length-1;i>=0;i--){
-  const b=S.pr[i];b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;let dead=false;
-  for(const e of S.en){
-   if(e.hp<=0||b.hit.has(e))continue;
-   if(dist(e,b)<e.r+4){
-    strike(e,b.dmg,b.canJump);b.hit.add(e);b.canJump=false;
-    if(b.pl>0)b.pl--;else dead=true;
-    break;
-   }
-  }
-  if(!dead&&wallHit(b))dead=true;
-  if(dead||b.life<=0)S.pr.splice(i,1);
- }
- const keep=[];let ns=0;
- for(const e of S.en){
-  if(e.hp>0){keep.push(e);if(e.type==='sph')ns++;continue}
-  if(e.gone)continue;
-  S.kills++;
-  if(e.type==='dane')drop(e.x,e.y,2);
-  else if(e.type==='sph'){if(rnd()<.5)drop(e.x,e.y,1)}
-  else{
-   drop(e.x,e.y,7);S.boss=null;S.bossWins++;
-   S.bossDown=e.index===BOSSES.length-1;
-   S.chest={...BOSSES[e.index],index:e.index};
-  }
- }
- S.en=keep;S.nSph=ns;
- for(let i=S.puff.length-1;i>=0;i--){S.puff[i].t-=dt;if(S.puff[i].t<=0)S.puff.splice(i,1)}
- if(!reduce)P.rot+=dt*.8;
- tickBuild(dt);
- if(P.hp<=0){P.hp=0;finish('exhaust')}
- else if(S.cirr)finish('cirrhosis');
- else if(S.chest){showDraft(bossCards(),S.chest)}
- else if(S.bossDown&&S.infected<=0)finish('win');
- else if(S.t>=END)finish('chronic');
- else if(S.pending>0)openLevel();
-}
-function ambient(dt){
- S.clock+=dt;
- if(!reduce)for(const b of S.rbc){b.r-=b.sp*dt;if(b.r<28)b.r=b.length}
- for(const s of S.sep)if(s.shown<s.nodes.length)s.shown=Math.min(s.nodes.length,s.shown+dt*26);
- for(const o of S.orbs)o.t+=dt*3;
- if(S.phase!=='play')for(const k of S.kup)k.ph+=dt;
+function pauseGame() {
+ if(S?.phase!=='play')return;
+ S.phase='pause';clearInput();setPanel('pause');syncArena();
+ describeBuild($('ctr'));$('resumeBtn').focus({preventScroll:true});
 }
 
-function resize(){
- const size=stage.getBoundingClientRect();
- if(!ctx||S?.phase!=='play'||crew.isOpen()||!size.width||!size.height)return false;
- const width=Math.max(1,Math.round(size.width)),height=Math.max(1,Math.round(size.height));
- const density=Math.min(1.5,window.devicePixelRatio||1,Math.sqrt(PIXEL_BUDGET/(width*height)));
- if(bg&&W===width&&H===height&&dpr===density)return true;
- W=width;H=height;dpr=density;
- cv.width=Math.max(1,Math.floor(W*dpr));
- cv.height=Math.max(1,Math.floor(H*dpr));
- const margin=12;
- sc=Math.min(W/(2*A+2*margin),H/(2*R+2*margin));ox=W/2;oy=H/2;
- buildBg();
- return !!bg;
-}
-function buildBg(){
- if(!S)return;
- if(!bg)bg=document.createElement('canvas');
- bg.width=cv.width;bg.height=cv.height;
- const g=bg.getContext('2d');
- if(!g){bg=null;return}
- g.setTransform(dpr*sc,0,0,dpr*sc,dpr*ox,dpr*oy);
- arenaArt.paintArena(g,R,S.tri,edgeR,terrain);
+function resume() {
+ if(S?.phase!=='pause')return;
+ S.phase='play';clearInput();setPanel('play');syncArena();
+ cv.focus({preventScroll:true});
 }
 
-function drawMapThumbnail(){
- const map=$('crewChart'),g=map.getContext('2d');
+function finish(won) {
+ S.phase='end';clearInput();
+ if(won){S.impact=100;S.regions=3;crew.rewardCoins(25);}
+ setPanel('end');syncArena();
+ $('endH').textContent=won?'Fase respiratória concluída':'A defesa respiratória conteve o vírus';
+ $('endP').textContent=won?'Você passou pela traqueia e venceu o macrófago alveolar. +25 moedas.':'Tente outra combinação e use o dash para sair dos anéis de defesa.';
+ $('sInf').textContent=S.cells;$('sBoss').textContent=S.regions+'/3';$('sF').textContent=S.impact+'%';
+ describeBuild($('loadoutEnd'));
+ $('codex').replaceChildren();
+ for(const result of S.history) {
+  const row=document.createElement('li');row.className=result.correct?'':'x';
+  row.textContent=result.question;$('codex').append(row);
+ }
+ $('runQuizLog').hidden=!S.history.length;
+ $('againBtn').focus({preventScroll:true});
+}
+
+function hud() {
+ const p=S.p,area=respiratory.stages[S.step],boss=currentBoss();
+ const region=respiratory.stages[S.p.y<=230?0:S.p.y<=530?1:2].name;
+ const hp=Math.ceil(p.hp),dashSeconds=Math.ceil(p.cooldown);
+ const key=[hp,p.max,region,S.step,S.level,S.xp,S.impact,S.mucus,boss?.type,boss?.hp,dashSeconds].join('|');
+ if(key===lastHud)return;
+ lastHud=key;
+ $('regionNow').textContent=region;$('hpt').textContent=hp+'/'+p.max;
+ $('hpb').style.width=100*p.hp/p.max+'%';
+ $('lvt').textContent='Nível '+S.level;$('fbt').textContent='Mal-estar '+S.impact+'%';
+ $('xpb').style.width=Math.min(100,100*S.xp/(4+S.level*2))+'%';
+ const guide=$('arenaTissue'),ready=S.enemies.every(e=>e.type!=='cell'||!e.required);
+ const next=ready&&S.step===1?'Alcance o marco da neuraminidase.':area.task;
+ guide.textContent=boss?'Defesa ativa · '+respiratory.bosses[boss.type].name:next;
+ for(const [index,el] of [...$('regionTrack').children].entries()){
+  if(index===S.step)el.setAttribute('aria-current','step');
+  else el.removeAttribute('aria-current');
+  el.classList.toggle('done',index<S.regions);
+ }
+ $('mucusStatus').hidden=S.mucus<0;
+ $('dashBtn').disabled=p.cooldown>0;
+ $('dashTime').textContent=dashSeconds?dashSeconds+'s':'Pronto';
+ const bossBar=$('bossBar');bossBar.hidden=!boss||S.phase!=='play';
+ if(boss){
+  $('bossName').textContent=respiratory.bosses[boss.type].name;
+  $('bossFill').style.width=100*boss.hp/boss.max+'%';
+ }
+}
+
+function makeMap() {
+ const g=mapCache.getContext('2d');
  if(!g)return;
- g.resetTransform();
- g.clearRect(0,0,map.width,map.height);
- const scale=Math.min(map.width/(2*A+30),map.height/(2*R+30));
- g.setTransform(scale,0,0,scale,map.width/2,map.height/2);
- arenaArt.paintArena(g,R,PORTALS,edgeR,terrain);
+ g.setTransform(1,0,0,1,respiratory.width/2,0);
+ respiratory.paintMap(g,terrain);
+ const thumb=$('crewChart'), h=thumb.getContext('2d');
+ if(!h)return;
+ h.clearRect(0,0,thumb.width,thumb.height);
+ const ratio=Math.min(thumb.width/respiratory.width,thumb.height/respiratory.height)*.94;
+ const w=respiratory.width*ratio,k=respiratory.height*ratio;
+ h.drawImage(mapCache,(thumb.width-w)/2,(thumb.height-k)/2,w,k);
 }
 
-function circ(x,y,r){ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill()}
-function eyes(x,y,a,s,w,p){const px=-Math.sin(a),py=Math.cos(a);for(const d of[-1,1]){const ex=x+px*d*s*1.5,ey=y+py*d*s*1.5;ctx.fillStyle=w;circ(ex,ey,s);ctx.fillStyle=p;circ(ex+Math.cos(a)*s*.35,ey+Math.sin(a)*s*.35,s*.55)}}
-function drawKup(k){
- if(k.grab>0&&k.tg){
-  const angle=Math.atan2(k.tg.y-k.y,k.tg.x-k.x);
-  const d=Math.min(dist(k,k.tg),k.reach)*k.grab;
-  ctx.beginPath();
-  for(const offset of [-.38,.38]){
-   const a=angle+offset;
-   ctx.moveTo(k.x+Math.cos(a)*k.r*.6,k.y+Math.sin(a)*k.r*.6);
-   ctx.quadraticCurveTo(k.x+Math.cos(a)*d*.7,k.y+Math.sin(a)*d*.7,
-    k.x+Math.cos(a-offset*.8)*d,k.y+Math.sin(a-offset*.8)*d);
-  }
-  ctx.strokeStyle='#5f3543';ctx.lineWidth=10;ctx.stroke();
-  ctx.strokeStyle=C.kup;ctx.lineWidth=7;ctx.stroke();
- }
- arenaArt.drawCreature(ctx,'kupffer',k,reduce);
+function resize() {
+ const box=stage.getBoundingClientRect();
+ if(!ctx||!box.width||!box.height)return false;
+ W=box.width;H=box.height;
+ dpr=Math.min(1.8,window.devicePixelRatio||1,Math.sqrt(700000/(W*H)));
+ cv.width=Math.max(1,Math.floor(W*dpr));cv.height=Math.max(1,Math.floor(H*dpr));
+ scale=Math.max(.57,Math.min(1.16,W/470,H/560));
+ return true;
 }
 
-function drawEn(e){
- if(e.type==='sph')arenaArt.drawParticle(ctx,e,reduce);
- else arenaArt.drawCreature(ctx,e.type==='boss'?BOSSES[e.index].art:'dane',e,reduce);
- if(e.type==='boss'){
-  const boss=BOSSES[e.index];
-  ctx.strokeStyle=boss.color;ctx.lineWidth=3;
-  ctx.beginPath();ctx.arc(e.x,e.y,e.r+8,0,TAU);ctx.stroke();
-  if(e.windup>0){
-   ctx.lineWidth=2;ctx.strokeStyle='rgba(153,62,54,.52)';ctx.setLineDash([5,6]);
-   ctx.beginPath();ctx.arc(e.x,e.y,boss.wave,0,TAU);ctx.stroke();ctx.setLineDash([]);
-   ctx.strokeStyle='#ad5139';ctx.lineWidth=3;ctx.beginPath();
-   ctx.arc(e.x,e.y,boss.wave,-Math.PI/2,-Math.PI/2+TAU*(1-e.windup/.87));ctx.stroke();
-  }
- }
- if(e.markedUntil>S.t){
-  ctx.strokeStyle='#8b4686';ctx.lineWidth=2.1;ctx.beginPath();
-  ctx.arc(e.x,e.y,e.r+5,0,TAU);ctx.stroke();
- }
+function setCamera() {
+ const w=W/(2*scale),h=H/(2*scale),half=respiratory.width/2;
+ const x=w>=half?0:clamp(S.p.x,-half+w,half-w);
+ const y=h*2>=respiratory.height?respiratory.height/2:clamp(S.p.y,h,respiratory.height-h);
+ ox=W/2-x*scale;oy=H/2-y*scale;
 }
-function drawAb(x,y,a){ctx.save();ctx.translate(x,y);ctx.rotate(a+Math.PI/2);ctx.strokeStyle=C.imm;ctx.lineWidth=2.2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,5);ctx.lineTo(0,0);ctx.moveTo(0,0);ctx.lineTo(-4,-5);ctx.moveTo(0,0);ctx.lineTo(4,-5);ctx.stroke();ctx.restore()}
-function drawHeroSprite(p){
- const build=S.build;
- const height=56+4*(build.rank-1)+(build.evolved?4:0);
- const width=height*heroPortrait.naturalWidth/heroPortrait.naturalHeight;
- const cast=Math.max(0,1-(S.t-p.castAt)/.16);
- const stride=reduce?0:Math.sin(S.t*19)*p.walk;
- const lift=reduce?0:Math.abs(stride)*3+Math.sin(S.t*3)*(1-p.walk)*1.2;
- const facing=cast>0&&p.walk<.1?p.castFacing:p.facing;
- ctx.save();
- ctx.translate(p.x,p.y);
- ctx.beginPath();
- ctx.ellipse(0,9,19,7,0,0,TAU);
- ctx.fillStyle=S.hurt>0?'rgba(180,30,62,.42)':'rgba(33,27,54,.25)';
- ctx.fill();
- if(build.evolved){
-  ctx.strokeStyle='#a86e20';ctx.lineWidth=3;ctx.stroke();
-  ctx.strokeStyle='#ffe6a0';ctx.lineWidth=1.2;ctx.stroke();
- }
- if(build.fusions.size){
-  ctx.beginPath();ctx.ellipse(0,9,24,10,0,0,TAU);
-  ctx.strokeStyle='#7843aa';ctx.lineWidth=2.8;ctx.stroke();
-  ctx.strokeStyle='#e6afff';ctx.lineWidth=1.2;ctx.stroke();
- }
- ctx.scale(facing,1);
- ctx.translate(reduce?0:-cast*3,-lift);
- if(!reduce)ctx.rotate(stride*.07);
- ctx.drawImage(heroPortrait,-width/2,11-height,width,height);
- if(!reduce&&cast>0){
-  ctx.globalAlpha=cast;
-  ctx.fillStyle=currentWeapon().color;
-  circ(width*.42,-7,5);
-  ctx.fillStyle='#fff0bc';
-  circ(width*.42,-7,2.5);
+
+function oval(g,x,y,rx,ry,fill,edge) {
+ g.beginPath();g.ellipse(x,y,rx,ry,0,0,TAU);
+ if(fill){g.fillStyle=fill;g.fill();}
+ if(edge){g.strokeStyle=edge;g.lineWidth=2.4;g.stroke();}
+}
+
+function drawAntibodies(x,y,radius) {
+ ctx.save();ctx.lineWidth=2.8;ctx.lineCap='round';ctx.strokeStyle='#efe0ff';
+ for(let i=0;i<6;i++){
+  const a=i*TAU/6+Math.PI/6;
+  const px=x+Math.cos(a)*radius,py=y+Math.sin(a)*radius;
+  ctx.beginPath();ctx.moveTo(px,py+6);ctx.lineTo(px,py);
+  ctx.lineTo(px-4,py-5);ctx.moveTo(px,py);ctx.lineTo(px+4,py-5);ctx.stroke();
  }
  ctx.restore();
 }
 
-function drawP(){
- const P=S.p,st=S.st;
- if(st.cytoR>0){ctx.fillStyle='rgba(47,125,224,.07)';circ(P.x,P.y,st.cytoR);ctx.strokeStyle='rgba(47,125,224,.4)';ctx.lineWidth=1.5;ctx.setLineDash([5,6]);ctx.beginPath();ctx.arc(P.x,P.y,st.cytoR,0,TAU);ctx.stroke();ctx.setLineDash([])}
- ctx.strokeStyle='rgba(47,37,96,.28)';ctx.lineWidth=1.2;ctx.setLineDash([3,5]);ctx.beginPath();ctx.arc(P.x,P.y,P.r+st.reach+8,0,TAU);ctx.stroke();ctx.setLineDash([]);
- if(heroPortrait.complete&&heroPortrait.naturalHeight){
-  drawHeroSprite(P);
- }else{
-  const a=Math.atan2(P.fy,P.fx);
-  ctx.fillStyle=S.hurt>0?'#e45b72':C.cd8;circ(P.x,P.y,P.r);
-  ctx.fillStyle=C.cd8N;circ(P.x-Math.cos(a)*1.5,P.y-Math.sin(a)*1.5,P.r*.66);
-  eyes(P.x+Math.cos(a)*4,P.y+Math.sin(a)*4,a,3.6,'#ffffff','#10202a');
+function drawDefense(e) {
+ const boss=respiratory.bosses[e.type];
+ if(boss&&e.windup>0){
+  const progress=1-e.windup/.85;
+  oval(ctx,e.x,e.y,boss.wave,boss.wave,'rgba(252,92,117,.17)','#ffcab7');
+  ctx.beginPath();ctx.arc(e.x,e.y,boss.wave,-Math.PI/2,-Math.PI/2+TAU*progress);
+  ctx.strokeStyle='#fff1d0';ctx.lineWidth=4;ctx.stroke();
+  if(e.type==='lungs'&&e.waves%2===0)drawAntibodies(e.x,e.y,boss.wave);
  }
- if(S.tier.pat>=1){ctx.fillStyle=C.dead;for(let i=0;i<S.tier.pat+2;i++){const b=i*TAU/(S.tier.pat+2)+.6;circ(P.x+Math.cos(b)*P.r*.8,P.y+Math.sin(b)*P.r*.8,1.7)}}
- const nm=S.tier.mor;for(let i=0;i<nm;i++){const b=S.clock*1.6+i*TAU/nm;drawAb(P.x+Math.cos(b)*(P.r+12),P.y+Math.sin(b)*(P.r+12),b)}
-}
-function labels(){
- const sx=x=>ox+x*sc,sy=y=>oy+y*sc;
- ctx.font='700 13px Nunito,system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
- const L=[['veia central',0,40],['espaço porta',S.tri[0].x,S.tri[0].y+52],['você (linfócito T)',S.p.x,S.p.y-32]];
- const k=S.kup.slice().sort((a,b)=>Math.hypot(a.x,a.y+95)-Math.hypot(b.x,b.y+95))[0];if(k)L.push(['célula de Kupffer',k.x,k.y+36]);
- const ic=S.cells.find(c=>c.st===1);if(ic)L.push(['hepatócito infectado',ic.x,ic.y+20]);
- for(const[t,x,y]of L){ctx.lineWidth=4;ctx.strokeStyle='rgba(255,250,252,.92)';ctx.strokeText(t,sx(x),sy(y));ctx.fillStyle=C.ink;ctx.fillText(t,sx(x),sy(y))}
-}
-function drawCellBodies(){
- if(typeof Path2D!=='function')return false;
- const pattern=S.cells.map(c=>c.st).join('');
- if(!cellPaths||cellPattern!==pattern){
-  cellPattern=pattern;cellPaths=new Map();
-  function disc(color,x,y,r){
-   if(!cellPaths.has(color))cellPaths.set(color,new Path2D());
-   const path=cellPaths.get(color);path.moveTo(x+r,y);path.arc(x,y,r,0,TAU);
-  }
-  for(const c of S.cells){
-   const shade=c.st===2?C.dead:c.st===1?C.inf:c.alt?C.cell2:C.cell;
-   disc(shade,c.x,c.y,c.st===2?c.r*.62:c.r);
-  }
-  for(const c of S.cells){
-   if(c.st===2)disc('#3b1730',c.x+1,c.y-1,1.5);
-   else disc(c.st===1?C.infN:C.nuc,c.x,c.y,c.r*.36);
-  }
+ const motion=reduce?0:Math.sin(S.clock*8+e.phase)*e.r*.095;
+ arenaArt.drawActor(ctx,sprite(e.type,boss?.rank),e.x,e.y,e.r,motion,S.clock-e.hitAt<.13);
+ if(e.required&&!boss&&e.hp<e.max){
+  ctx.fillStyle='#522645';ctx.fillRect(e.x-14,e.y+13,28,4);
+  ctx.fillStyle='#ffdca3';ctx.fillRect(e.x-14,e.y+13,28*e.hp/e.max,4);
  }
- for(const [color,path] of cellPaths){ctx.fillStyle=color;ctx.fill(path)}
- return true;
-}
-function draw(){
- ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);
- if(!bg||!S)return;
- ctx.drawImage(bg,0,0);
- ctx.setTransform(dpr*sc,0,0,dpr*sc,dpr*ox,dpr*oy);
- const st=S.st;
- if(!reduce)arenaArt.drawBlood(ctx,S.rbc,S.tri,S.clock);
- const batched=drawCellBodies();
- for(const c of S.cells){
-  if(!batched){
-   if(c.st===2){ctx.fillStyle=C.dead;circ(c.x,c.y,c.r*.62);ctx.fillStyle='#3b1730';circ(c.x+1,c.y-1,1.5)}
-   else {
-    ctx.fillStyle=c.st===1?C.inf:(c.alt?C.cell2:C.cell);circ(c.x,c.y,c.r);
-    ctx.fillStyle=c.st===1?C.infN:C.nuc;circ(c.x,c.y,c.r*.36);
-   }
-  }
-  if(c.st===2)continue;
-  if(c.st===1){
-   ctx.fillStyle=C.tealL;const ph=S.clock*2+c.ph;circ(c.x+Math.cos(ph)*c.r*.62,c.y+Math.sin(ph)*c.r*.62,1.5);circ(c.x+Math.cos(ph+2.1)*c.r*.62,c.y+Math.sin(ph+2.1)*c.r*.62,1.5);
-   const pa=c.kt/st.killT,pb=st.cytoR?c.cy/st.cytoT:0,pr=Math.max(pa,pb);
-   if(pr>0){ctx.strokeStyle=pa>=pb?'#c2334a':'#2f7de0';ctx.lineWidth=2.2;ctx.beginPath();ctx.arc(c.x,c.y,c.r+2.8,-Math.PI/2,-Math.PI/2+TAU*Math.min(1,pr));ctx.stroke()}
-  }else if(c.imm||S.immAll>0){ctx.strokeStyle=C.imm;ctx.lineWidth=1.8;ctx.beginPath();ctx.arc(c.x,c.y,c.r+1.5,0,TAU);ctx.stroke()}
- }
- ctx.lineCap='round';ctx.lineJoin='round';
- for(const s of S.sep){const n=Math.floor(s.shown);if(n<2)continue;ctx.beginPath();ctx.moveTo(s.nodes[0].x,s.nodes[0].y);for(let i=1;i<n;i++)ctx.lineTo(s.nodes[i].x,s.nodes[i].y);ctx.strokeStyle=C.fib;ctx.lineWidth=15;ctx.stroke();ctx.strokeStyle=C.fibL;ctx.lineWidth=2;ctx.stroke()}
- if(S.boss?.index===BOSSES.length-1){
-  const b=S.boss,inf=[];for(const c of S.cells)if(c.st===1){const d=dist(c,b);if(d<420)inf.push([d,c])}
-  inf.sort((x,y)=>x[0]-y[0]);ctx.strokeStyle='rgba(14,138,140,.3)';ctx.lineWidth=1.5;ctx.setLineDash([4,5]);
-  for(const[,c]of inf.slice(0,10)){ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(c.x,c.y);ctx.stroke()}
-  ctx.setLineDash([]);
- }
- for(const orb of S.orbs)arenaArt.drawFragment(ctx,orb,reduce);
- for(const k of S.kup)drawKup(k);
- for(const e of S.en)drawEn(e);
- for(const p of S.puff){const r=6+(.5-p.t)*40;ctx.strokeStyle='rgba(79,143,220,'+Math.max(0,p.t*2)+')';ctx.lineWidth=2.4;ctx.beginPath();ctx.arc(p.x,p.y,r,0,TAU);ctx.stroke()}
- ctx.fillStyle=C.cd8;ctx.strokeStyle=C.cd8N;ctx.lineWidth=1.5;
- for(const b of S.pr){ctx.fillStyle=b.color;ctx.beginPath();ctx.arc(b.x,b.y,3.6,0,TAU);ctx.fill();ctx.stroke()}
- drawBuild();
- crew.drawEscort();
- drawP();
- ctx.setTransform(dpr,0,0,dpr,0,0);
- if(S.phase==='intro')labels();
- if(S.boss&&S.phase!=='intro'){
-  const b=S.boss,w=Math.min(300,W*.6),x=(W-w)/2,y=H-26;
-  ctx.font='800 12px Nunito,system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.lineJoin='round';
-  ctx.lineWidth=4;ctx.strokeStyle='rgba(255,250,252,.92)';ctx.strokeText(BOSSES[b.index].name,W/2,y-3);ctx.fillStyle=C.ink;ctx.fillText(BOSSES[b.index].name,W/2,y-3);
-  ctx.fillStyle='rgba(43,22,51,.25)';ctx.fillRect(x,y,w,8);ctx.fillStyle=C.teal;ctx.fillRect(x,y,w*Math.max(0,b.hp)/b.max,8);
- }
- if(joy.on&&S.phase==='play'){ctx.strokeStyle='rgba(47,37,96,.45)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(joy.ox,joy.oy,42,0,TAU);ctx.stroke();const dx=joy.x-joy.ox,dy=joy.y-joy.oy,l=Math.hypot(dx,dy),m=Math.min(l,42);ctx.fillStyle='rgba(47,37,96,.35)';circ(joy.ox+(l?dx/l*m:0),joy.oy+(l?dy/l*m:0),16)}
- if(S.hurt>0){ctx.strokeStyle='rgba(194,51,74,'+Math.min(.45,S.hurt*2.5)+')';ctx.lineWidth=10;ctx.strokeRect(5,5,W-10,H-10)}
-}
-function hud(){
- $('crewHud').disabled=S.phase==='level';
- $('pauseBtn').disabled=!['play','pause'].includes(S.phase);
- const p=S.p,st=S.st,b=S.build,week=Math.min(10,Math.floor(S.t/WEEK)+1);
- const hp=Math.max(0,Math.ceil(p.hp));
- const key=[week,hp,p.max,st.lvl,st.xp,st.need,S.sep.length,S.infected,S.bossWins,
-  b.rank,b.evolved,...Object.values(b.skills),b.fusions.size].join('|');
- if(key===lastH)return;
- lastH=key;
- hEl.day.textContent='Semana '+week;
- hEl.hpt.textContent=hp+'/'+p.max;hEl.hpb.style.width=(100*Math.max(0,p.hp)/p.max)+'%';
- hEl.lvt.textContent='Nível '+st.lvl;hEl.xpb.style.width=(100*st.xp/st.need)+'%';
- hEl.fbt.textContent='Chefes '+S.bossWins+'/'+BOSSES.length;
- $('arenaWeapon').textContent=weaponName()+' '+b.rank;
- const choices=[...Object.keys(b.skills).map(id=>SKILLS[id].name),...Array.from(b.fusions,id=>FUSIONS[id].name)];
- $('arenaSkills').textContent=choices.join(' · ');
- $('arenaTissue').textContent='Infectados '+S.infected+' · Fibrose '+fibPct()+'%';
 }
 
-function pickQ(id){
- const idx=[];Q.forEach((q,i)=>{if(q.t===id)idx.push(i)});
- const fresh=idx.filter(i=>!S.used.has(i)),pool=fresh.length?fresh:idx,i=pool[Math.floor(rnd()*pool.length)];
- S.used.add(i);return Q[i];
+function drawPlayer() {
+ const p=S.p,ha=traitRank('ha'),na=traitRank('na'),fused=S.fusions.size>0;
+ const shell=traitRank('shell'),veil=traitRank('veil'),core=traitRank('core');
+ const traits=Object.keys(S.slots).length-1;
+ const grade=Math.min(3,Math.floor((traits+ha+na+S.fusions.size)/2));
+ const pace=reduce?0:Math.sin(S.clock*20)*p.walk;
+ const bounce=reduce?0:Math.abs(pace)*3+Math.sin(S.clock*4)*1.8;
+ const recoil=reduce?0:Math.max(0,1-(S.clock-p.castAt)/.14)*3;
+ const aura=fused?'#e79bff':na?'#b5ffe3':ha?'#ffe0a5':null;
+ if(aura)oval(ctx,p.x,p.y+10,23+grade*2,8,'rgba(77,27,76,.38)',aura);
+ if(shell||veil)oval(ctx,p.x,p.y-6,24+grade,24+grade,null,shell?'#b4e2ed':'#dcb7f0');
+ if(p.dash>0&&!reduce) {
+  ctx.globalAlpha=.3;
+  arenaArt.drawActor(ctx,sprite('player',grade),p.x-p.fx*22,p.y-p.fy*22,19,bounce);
+  ctx.globalAlpha=1;
+ }
+ ctx.save();ctx.translate(p.x,p.y);
+ ctx.scale(p.facing*(p.dash>0&&!reduce?1.14:1),1);
+ if(!reduce)ctx.rotate(pace*.11);
+ arenaArt.drawActor(ctx,sprite('player',grade),-recoil,0,19+grade,bounce,S.clock-p.hitAt<.18);
+ if(ha)oval(ctx,-17,-19-bounce,3.1+ha,3.1+ha,'#ffd992','#7c4252');
+ if(na)oval(ctx,18,-14-bounce,3.3+na,3.3+na,'#a4f1d0','#4b5769');
+ if(core)oval(ctx,0,-30-bounce,3+core,3+core,'#d7a8ff','#644081');
+ if(traitRank('magnet'))oval(ctx,-24,4,3.1,3.1,'#ffdaa0','#89594c');
+ if(traitRank('reserve'))oval(ctx,24,5,3.1,3.1,'#ffacca','#885567');
+ ctx.restore();
 }
-function startQ(cd){
- curCombo=!!cd.combo;curT=cd.combo?null:cd.t;curQ=cd.combo?COMBO:pickQ(cd.t.id);
- $('draftHint').hidden=true;$('ups').hidden=true;$('ups').textContent='';
- $('lvTag').textContent=cd.combo?'Combo · Profilaxia neonatal':curT.name+' · '+curT.ctr+' · acertando: nível '+(S.tier[curT.id]+1);
- $('qText').textContent=curQ.q;const box=$('opts');box.textContent='';
- for(const o of shuffle(curQ.a.slice())){const b=document.createElement('button');b.className='opt';b.textContent=o;b.dataset.c=o===curQ.a[0]?'1':'0';b.addEventListener('click',()=>answer(b,o));box.append(b)}
- setTimeout(()=>{const f=box.querySelector('button');if(f)f.focus({preventScroll:true})},60);
+
+function drawEffects() {
+ for(const effect of S.effects) {
+  const t=(S.clock-effect.born)/effect.life;
+  ctx.globalAlpha=1-t;
+  if(effect.type==='pulse') {
+   const r=Math.max(1,effect.r*(reduce?1:.44+.56*t));
+   oval(ctx,effect.x,effect.y,r,r,null,effect.color);
+   if(effect.antibody)drawAntibodies(effect.x,effect.y,r);
+  }else{
+   const dx=effect.x2-effect.x,dy=effect.y2-effect.y;
+   const end = reduce ? .95 : .45+.55*t;
+   ctx.beginPath();ctx.moveTo(effect.x+dx*Math.max(0,end-.38),effect.y+dy*Math.max(0,end-.38));
+   ctx.lineTo(effect.x+dx*end,effect.y+dy*end);
+   ctx.lineCap='round';ctx.lineWidth=6;ctx.strokeStyle='#693150';ctx.stroke();
+   ctx.lineWidth=3;ctx.strokeStyle=effect.color;ctx.stroke();
+  }
+ }
+ ctx.globalAlpha=1;
 }
-function answer(btn,o){
- if(answered)return;answered=true;const ok=o===curQ.a[0];
- for(const b of $('opts').children){b.disabled=true;if(b.dataset.c==='1')b.classList.add('ok');else if(b===btn)b.classList.add('no')}
- S.log.push({q:curQ.q,a:curQ.a[0],ok});
- const fb=$('fb');fb.className='fb '+(ok?'good':'bad');fb.textContent='';
- const add=(txt,cls)=>{const p=document.createElement('p');if(cls)p.className=cls;p.textContent=txt;fb.append(p)};
- add(ok?'Certo.':'Ainda não.','fbh');
- if(!ok)add('Você marcou: '+o+'.');
- add(curQ.e);
- if(ok){
-  crew.rewardAnswer();add('+4 moedas para a equipe.');
-  if(curCombo){S.comboDone=true;S.immAll=25;S.p.hp=Math.min(S.p.max,S.p.hp+40);add('Combo ativado: por 25 s todo vírion que chega a um hepatócito saudável é neutralizado, e você recuperou vigor.')}
-  else{const T=curT,n=++S.tier[T.id];applyTier(T.id,n);add('Contramedida '+T.ctr+', nível '+n+': '+T.tiers[n-1][0]+'. '+T.tiers[n-1][1])}
- }else add(curCombo?'O combo não saiu desta vez.':'Sem evolução desta vez: '+curT.ctr+' continua no nível '+S.tier[curT.id]+'.');
- add('Resposta completa: '+curQ.a[0]+'.');
- fb.hidden=false;const c=$('contBtn');c.textContent='Continuar';c.hidden=false;c.focus({preventScroll:true});
-}
-function closeLevel(){
- if(S.phase!=='level'||!S.draft?.chosen||S.draft.chest)return;
- S.pending=Math.max(0,S.pending-1);continueRun();
-}
-function renderCtr(){describeBuild($('ctr'))}
-function finish(res){
- if(S.phase==='end')return;S.phase='end';joy.on=false;$('lv').hidden=true;$('pause').hidden=true;
- const week=Math.min(10,Math.floor(S.t/WEEK)+1),score=res==='win'?11:week;
- if(score>best){best=score;try{localStorage.setItem('lobulo-hbv-best',String(best))}catch(_){}}
- const T={
-  win:['Infecção resolvida','Você controlou a infecção no lóbulo. Na prática clínica, após a resolução, o HBsAg desaparece e o anti-HBc total persiste. O cccDNA ainda pode permanecer no fígado.'],
-  chronic:['A infecção persistiu',(S.bossDown?'Você derrubou o foco, mas ainda havia hepatócitos infectados.':'O foco viral continuou ativo ao fim da partida.')+' Na clínica, a persistência de HBsAg por pelo menos seis meses define hepatite B crônica.'],
-  exhaust:['Linfócito exausto','O excesso de antígeno esgotou o seu linfócito. Na hepatite B crônica, os linfócitos T CD8+ específicos também ficam exauridos, e a resposta fica fraca. Você chegou à semana '+week+' de 10.'],
-  cirrhosis:['O fígado cirrosou','A resposta imune destruiu hepatócitos demais. A lesão repetida ativa as células estreladas, que depositam colágeno e levam à cirrose. Você chegou à semana '+week+' de 10.']
- }[res];
- $('endH').textContent=T[0];$('endP').textContent=T[1];
- $('sInf').textContent=String(S.infected);$('sBoss').textContent=S.bossWins+'/'+BOSSES.length;$('sF').textContent=fibPct()+'%';
- describeBuild($('loadoutEnd'));
- const ul=$('codex');ul.textContent='';
- if(!S.log.length){const li=document.createElement('li');li.className='none';li.textContent='Se quiser revisar, escolha uma pergunta de HBV ao subir de nível.';ul.append(li)}
- for(const l of S.log){const li=document.createElement('li');if(!l.ok)li.className='x';const q=document.createElement('b');q.textContent=l.q+' ';const a=document.createElement('span');a.textContent='Resposta: '+l.a+'.';li.append(q,a);ul.append(li)}
- $('bestE').textContent=best?'Seu recorde: '+(best>10?'infecção resolvida':'semana '+best):'';
- $('end').hidden=false;syncArena();setTimeout(()=>$('againBtn').focus({preventScroll:true}),60);
-}
-function startRun(){
- S=newState();posed();S.phase='play';lastH='';cellPaths=null;$('arenaNotice').hidden=true;
- $('hud').hidden=false;$('arenaRoster').hidden=false;
- toastQ=[];toastT=0;toastGap=0;tEl.classList.remove('show');
- $('intro').hidden=true;$('end').hidden=true;$('lv').hidden=true;$('pause').hidden=true;
- toast('Colete os fragmentos roxos para escolher habilidades.');
- syncArena();
-}
-function pauseGame(){if(!S||S.phase!=='play')return;S.phase='pause';joy.on=false;renderCtr();$('pause').hidden=false;syncArena();$('resumeBtn').focus()}
-function resume(){
- $('pause').hidden=true;
- if(S?.phase==='pause'){S.phase='play';syncArena()}
+
+function draw() {
+ ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);
+ setCamera();
+ ctx.setTransform(dpr*scale,0,0,dpr*scale,dpr*ox,dpr*oy);
+ ctx.drawImage(mapCache,-respiratory.width/2,0);
+ respiratory.drawMucus(ctx,S.clock,S.mucus,reduce);
+ if(S.step<2)respiratory.lock(ctx,respiratory.stages[S.step].gate);
+ const stop=respiratory.stages[S.step];
+ const label=['Hemaglutinina','Neuraminidase','Bifurcação'][S.step];
+ if(!currentBoss())respiratory.marker(ctx,stop,label,S.enemies.every(e=>!e.required),S.clock,reduce);
+ for(const orb of S.orbs)arenaArt.drawFragment(ctx,orb,reduce);
+ for(const enemy of S.enemies)drawDefense(enemy);
+ crew.drawEscort();
+ drawEffects();drawPlayer();
+ if(joy.on){
+  const dx=joy.x-joy.ox,dy=joy.y-joy.oy,length=Math.max(1,Math.hypot(dx,dy)),amount=Math.min(34,length);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  oval(ctx,joy.ox,joy.oy,36,36,'rgba(79,43,73,.25)','#f4d8e4');
+  oval(ctx,joy.ox+dx/length*amount,joy.oy+dy/length*amount,13,13,'rgba(255,227,223,.74)',null);
+ }
 }
 
 const crew=(()=>{
@@ -1339,8 +1097,8 @@ function profile(){
       ${add?`<button class="talent-plus" type="button" data-act="train" data-id="${s.id}" data-key="${key}" aria-label="Aplicar um ponto em ${t.name}">+</button>`:''}</div>`;
   }).join('');
   let escort;
-  if(state.escort===s.id){escort=a.job?'Assume a coleta na arena depois que você receber a recompensa.':`Acompanha o linfócito e amplia o alcance de coleta em ${12+3*a.level} unidades.`;}
-  else{escort='Quando está livre, pode acompanhar o linfócito para recolher fragmentos de mais longe.';}
+  if(state.escort===s.id){escort=a.job?'Assume a coleta na arena depois que você receber a recompensa.':`Acompanha o seu vírus e amplia o alcance de coleta em ${12+3*a.level} unidades.`;}
+  else{escort='Quando está livre, pode acompanhar o seu vírus para recolher fragmentos de mais longe.';}
   return back('Minha equipe','team')+heading(html(a.name),intro)+`<div class="crew-detail-grid">${passport(s,a)}<section class="sheet-panel">
     ${xpbar(a)}<div class="panel-actions">${status(s.id,a)}${action(a.job?'Abrir missão':'Escolher missão',a.job?'job':'board',s.id)}</div>
     <div class="sheet-segment"><h3>Talentos</h3><p class="crew-small">${pt?`${pt} ${pt===1?'ponto disponível':'pontos disponíveis'}. Escolha onde investir.`:a.level===MAX_LEVEL?'Você distribuiu todos os pontos deste auxiliar.':'Cada novo nível libera um ponto para distribuir.'}</p>
@@ -1405,7 +1163,7 @@ function syncBadges(){
   $('crewJobs').textContent=running;
   $('crewJobs').hidden=!running;
   const ready=!!currentReady();
-  if(!total)$('crewLead').textContent='Escolha um mascote viral para acompanhar você no lóbulo ou sair em missões por moedas e experiência.';
+  if(!total)$('crewLead').textContent='Escolha um mascote viral para acompanhar você na arena ou sair em missões por moedas e experiência.';
   else if(ready)$('crewLead').textContent='Tem auxiliar de volta à base. Abra a missão para conferir a resposta e receber sua recompensa.';
   else if(running)$('crewLead').textContent=running===1?'Um auxiliar está em missão. Você pode voltar à arena enquanto ele trabalha.':running+' auxiliares estão em missão. Você pode voltar à arena enquanto eles trabalham.';
   else $('crewLead').textContent='Sua equipe está na base. Escolha quem vai à arena e quem vai sair em missão.';
@@ -1477,7 +1235,7 @@ function close(){
   hub.hidden=true;$('app').hidden=false;
   if(S?.phase==='base')S.phase='play';
   keys.clear();syncArena();
-  if(origin==='intro')renderArsenal();
+  if(origin==='intro')renderIntroduction();
   const target=origin==='intro'?$('startBtn'):(earlierFocus?.isConnected?earlierFocus:$('crewHud'));
   target?.focus();
   scheduleTick();
@@ -1627,78 +1385,113 @@ return {open,isOpen:()=>!hub.hidden,drawEscort,extraReach:()=>{const a=escort();
   rewardCoins:amount=>transact(data=>{data.coins+=amount;})};
 })();
 
-function rel(e){const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]}
-cv.addEventListener('pointerdown',e=>{if(!S||S.phase!=='play')return;const[x,y]=rel(e);joy.on=true;joy.id=e.pointerId;joy.ox=x;joy.oy=y;joy.x=x;joy.y=y;try{cv.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault()});
-cv.addEventListener('pointermove',e=>{if(joy.on&&e.pointerId===joy.id){const[x,y]=rel(e);joy.x=x;joy.y=y}});
-const release=e=>{if(e.pointerId===joy.id){joy.on=false;joy.id=null}};
-for(const event of ['pointerup','pointercancel','lostpointercapture'])cv.addEventListener(event,release);
-addEventListener('keydown',e=>{if(crew.isOpen())return;const k=(e.key||'').toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d'].includes(k)){keys.add(k);if(S&&S.phase==='play')e.preventDefault()}if(k==='escape'||k==='p'){if(S&&S.phase==='play')pauseGame();else if(S&&S.phase==='pause')resume()}});
-addEventListener('keyup',e=>keys.delete((e.key||'').toLowerCase()));
-addEventListener('blur',()=>keys.clear());
-document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseGame()});
+function relative(event) {
+ const rect=cv.getBoundingClientRect();
+ return [event.clientX-rect.left,event.clientY-rect.top];
+}
+cv.addEventListener('pointerdown',event=>{
+ if(S?.phase!=='play'||joy.on)return;
+ const [x,y]=relative(event);
+ Object.assign(joy,{on:true,id:event.pointerId,ox:x,oy:y,x,y});
+ try{cv.setPointerCapture(event.pointerId);}catch{}
+ event.preventDefault();
+});
+cv.addEventListener('pointermove',event=>{
+ if(joy.on&&event.pointerId===joy.id)[joy.x,joy.y]=relative(event);
+});
+for(const event of ['pointerup','pointercancel','lostpointercapture']){
+ cv.addEventListener(event,pointer=>{
+  if(pointer.pointerId===joy.id){joy.on=false;joy.id=null;}
+ });
+}
+
+const directionKeys=['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d'];
+window.addEventListener('keydown',event=>{
+ if(crew.isOpen())return;
+ const key=event.key?.toLowerCase();
+ if(S?.phase==='play'&&directionKeys.includes(key)){
+  keys.add(key);event.preventDefault();
+ }
+ if(S?.phase==='play'&&event.code==='Space'&&document.activeElement?.tagName!=='BUTTON'){
+  event.preventDefault();if(!event.repeat)dash();
+ }
+ if(key==='escape'||key==='p'){
+  if(S?.phase==='play')pauseGame();
+  else if(S?.phase==='pause')resume();
+ }
+});
+window.addEventListener('keyup',event=>keys.delete(event.key?.toLowerCase()));
+window.addEventListener('blur',clearInput);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseGame();});
 $('startBtn').addEventListener('click',startRun);
 $('againBtn').addEventListener('click',showIntro);
-$('contBtn').addEventListener('click',closeLevel);
+$('contBtn').addEventListener('click',continueRun);
+$('reviewBtn').addEventListener('click',reviewTrait);
+$('practiceBtn').addEventListener('click',practice);
 $('resumeBtn').addEventListener('click',resume);
-$('studyBtn').addEventListener('click',openStudy);
 $('restartBtn').addEventListener('click',showIntro);
-$('pauseBtn').addEventListener('click',()=>{if(S&&S.phase==='play')pauseGame();else if(S&&S.phase==='pause')resume()});
+$('pauseBtn').addEventListener('click',()=>{if(S?.phase==='pause')resume();else pauseGame();});
+$('dashBtn').addEventListener('click',()=>{
+ dash();
+ if(S?.phase==='play')cv.focus({preventScroll:true});
+});
 
-function releaseArena(){
- if(frameId!==null){cancelAnimationFrame(frameId);frameId=null}
- if(arenaObserver){arenaObserver.disconnect();arenaObserver=null}
- if(bg){bg.width=1;bg.height=1;bg=null}
- if(cv.width>1||cv.height>1){cv.width=1;cv.height=1}
+function stopFrames() {
+ if(frameId!==null){cancelAnimationFrame(frameId);frameId=null;}
+ if(observer){observer.disconnect();observer=null;}
+ if(cv.width>1||cv.height>1){cv.width=1;cv.height=1;}
 }
-function syncArena(){
+
+function syncArena() {
  const phase=S?.phase||'intro';
  stage.dataset.phase=phase;
- if(phase!=='play'||crew.isOpen()||document.hidden){
-  releaseArena();
+ if(phase!=='play'||crew.isOpen()||document.hidden) {
+  stopFrames();
   if(S)hud();
   return;
  }
  try{
   if(!ctx)ctx=cv.getContext('2d');
-  if(!ctx||!resize())throw Error('Canvas 2D unavailable');
+  if(!ctx||!resize())throw new Error('Canvas 2D unavailable');
  }catch{
-  releaseArena();S=null;lastH='';
-  stage.dataset.phase='intro';$('intro').hidden=false;$('hud').hidden=true;
-  $('pauseBtn').disabled=true;$('crewHud').disabled=false;
+  stopFrames();S=null;setPanel('intro');
   $('arenaNotice').textContent='A arena não abriu neste navegador. A base e as missões continuam disponíveis.';
   $('arenaNotice').hidden=false;
   return;
  }
- if(!arenaObserver&&typeof ResizeObserver==='function'){
-  arenaObserver=new ResizeObserver(()=>{if(resize())draw()});
-  arenaObserver.observe(stage);
+ if(!observer&&typeof ResizeObserver==='function'){
+  observer=new ResizeObserver(()=>{if(resize())draw();});
+  observer.observe(stage);
  }
+ lastHud='';
  if(frameId===null){
-  frameTime=performance.now();frameCredit=0;last=frameTime;
+  lastFrame=performance.now();
   draw();hud();frameId=requestAnimationFrame(frame);
  }
 }
-function frame(ts){
+
+function frame(time) {
  frameId=null;
- if(!S||S.phase!=='play'||crew.isOpen()||document.hidden){syncArena();return}
- frameCredit+=Math.max(0,ts-frameTime);frameTime=ts;
- if(frameCredit>=FRAME_MS-.25){
-  frameCredit=Math.max(0,frameCredit-FRAME_MS);
-  const dt=Math.min(Math.max(0,(ts-last)/1000),.05);last=ts;
+ if(S?.phase!=='play'||crew.isOpen()||document.hidden){syncArena();return;}
+ if(time-lastFrame>=FRAME_MS-.25) {
+  const dt=Math.min((time-lastFrame)/1000,.067);lastFrame=time;
   update(dt);
-  if(S.phase!=='play'){syncArena();return}
-  ambient(dt);tickToast(dt);draw();hud();
+  if(S?.phase!=='play')return;
+  if(S.clock>=toastUntil)$('toast').classList.remove('show');
+  draw();hud();
  }
  if(frameId===null)frameId=requestAnimationFrame(frame);
 }
-window.addEventListener('resize',()=>{if(resize()&&arenaObserver===null)draw()});
-try{best=+(localStorage.getItem('lobulo-hbv-best')||0)||0}catch{}
-if(best)$('bestT').textContent='Seu recorde: '+(best>10?'infecção resolvida':'semana '+best);
-terrain.addEventListener('load',()=>{
- drawMapThumbnail();
- if(bg)buildBg();
+window.addEventListener('resize',()=>{
+ if(S?.phase==='play'&&!observer&&resize())draw();
 });
-drawMapThumbnail();
+terrain.addEventListener('load',()=>{
+ makeMap();
+ if(S?.phase==='play'&&ctx)draw();
+});
+const portrait=$('virusPortrait').getContext('2d');
+if(portrait)portrait.drawImage(sprite('player'),0,0,112,112);
+makeMap();
+setupGuide();
 showIntro();
-crew.open(true);
 }
