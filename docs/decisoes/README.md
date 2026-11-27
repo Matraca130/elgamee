@@ -6,6 +6,8 @@ Use este índice para saber por que o Atlas Viral funciona do jeito atual. As re
 | --- | --- | --- |
 | [Salvar o progresso por conta e por curso](progresso-por-conta.md) | Aceita | Login e armazenamento |
 | [Separar os capítulos respiratórios](capitulos-respiratorios.md) | Aceita | Jogo e conteúdo |
+| [Animar a influenza com peças articuladas](animacao-influenza.md) | Aceita | Arte e combate |
 | [Versionar a memória com o código](memoria-no-repositorio.md) | Aceita | Colaboração |
+| [Manter um endereço fixo para a prévia jogável](previa-github-pages.md) | Aceita | Publicação |
 
 Para registrar uma escolha importante, crie um arquivo com título curto, data e estado. Descreva o contexto, a decisão, suas consequências e os arquivos envolvidos. Acrescente o link ao índice junto com a mudança. Use **Proposta**, **Aceita** ou **Substituída**. Uma decisão substituída aponta para a que passou a valer.

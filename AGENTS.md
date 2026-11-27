@@ -6,7 +6,8 @@
 - O envoltório tem até quatro espaços funcionais: ataque, pulso, defesa e apoio. Nucleocapsídeo, movimento e status têm um espaço cada. Cada espaço aceita uma habilidade por partida, com melhorias de nível. Uma fusão pode acrescentar um terceiro poder sem ocupar o espaço de suas duas habilidades de origem. Mostre as escolhas no visual do vírus.
 - A fase respiratória tem quatro arenas separadas: orofaringe, traqueia, brônquios e pulmões. As evoluções são oferecidas após vencer cada arena. As correntes de ar levam de uma sala para outra. Renderize só a arena ativa.
 - Use a mucosa como defesa que atrasa o jogador e abre uma pergunta. A resposta correta preserva a integridade. Na última arena, o macrófago alveolar é o chefe e os anticorpos são uma defesa adaptativa distinta. O bônus jogável de fim de fase ainda está em discussão.
-- A morfologia tem corpo, face, núcleo visível e envoltório. O personagem flutua. Fibras curtas ou longas são detalhes de superfície inspirados em estruturas de adesão. Use azul-claro para o envoltório da influenza, pinos dourados para HA, ramos para NA e violeta para a fusão. Dê uma forma visual própria às habilidades especiais equipadas.
+- A morfologia tem corpo, face, núcleo visível e envoltório. A influenza flutua com membrana turquesa, sombras azul-petróleo, aletas angulosas e poucas hastes largas. Fibras curtas ou longas são detalhes de superfície inspirados em estruturas de adesão. Use pinos dourados para HA, ramos para NA e violeta para a fusão. Dê uma forma visual própria às habilidades especiais equipadas.
+- Anime a influenza com peças articuladas e poses legíveis na escala da arena. Sincronize o disparo com a soltura da animação. Use o estúdio para revisar a preparação, o recuo e a reação ao dano.
 - A patogenia tem uma antena própria. Na fase respiratória, Membrana firme e Impulso nível 2 podem abrir o desafio do Eco inflamatório. A resposta correta equipa uma espiral coral e o Super. O dash durante o impacto de uma onda de chefe carrega o Super, que transforma um disparo em leque. Use o dash como acessório inicial. As transformações dos disparos devem exigir combinações específicas e ser legíveis na mira manual.
 - Os perfis fictícios de genoma mudam o ritmo dos ataques, a integridade e a movimentação. Use um traço para RNA de fita simples, dois traços de outra cor para DNA de fita dupla e um sinal para a polaridade de RNA. Na ficha científica, influenza A tem RNA segmentado de fita simples negativa. Os atributos de jogo pertencem à ficção.
 - Ofereça a morfologia interna da influenza na Área do núcleo, depois da orofaringe. Uma pergunta libera sete ou oito segmentos. Uma pergunta bônus permite escolher C com sete ou A/B com oito. Conserve a morfologia anterior se o jogador errar. Mostre na arte o número de segmentos e diferencie os perfis por cor.
@@ -28,12 +29,13 @@
 - Registre decisões que mudem as regras do jogo, os cursos, o armazenamento ou a publicação junto com a alteração que as aplica. Anote o contexto, o que foi decidido e as consequências.
 - Identifique ideias em discussão como propostas. Quando uma decisão mudar, vincule a anterior à nova e atualize as instruções vigentes aqui.
 - Atualize o [estado do projeto](docs/contexto/estado.md) quando a entrega ou a pendência principal mudar.
+- A prévia jogável usa a branch `gh-pages`. Atualize-a com uma revisão escolhida do código e registre o commit de origem conforme a [decisão de publicação](docs/decisoes/previa-github-pages.md).
 
 ## Onde acrescentar conteúdo
 
 - Defina as arenas, os pontos de saída, os chefes e as perguntas em `dist/fase-influenza.js`.
 - Defina as arenas e os casos do VSR em `dist/capitulo-vsr.js`. Registre novos capítulos no seletor em `dist/jogo.js` e na validação de progresso em `worker/index.js`.
-- Configure perfis e atributos em `dist/morfologia.js` e as camadas visuais em `dist/arte-jogo.js`.
+- Configure perfis e atributos em `dist/morfologia.js`, as camadas e poses da influenza em `dist/influenza-2d.js` e a arte dos outros personagens em `dist/arte-jogo.js`.
 - Configure segmentos, perfis, poderes, perguntas do núcleo e chances das formas em `dist/nucleo-influenza.js`.
 - Configure perfis, limite e duração de ecos em `dist/replicacao.js`.
 - Registre as novas habilidades, fusões e efeitos de jogo em `dist/jogo.js`.

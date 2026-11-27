@@ -6,6 +6,8 @@ Jogo de virologia com cursos interativos de influenza e vírus sincicial respira
 
 Com Node.js instalado, execute `npm run dev` e abra a URL exibida. Na prévia local, o avanço fica no navegador. Execute `npm run build` para gerar o Worker que serve o jogo e o progresso por conta no site.
 
+Abra `/estudio-influenza.html` na prévia para testar a versão articulada da influenza. O [guia de animação](docs/prototipo-influenza.md) explica como adaptar as peças e os movimentos para outro personagem.
+
 Para continuar em outro chat ou editor, abra o repositório na raiz e consulte as [instruções do projeto](AGENTS.md). O [registro de decisões](docs/decisoes/README.md) explica as escolhas que ainda orientam o código.
 
 ## Recuperar contexto
@@ -38,3 +40,9 @@ O código e a memória compartilhados estão no [Matraca130/elgamee](https://git
 Se você recebeu o pacote Git do Atlas, rode `git clone atlas-viral.bundle atlas-viral` e abra a pasta `atlas-viral` no editor. O pacote traz o histórico e os arquivos de contexto da versão em que foi criado.
 
 A URL do Atlas é publicada a partir do repositório vinculado ao Site. Se a equipe editar em outro repositório, aplique a revisão combinada no repositório do Site antes de publicar. As configurações da conta e os resultados dos jogadores ficam na hospedagem.
+
+## Jogar pela prévia do GitHub
+
+Use o [link fixo para jogar Atlas Viral](https://matraca130.github.io/elgamee/). O progresso nessa prévia fica no navegador.
+
+A branch `gh-pages` guarda o jogo pronto para abrir. O código e as decisões continuam no fluxo de pull requests para `main`. Consulte a [decisão da prévia pública](docs/decisoes/previa-github-pages.md) para ativar o endereço e atualizar a versão jogável.
