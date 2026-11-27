@@ -14,7 +14,7 @@ const chapters={
  },
  vsr:vsrChapter
 };
-const courseLimits=Object.fromEntries(Object.values(chapters).map(chapter=>[chapter.id,chapter.stages.length]));
+const courseLimits=atlasCourseLimits;
 const courseChoiceKey='atlas-viral-curso-ativo';
 let selectedChapter=chapters.influenza;
 const courseButtons=new Map();
@@ -680,13 +680,16 @@ function renderCourseStatus(){
  $('courseStatus').textContent=status[mode];
  $('courseSignIn').hidden=mode!=='signin';
  for(const [id,{button,score}] of courseButtons){
-  const entry=atlasProgress.read(id);
-  const max=courseLimits[id];
-  const correct=entry?.correct??0;
   button.setAttribute('aria-pressed',String(id===selectedChapter.id));
-  score.textContent=(entry?.cleared===max?'Concluído':(entry?.cleared??0)+'/'+max+' arenas')+
-   ' · '+correct+(correct===1?' acerto':' acertos');
+  score.textContent=courseScore(id);
  }
+ $('parasiteScore').textContent=courseScore('toxocara');
+}
+
+function courseScore(id){
+ const entry=atlasProgress.read(id),max=courseLimits[id],correct=entry?.correct??0;
+ return (entry?.cleared===max?'Concluído':(entry?.cleared??0)+'/'+max+' arenas')+
+   ' · '+correct+(correct===1?' acerto':' acertos');
 }
 
 function setupCourses(){
@@ -708,6 +711,7 @@ function setupCourses(){
   $('courseChoices').append(button);
   courseButtons.set(chapter.id,{button,score});
  }
+ $('courseChoices').append($('parasiteCourse'));
  atlasProgress.init(courseLimits,renderCourseStatus);
 }
 
