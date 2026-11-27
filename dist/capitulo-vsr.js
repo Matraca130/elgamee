@@ -1,26 +1,40 @@
 const vsrChapter=(()=>{
  const review={
-  syncytium:{guide:14,level:'Intermediária',topic:'Sincício',
-   q:'Como se forma um sincício na infecção pelo VSR?',
-   answers:['A proteína F pode promover a fusão de células, formando uma estrutura com vários núcleos.','A proteína G divide cada núcleo em vários segmentos de RNA.','Os anticorpos unem os núcleos no interior das células.'],
-   note:'Sincícios são estruturas multinucleadas formadas pela fusão de células. A proteína F participa dessa fusão no VSR e a proteína G está associada à ligação à célula.'},
-  morphology:{guide:10,level:'Fácil',topic:'Morfologia',
-   q:'Como se descreve o genoma do vírus sincicial respiratório?',
-   answers:['RNA de fita simples negativa, não segmentado.','RNA de fita simples positiva em oito segmentos.','DNA circular de fita dupla.'],
-   note:'O VSR pertence ao gênero Orthopneumovirus, da família Pneumoviridae. Tem envoltório e pode apresentar formas arredondadas e filamentosas.'}
+  syncytium:{guide:14,level:'Difícil',topic:'Leitura de lâmina',
+   q:'Em uma lâmina de VSR, os núcleos de células vizinhas permanecem distintos após a fusão das membranas. Nomeie a estrutura resultante e o compartimento que passou a ser comum.',
+   fields:[{label:'Estrutura observada',terms:['Sincício','Sincícios','Sincitio','Syncytium','Sincício multinucleado']},
+    {label:'Compartimento compartilhado',terms:['Citoplasma','Citoplasma celular','Cytoplasm']}],
+   note:'O sincício é a estrutura formada pela fusão celular. O achado descrito é o citoplasma compartilhado por vários núcleos.'},
+  morphology:{guide:10,level:'Intermediária',topic:'Classificação',
+   q:'Duas fichas, de VSR e de metapneumovírus humano, estão na mesma pasta de família. Escreva o nome dessa família e o gênero que identifica especificamente o VSR.',
+   fields:[{label:'Gênero',terms:['Orthopneumovirus']},{label:'Família',terms:['Pneumoviridae']}],
+   note:'Orthopneumovirus é o gênero do VSR. Pneumoviridae é a família, que também inclui o metapneumovírus humano.'}
  };
+ const immunity={level:'Difícil',topic:'Imunização',
+  q:'Um lactente recebe anticorpos prontos. Em outro exemplo, o próprio organismo produz anticorpos após uma vacina. Como se classifica a imunidade adquirida em cada situação?',
+  fields:[{label:'Anticorpos recebidos',terms:['Passiva','Imunidade passiva','Imunização passiva','Pasiva','Inmunidad pasiva','Inmunización pasiva']},
+   {label:'Resposta à vacina',terms:['Ativa','Imunidade ativa','Imunização ativa','Activa','Inmunidad activa','Inmunización activa']}],
+  note:'Na imunização passiva, os anticorpos vêm de fora. Na ativa, o sistema imune da própria pessoa responde ao antígeno.'};
+ const positiveTests={level:'Difícil',topic:'Vigilância de VSR',
+  q:'Dois serviços enviaram amostras para VSR. O Leste teve 9 positivas em 30 e o Oeste, 15 em 75. Qual teve maior positividade e qual foi o valor?',
+  fields:[{label:'Serviço',terms:['Leste','Serviço Leste','Este','Servicio Este']},{label:'Positividade (%)',percent:30}],
+  note:'O Leste teve 30% de positividade e o Oeste, 20%. Esses valores descrevem as amostras testadas em cada serviço.'};
  const cases={
   care:{x:-160,y:228,tone:'#f2c790',label:'Caso · equipe de saúde',hint:'Caso sobre prevenção · à esquerda da entrada',
-   questions:[{level:'Fácil',topic:'Prevenção',
-    q:'Entre atendimentos de pessoas com sintomas respiratórios, qual ação ajuda a proteger pacientes e equipe?',
-    answers:['Higienizar as mãos e seguir as precauções indicadas no serviço.','Usar antibióticos preventivamente em todos os casos.','Adotar precauções apenas se houver febre.'],
-    note:'Higiene das mãos e precauções adequadas ajudam a reduzir infecções em serviços de saúde.'}]},
+   questions:[{level:'Intermediária',topic:'Prevenção no serviço',
+    q:'Uma profissional retira as luvas após examinar uma criança e vai atender outra. Qual cuidado com as mãos deve ocorrer entre esses atendimentos?',
+    fields:[{label:'Medida de prevenção',terms:['Higiene das mãos','Higienização das mãos','Higienizar as mãos','Lavar as mãos','Lavagem das mãos','Fricção antisséptica das mãos','Higiene de manos','Lavado de manos','Higienização de mãos']}],
+    note:'As luvas complementam a proteção. A higiene das mãos está indicada após retirá-las e antes do contato com o próximo paciente.'},immunity]},
   infant:{x:165,y:232,tone:'#f2c790',label:'Caso · lactente',hint:'Caso de bronquiolite · à direita da entrada',
-   questions:[{guide:13,level:'Intermediária',topic:'Bronquiolite',
-    q:'Em um lactente com bronquiolite, qual região está inflamada?',
-    answers:['Os bronquíolos, as pequenas vias aéreas dos pulmões.','Apenas a orofaringe.','As membranas que revestem o cérebro.'],
-    note:'Bronquiolite é a inflamação das pequenas vias aéreas. O VSR é uma causa frequente em lactentes. A gravidade varia com a idade e outros fatores.'}]}
+   questions:[{guide:13,level:'Difícil',topic:'Anatomia e clínica',
+    q:'Em um caso didático de VSR, o laudo localiza a inflamação nas pequenas vias aéreas entre os brônquios e os alvéolos. Nomeie a estrutura e o quadro inflamatório correspondente.',
+    fields:[{label:'Estrutura anatômica',terms:['Bronquíolos','Bronquíolo','Os bronquíolos','Los bronquiolos']},
+     {label:'Quadro inflamatório',terms:['Bronquiolite','Bronquiolite aguda','Bronquiolitis','Bronquiolitis aguda']}],
+    note:'Os bronquíolos são pequenas vias aéreas. A inflamação dessas estruturas recebe o nome de bronquiolite.'},positiveTests]}
  };
+ const practice=[cases.infant.questions[0],immunity,positiveTests,review.syncytium];
+ const mucusQuestions=[...respiratory.questions,review.morphology,positiveTests];
+
  const stages=[
   {name:'Vias superiores',art:0,rx:308,ry:278,spawn:{x:0,y:178},x:0,y:446,exit:{x:0,y:603},
    tone:'#a8e4d6',label:'Marco das correntes',targets:[[-132,252],[147,295],[-105,395]],boss:'vsrWatch',
@@ -39,6 +53,6 @@ const vsrChapter=(()=>{
  };
  return {id:'vsr',title:'Vírus sincicial respiratório',short:'VSR',topic:'Virus sincicial respiratorio',
   lead:'Atravesse duas arenas e investigue o sincício e a bronquiolite.',
-  stages,bosses,review,practice:review.morphology,fixedGenome:'rnaNegative',
+  stages,bosses,review,practice,mucusQuestions,fixedGenome:'rnaNegative',
   win:'Você atravessou os bronquíolos e venceu a defesa da curva. +25 moedas.'};
 })();

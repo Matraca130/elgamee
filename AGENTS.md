@@ -21,6 +21,9 @@
 - Mantenha o jogo acessível no celular e com teclado. Preserve a base dos auxiliares e seus dados salvos. Audite controles, objetivos e progressão ao mexer na arena.
 - Quando o usuário firmar uma nova regra permanente de jogabilidade, arte ou conteúdo, atualize este arquivo junto com a mudança. Use a instrução mais recente do usuário para resolver divergências.
 
+- Nos capítulos jogáveis, priorize casos que peçam interpretação e recordação. Para respostas curtas, defina os campos, os termos aceitos ou a porcentagem e a explicação. Faça a correção no navegador por regras locais. Use alternativas plausíveis quando a resposta exige julgar uma explicação inteira.
+- Nas ilustrações das arenas, dê uma silhueta própria a cada defesa. Mostre os marcos, a corrente de ar e o posto de estudo com formas distintas e mantenha as camadas de evolução visíveis no personagem.
+
 ## Continuidade do projeto
 
 - Use o [README](README.md) para retomar o projeto e consulte o [registro de decisões](docs/decisoes/README.md) antes de mudar uma área já documentada.

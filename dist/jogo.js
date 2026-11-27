@@ -6,7 +6,8 @@ const chapters={
  influenza:{
   id:'influenza',title:'Influenza',short:'Influenza',topic:'Influenza',
   lead:'Monte seu vírus e passe por quatro arenas do aparelho respiratório.',
-  stages:respiratory.stages,bosses:respiratory.bosses,review:respiratory.review,practice:respiratory.review.epidemiology,
+  stages:respiratory.stages,bosses:respiratory.bosses,review:respiratory.review,practice:respiratory.practice,
+  mucusQuestions:respiratory.mucusQuestions,
   win:'Você passou pela traqueia e venceu o macrófago alveolar. +25 moedas.'
  },
  vsr:vsrChapter
@@ -17,6 +18,7 @@ let selectedChapter=chapters.influenza;
 const courseButtons=new Map();
 const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TAU=Math.PI*2, FRAME_MS=1000/30;
+const BOSS_WINDUP_SECONDS=.85;
 const keys=new Set();
 const moveStick={id:null,ox:0,oy:0,x:0,y:0};
 const aimStick={id:null,ox:0,oy:0,x:0,y:0,mouse:false};
@@ -72,13 +74,13 @@ const FUSIONS={
 const SLOT_NAMES=Object.fromEntries(SLOTS);
 const OPTIONAL=['shell','veil','magnet','core','dash','reserve'];
 const defenseArt={
- cell:{look:'box',colors:['#efb084','#bd6679','#ffe5c3']},
- patrol:{look:'tuft',colors:['#85bbdd','#485b96','#d1eff0']},
- watch:{look:'shell',colors:['#9bd9c5','#458787','#e4f5c6']},
- airway:{look:'spark',colors:['#79b2d6','#4d5d98','#deefff']},
- lungs:{look:'scallop',colors:['#bb7ec2','#663b87','#f8cae8']},
- vsrWatch:{look:'shell',colors:['#8bb4cf','#486184','#e0fbeb']},
- vsrBronchi:{look:'spark',colors:['#7fcbb4','#3e727f','#e6ffd9']}
+ cell:{model:'cell',colors:['#e2a15a','#8e5050','#ffe4a0']},
+ patrol:{model:'patrol',colors:['#73b5d0','#42587b','#cbefed']},
+ watch:{model:'watch',colors:['#79bba2','#416f70','#d7edb5']},
+ airway:{model:'airway',colors:['#80b7d3','#506392','#dbf0ec']},
+ lungs:{model:'lungs',colors:['#c582b0','#784875','#ffcdcc']},
+ vsrWatch:{model:'watch',colors:['#83b9cd','#4a6886','#d6f4e4']},
+ vsrBronchi:{model:'airway',colors:['#87c5a9','#477c81','#e7f4bd']}
 };
 const companionLook={morph:{...viralMorphology.defaults,face:'calm'}};
 const bodyCache=new Map();
@@ -89,12 +91,12 @@ let S=null, ctx=null, frameId=null, observer=null;
 let W=1,H=1,dpr=1,scale=1,ox=0,oy=0,lastFrame=0,lastHud='';
 let toastUntil=0;
 
-function sprite(type,rank=0) {
- const key=type+'-'+rank;
- if(!bodyCache.has(key)) {
-  bodyCache.set(key,arenaArt.creature(defenseArt[type],rank,true));
+function sprite(type) {
+ if(!bodyCache.has(type)){
+  const {model,colors}=defenseArt[type];
+  bodyCache.set(type,defenseIllustration.render(model,colors));
  }
- return bodyCache.get(key);
+ return bodyCache.get(type);
 }
 
 function traitRank(id) {
@@ -430,7 +432,7 @@ function moveDefenses(dt) {
   }
   if(boss&&d<boss.wave+90) {
    enemy.charge-=dt;
-   if(enemy.charge<=0){enemy.windup=.85;continue;}
+   if(enemy.charge<=0){enemy.windup=BOSS_WINDUP_SECONDS;continue;}
   }
   if(d>.01) {
    enemy.x+=(p.x-enemy.x)/d*enemy.speed*dt;
@@ -488,8 +490,8 @@ function arenaReward() {
  const note=reward?TRAITS[reward].study:'As habilidades evoluem no próprio espaço.';
  const draft={cards,title,label:area.name+' · arena concluída',note,topic:reward};
  if(S.step===0&&S.chapter.id==='influenza')showLayoutChoices(draft);
- else if(area.unlock)showFusionChallenge(fusionCard(area.unlock),'Desafio do sincício',
-  'Associe a proteína do VSR ao efeito observado nas células.',()=>resumeDraft(draft));
+ else if(area.unlock)showFusionChallenge(fusionCard(area.unlock),'Desafio da lâmina',
+  'Interprete o que aconteceu às células para conquistar Confluência.',()=>resumeDraft(draft));
  else resumeDraft(draft);
 }
 
@@ -545,11 +547,7 @@ function mucusCheck(dt) {
  S.mucusTime+=dt;
  if(S.mucusTime<.36)return false;
  S.mucusAnswered=true;
- const pool=S.chapter.id==='influenza'&&S.step===1?
-  [respiratory.questions[index],...respiratory.influenzaBank]:[respiratory.questions[2]];
- const unseen=pool.filter(question=>!S.history.some(item=>item.question===question.q));
- const options=unseen.length?unseen:pool;
- openQuiz(options[Math.floor(Math.random()*options.length)],'mucus');
+ openQuiz(atlasQuiz.nextQuestion(S.chapter.mucusQuestions,S.history),'mucus');
  return true;
 }
 
@@ -558,7 +556,7 @@ function studyCheckpoint() {
  if(!post||S.studySeen||distance(post,S.p)>34)return false;
  S.studySeen=true;
  const pool=post.questions??respiratory.prophylaxis;
- const question=pool[Math.floor(Math.random()*pool.length)];
+ const question=atlasQuiz.nextQuestion(pool,S.history);
  openQuiz(question,'study',correct=>{
   if(correct)arenaReplication.studyReward(S.replication,S.p,S.clock);
   S.round=null;
@@ -684,7 +682,6 @@ function renderChapter(){
  $('influenzaCoreHelp').hidden=!influenza;
  $('influenzaLink').hidden=!influenza;
  $('vsrHelp').hidden=influenza;
- $('practiceBtn').textContent='Revisar · '+chapter.practice.topic;
  stage.setAttribute('aria-label','Arena respiratória · '+chapter.short);
  cv.setAttribute('aria-label','Arena do Atlas Viral, com '+chapter.stages.length+' regiões respiratórias');
  $('campaignRoute').replaceChildren();
@@ -747,11 +744,13 @@ function startRun() {
 
 function setupChoice(title,label,note) {
  S.phase='level';clearInput();setPanel('level');syncArena();
+ $('lv').dataset.kind=S.round.kind;
  $('qText').textContent=title;$('lvTag').textContent=label;
  $('draftHint').hidden=!note;$('draftHint').textContent=note;
  $('opts').replaceChildren();
  $('ups').replaceChildren();$('ups').hidden=true;
  $('contBtn').textContent='Continuar';$('contBtn').classList.remove('ghost');
+ $('leavePractice').hidden=true;
  $('fb').hidden=true;$('contBtn').hidden=true;$('reviewBtn').hidden=true;$('evolutionPreview').hidden=true;
 }
 
@@ -872,49 +871,76 @@ function showFusionChallenge(card,title,note,onContinue) {
 }
 
 function openQuiz(question,mode,returnTo=null,hint='') {
- S.round={kind:'quiz',mode,returnTo,answered:false};
+ const round={kind:'quiz',mode,question,returnTo,answered:false};
+ S.round=round;
  const note=mode==='mucus'?'Uma resposta certa protege sua integridade. Um erro custa 26 pontos.':hint;
  const source=question.guide?' · Taller 14, questão '+question.guide:'';
  setupChoice(question.q,question.level+' · '+question.topic+source,note);
- if(mode==='practice')$('hud').hidden=true;
- const order=[0,1,2];
- for(let i=order.length-1;i>0;i--) {
-  const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];
+ if(mode==='practice'){
+  $('hud').hidden=true;
+  $('leavePractice').hidden=false;
  }
- for(const index of order){
+ const options=$('opts');
+ if(question.fields){
+  const form=atlasQuiz.writtenForm(question,marks=>answerQuiz(round,marks.every(Boolean),marks));
+  options.append(form);
+  form.querySelector('input').focus({preventScroll:true});
+  return;
+ }
+ const buttons=question.answers.map((answer,index)=>{
   const option=document.createElement('button');
-  option.type='button';option.className='opt';option.textContent=question.answers[index];
-  option.dataset.correct=String(index===0);
-  option.addEventListener('click',()=>answerQuiz(index,question,option));
-  $('opts').append(option);
- }
- $('opts').firstElementChild?.focus({preventScroll:true});
+  option.type='button';option.className='opt';option.textContent=answer;
+  option.addEventListener('click',()=>{
+   if(S?.round!==round||round.answered)return;
+   for(const button of buttons)button.disabled=true;
+   buttons[0].classList.add('ok');
+   if(index!==0)option.classList.add('no');
+   answerQuiz(round,index===0);
+  });
+  return option;
+ });
+ options.append(...atlasQuiz.shuffled(buttons));
+ options.firstElementChild.focus({preventScroll:true});
 }
 
-function answerQuiz(index,question,option) {
- if(S?.phase!=='level'||S.round?.kind!=='quiz'||S.round.answered)return;
- const correct=index===0,mucus=S.round.mode==='mucus';
- S.round.answered=true;S.round.correct=correct;
+function answerQuiz(round,correct,marks) {
+ if(S?.phase!=='level'||S.round!==round||round.answered)return;
+ const {question,mode}=round;
+ round.answered=true;round.correct=correct;
  S.history.push({question:question.q,correct});
- saveCourseProgress();
- if(mucus) {
+ if(mode!=='practice')saveCourseProgress();
+ if(mode==='mucus') {
   if(correct)crew.rewardAnswer();
   else S.p.hp=Math.max(0,S.p.hp-26);
  }
- for(const button of $('opts').children) {
-  button.disabled=true;
-  if(button.dataset.correct==='true')button.classList.add('ok');
- }
- if(!correct)option.classList.add('no');
  const feedback=$('fb');
  feedback.className='fb '+(correct?'good':'bad');
  const headline=document.createElement('p');
  headline.className='fbh';
- headline.textContent=mucus?(correct?'Integridade preservada':'Você perdeu 26 pontos de integridade'):
+ headline.textContent=mode==='mucus'?(correct?'Integridade preservada':'Você perdeu 26 pontos de integridade'):
   (correct?'Resposta certa':'Confira a resposta');
+ if(marks?.length>1)headline.append(' · '+marks.filter(Boolean).length+' de '+marks.length+' campos corretos');
+ feedback.replaceChildren(headline);
+ if(question.fields&&!correct){
+  const key=document.createElement('p');
+  key.textContent=atlasQuiz.solution(question);
+  feedback.append(key);
+ }
  const explanation=document.createElement('p');explanation.textContent=question.note;
- feedback.replaceChildren(headline,explanation);feedback.hidden=false;
- $('contBtn').hidden=false;$('contBtn').focus({preventScroll:true});hud();
+ feedback.append(explanation);feedback.hidden=false;
+ const next=$('contBtn');
+ if(mode==='practice'){
+  const remaining=S.practiceDeck.length;
+  next.textContent='Próxima pergunta';
+  next.hidden=!remaining;
+  if(!remaining){
+   const score=document.createElement('p');
+   score.textContent='Treino concluído · '+S.history.filter(answer=>answer.correct).length+' de '+S.history.length+' acertos';
+   feedback.append(score);
+  }
+ }else next.hidden=false;
+ (next.hidden?$('leavePractice'):next).focus({preventScroll:true});
+ hud();
 }
 
 function reviewTrait() {
@@ -922,9 +948,22 @@ function reviewTrait() {
  if(draft?.kind==='draft'&&draft.topic)openQuiz(S.chapter.review[draft.topic],'review',draft);
 }
 
+function nextPractice() {
+ const deck=S.practiceDeck;
+ const number=S.chapter.practice.length-deck.length+1;
+ openQuiz(deck.pop(),'practice',null,'Treino · '+number+' de '+S.chapter.practice.length);
+}
+
 function practice() {
  S=createState();lastHud='';
- openQuiz(S.chapter.practice,'practice',{kind:'intro'});
+ S.practiceDeck=atlasQuiz.shuffled(S.chapter.practice);
+ nextPractice();
+}
+
+function leavePractice() {
+ if(S?.round?.mode!=='practice')return;
+ showIntro();
+ $('practiceBtn').focus({preventScroll:true});
 }
 
 function saveCourseProgress(){
@@ -935,11 +974,14 @@ function continueRun() {
  if(S?.phase!=='level')return;
  const round=S.round;
  if(round?.kind==='quiz'&&!round.answered)return;
+ if(round?.mode==='practice'){
+  if(S.practiceDeck.length)nextPractice();
+  return;
+ }
  const destination=round?.returnTo;
  if(typeof destination==='function'){destination(round.correct);return;}
- if(destination?.kind==='intro'){showIntro();$('practiceBtn').focus();return;}
  if(destination?.kind==='draft'){
-  showDraft(destination.cards,destination.title,destination.label,destination.note);
+  resumeDraft(destination);
   return;
  }
  if(round?.kind==='draft'&&S.step>0&&room().exit&&!S.pathogenesisOffered&&canFuse('eco')){
@@ -1094,8 +1136,11 @@ function resize() {
  const box=stage.getBoundingClientRect();
  if(!ctx||!box.width||!box.height)return false;
  W=box.width;H=box.height;
- dpr=Math.min(1.8,window.devicePixelRatio||1,Math.sqrt(700000/(W*H)));
- cv.width=Math.max(1,Math.floor(W*dpr));cv.height=Math.max(1,Math.floor(H*dpr));
+ dpr=Math.min(2,window.devicePixelRatio||1,Math.sqrt(1800000/(W*H)));
+ const width=Math.max(1,Math.round(W*dpr)),height=Math.max(1,Math.round(H*dpr));
+ if(cv.width!==width)cv.width=width;
+ if(cv.height!==height)cv.height=height;
+ ctx.imageSmoothingQuality='high';
  scale=Math.max(.57,Math.min(1.16,W/470,H/560));
  return true;
 }
@@ -1126,18 +1171,18 @@ function drawAntibodies(x,y,radius) {
 
 function drawDefense(e) {
  const boss=S.chapter.bosses[e.type];
+ const anticipation=e.windup>0?1-e.windup/BOSS_WINDUP_SECONDS:0;
  if(boss&&e.windup>0){
-  const progress=1-e.windup/.85;
   const pressure=Boolean(pressurePattern(e)),antibody=e.type==='lungs'&&!pressure;
   const fill=pressure?'rgba(255,181,93,.23)':antibody?'rgba(207,149,251,.21)':'rgba(252,92,117,.17)';
   const edge=pressure?'#ffe194':antibody?'#edc9ff':'#ffcab7';
   oval(ctx,e.x,e.y,boss.wave,boss.wave,fill,edge);
-  ctx.beginPath();ctx.arc(e.x,e.y,boss.wave,-Math.PI/2,-Math.PI/2+TAU*progress);
+  ctx.beginPath();ctx.arc(e.x,e.y,boss.wave,-Math.PI/2,-Math.PI/2+TAU*anticipation);
   ctx.strokeStyle='#fff1d0';ctx.lineWidth=4;ctx.stroke();
   if(antibody)drawAntibodies(e.x,e.y,boss.wave);
  }
  const motion=reduce?0:Math.sin(S.clock*8+e.phase)*e.r*.095;
- arenaArt.drawActor(ctx,sprite(e.type,boss?.rank),e.x,e.y,e.r,motion,S.clock-e.hitAt<.13);
+ arenaArt.drawActor(ctx,sprite(e.type),e.x,e.y,e.r,motion,S.clock-e.hitAt<.13,reduce?0:anticipation);
  if(e.spottedAt!==null&&S.clock-e.spottedAt<.8){
   ctx.font='900 18px system-ui, sans-serif';ctx.textAlign='center';ctx.lineWidth=4;
   ctx.strokeStyle='#44253c';ctx.fillStyle='#ffdda8';
@@ -1279,12 +1324,12 @@ function draw() {
   oval(ctx,field.x,field.y,field.r*.91,field.r*.91,null,'rgba(255,225,156,.65)');
  }
  if(S.roomCleared&&area.exit&&S.phase==='play'){
-  respiratory.marker(ctx,{...area.exit,tone:'#c7f8f7'},'Corrente de ar',true,S.clock,reduce);
+  arenaArt.marker(ctx,{...area.exit,tone:'#c7f8f7'},'Corrente de ar',true,S.clock,reduce,'wind');
  }else if(!S.roomCleared&&!currentBoss()){
-  respiratory.marker(ctx,area,area.label,S.enemies.every(e=>!e.required),S.clock,reduce);
+  arenaArt.marker(ctx,area,area.label,S.enemies.every(e=>!e.required),S.clock,reduce);
  }
  if(area.study&&!S.studySeen&&!S.roomCleared){
-  respiratory.marker(ctx,area.study,area.study.label,true,S.clock,reduce);
+  arenaArt.marker(ctx,area.study,area.study.label,true,S.clock,reduce,'study');
  }
  for(const orb of S.orbs)arenaArt.drawFragment(ctx,orb,reduce);
  for(const enemy of S.enemies)drawDefense(enemy);
@@ -1387,7 +1432,7 @@ const species = [
     ]
   },
   {
-    id:'flu', group:'Respiratórios', label:'Influenza', code:'FLU', name:'Brisa', look:'spark', affinity:'correio',
+    id:'flu', writtenQuiz:[respiratory.review.ha,respiratory.review.epidemiology,respiratory.review.na], group:'Respiratórios', label:'Influenza', code:'FLU', name:'Brisa', look:'spark', affinity:'correio',
     colors:['#efa8c4','#bd7095','#ffe7e3','#f8e1eb'], source:[CDC+'flu/about/viruses-types.html','CDC'],
     note:'Influenza A e B causam epidemias sazonais. Em nomes como H3N2, as letras identificam duas proteínas de superfície de influenza A.',
     quiz:[
@@ -1397,7 +1442,7 @@ const species = [
     ]
   },
   {
-    id:'rsv', group:'Respiratórios', label:'Vírus sincicial respiratório', code:'VSR', name:'Nimbo', look:'twins', affinity:'casos',
+    id:'rsv', writtenQuiz:vsrChapter.practice, group:'Respiratórios', label:'Vírus sincicial respiratório', code:'VSR', name:'Nimbo', look:'twins', affinity:'casos',
     colors:['#aaafe9','#767ab5','#e0e8ff','#eae8f8'], source:[CDC+'rsv/about/index.html','CDC'],
     note:'O VSR pode causar sintomas de resfriado. Em lactentes, é uma causa importante de bronquiolite e pneumonia.',
     quiz:[
@@ -1685,20 +1730,32 @@ function board(){
 }
 function assignment(){
   const s=byId[focusId],a=state.actors[focusId],j=a.job,m=missions[j.kind],ready=isReady(j);
-  const [question,answers,explanation]=s.quiz[j.question], answered=Number.isInteger(j.answer),correct=j.answer===0;
-  const quizOptions=j.order.map(n=>{
-    const mark=answered?(n===0?' ✓':n===j.answer?' ×':''):'';
-    const cl=answered?(n===0?' correct':n===j.answer?' wrong':''):'';
-    return action(html(answers[n])+mark,'answer',s.id,String(n),'quiz-option'+cl,answered,j.ticket);
-  }).join('');
+  const written=j.format==='short' ? s.writtenQuiz[j.question] : null;
+  const answered=Number.isInteger(j.answer),correct=j.answer===0;
+  let prompt,answerKey,explanation,controls;
+  if(written){
+    prompt=written.q;
+    answerKey=atlasQuiz.solution(written);
+    explanation=written.note;
+    controls=answered?'':'<div id="missionAnswer"></div>';
+  }else{
+    const [question,answers,note]=s.quiz[j.question];
+    prompt=question;answerKey=answers[0];explanation=note;
+    const options=j.order.map(n=>{
+      const mark=answered?(n===0?' ✓':n===j.answer?' ×':''):'';
+      const cl=answered?(n===0?' correct':n===j.answer?' wrong':''):'';
+      return action(html(answers[n])+mark,'answer',s.id,String(n),'quiz-option'+cl,answered,j.ticket);
+    });
+    controls='<div class="quiz-options">'+options.join('')+'</div>';
+  }
   const coins=j.coins+(correct?8:0),xp=j.xp+(correct?6:0);
   return back('Quadro de missões','missions')+heading(m.name,`${html(a.name)} · ${s.label}`)+`<div class="crew-detail-grid">${passport(s,a)}
     <section class="sheet-panel"><h3>${ready?'Seu auxiliar voltou!':'Missão em andamento'}</h3>
     <div class="route-card"><div class="reward-line"><b>${ready?'Entrega concluída':'Tempo até o retorno'}</b><span class="job-deadline" data-countdown="${s.id}">${fmtTime(left(j))}</span></div>
     <div class="time-track"><i data-progress="${s.id}"></i></div><p class="crew-small">${ready?'Receba a recompensa para liberar o auxiliar.':(storageOK||pageStorageOK?'O relógio continua rodando enquanto você joga ou fecha a página.':'O relógio continua rodando enquanto a página está aberta.')}</p></div>
     ${rewards(coins,xp)}${ready?action('Receber recompensa','collect',s.id,'','c-primary',false,j.ticket):action('Voltar ao quadro','missions','','','c-secondary')}
-    <div class="sheet-segment"><h3>Pergunta bônus</h3><p class="crew-small">Um acerto antes do resgate vale +8 moedas e +6 XP.</p><p><b>${question}</b></p>
-    <div class="quiz-options">${quizOptions}</div>${answered?`<div class="quiz-review"><b>${correct?'Acertou! Bônus incluído.':html(answers[0])+'.'}</b> ${html(explanation)}</div>`:''}</div></section></div>`;
+    <div class="sheet-segment"><h3>Pergunta bônus</h3><p class="crew-small">Um acerto antes do resgate vale +8 moedas e +6 XP.</p><p><b>${html(prompt)}</b></p>
+    ${controls}${answered?`<div class="quiz-review"><b>${correct?'Acertou! Bônus incluído.':html(answerKey)}</b> ${html(explanation)}</div>`:''}</div></section></div>`;
 }
 
 function currentReady(){
@@ -1743,7 +1800,22 @@ function render(){
   noteStorage();
   $('crewReturnLabel').textContent={intro:'Ir para a arena',play:'Voltar à partida',pause:'Voltar à pausa',end:'Ver resultado'}[origin]||'Ir para a arena';
   $('crewReturnShort').textContent={intro:'Arena',play:'Voltar',pause:'Voltar',end:'Resultado'}[origin]||'Arena';
+  const previousForm=content.querySelector('#missionAnswer form');
+  const previousFocus=document.activeElement;
   content.innerHTML=({catalog,team,missions:board,create:recruit,agent:profile,job:assignment})[screen]();
+  const slot=$('missionAnswer');
+  if(slot){
+    const id=focusId,job=state.actors[id].job;
+    if(previousForm?.dataset.ticket===job.ticket){
+      slot.append(previousForm);
+      if(previousForm.contains(previousFocus))previousFocus.focus({preventScroll:true});
+    }else{
+      const question=byId[id].writtenQuiz[job.question];
+      const form=atlasQuiz.writtenForm(question,marks=>recordAnswer(id,job.ticket,marks.every(Boolean)?0:1));
+      form.dataset.ticket=job.ticket;
+      slot.append(form);
+    }
+  }
   syncBadges();refreshClocks();
   readyMark=currentReady();
 }
@@ -1796,18 +1868,21 @@ function dispatch(id,key){
   transact(data=>{
     const a=data.actors[id], m=missions[key];
     if(!a||a.job||!m||a.level<m.level)return {error:'Esse auxiliar já está ocupado ou ainda precisa subir de nível.'};
-    const q=quote(id,a,key),now=Date.now(),pool=byId[id].quiz;
-    const order=[0,1,2];
-    for(let i=order.length-1;i>0;i--){const k=Math.floor(Math.random()*(i+1));[order[k],order[i]]=[order[i],order[k]];}
-    a.job={ticket:makeTicket(),kind:key,started:now,ends:now+q.seconds*1000,coins:q.coins,xp:q.xp,question:a.nextQuestion,order,answer:null};
-    a.nextQuestion=(a.nextQuestion+1)%pool.length;
+    const q=quote(id,a,key),now=Date.now(),species=byId[id];
+    const pool=species.writtenQuiz??species.quiz;
+    const question=a.nextQuestion%pool.length;
+    a.job={ticket:makeTicket(),kind:key,started:now,ends:now+q.seconds*1000,coins:q.coins,xp:q.xp,question,answer:null};
+    if(species.writtenQuiz)a.job.format='short';
+    else a.job.order=atlasQuiz.shuffled(pool[question][1].keys());
+    a.nextQuestion=(question+1)%pool.length;
     return {next:'job',id};
   });
 }
 function recordAnswer(id,ticket,index){
   transact(data=>{
     const j=data.actors[id]?.job;
-    if(!j||j.ticket!==ticket||j.answer!==null||!j.order.includes(index))return {error:'Essa pergunta já foi encerrada.'};
+    if(!j||j.ticket!==ticket||j.answer!==null)return {error:'Essa pergunta já foi encerrada.'};
+    if(!(j.format==='short'?[0,1]:j.order).includes(index))return {error:'Resposta inválida.'};
     j.answer=index;
     return {message:index===0?'Resposta certa! O bônus já faz parte da recompensa.':'Você registrou sua resposta. Confira o comentário da ficha.'};
   });
@@ -1831,7 +1906,7 @@ function newActor(){
     if(data.actors[id])return {next:'agent',id,message:'Esse auxiliar já faz parte da equipe.'};
     if(data.coins<price)return {error:`Você precisa de ${price} moedas para recrutar.`};
     const skills={agility:0,memory:0,trade:0};skills[t]=1;
-    data.actors[id]={name,level:1,xp:0,talents:skills,completed:0,nextQuestion:Math.floor(Math.random()*byId[id].quiz.length),job:null};
+    data.actors[id]={name,level:1,xp:0,talents:skills,completed:0,nextQuestion:Math.floor(Math.random()*(byId[id].writtenQuiz??byId[id].quiz).length),job:null};
     data.coins-=price;
     if(!data.escort)data.escort=id;
     return {next:'agent',id,message:`${name} entrou na equipe com 1 ponto em ${talents[t].name.toLowerCase()}.`};
@@ -1994,6 +2069,7 @@ $('againBtn').addEventListener('click',showIntro);
 $('contBtn').addEventListener('click',continueRun);
 $('reviewBtn').addEventListener('click',reviewTrait);
 $('practiceBtn').addEventListener('click',practice);
+$('leavePractice').addEventListener('click',leavePractice);
 $('resumeBtn').addEventListener('click',resume);
 $('restartBtn').addEventListener('click',showIntro);
 $('pauseBtn').addEventListener('click',()=>{if(S?.phase==='pause')resume();else pauseGame();});
