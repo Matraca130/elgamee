@@ -23,7 +23,8 @@
  </div>
 </header>
 <main id="stage" data-phase="intro" aria-label="Arena do lóbulo hepático">
- <canvas id="cv" width="1" height="1" role="img" aria-label="Lóbulo hepático: um linfócito T entre hepatócitos, com vírions do HBV chegando pelos espaços porta"></canvas>
+ <canvas id="cv" width="1" height="1" role="img" aria-label="Lóbulo hepático em seis lados, com canais que convergem para a veia central e um linfócito T entre hepatócitos"></canvas>
+ <img id="arenaTerrain" src="./terreno-lobulo.webp" alt="" hidden>
  <div id="toast" role="status" aria-live="polite"></div>
  <div class="ov" id="intro">
   <div class="arena-card arsenal-card">
@@ -51,6 +52,7 @@
    <details class="arena-help">
     <summary>Entender a arena</summary>
     <p>Você é um linfócito T CD8+. Aproxime-se dos hepatócitos roxos para eliminar a infecção. Cada célula eliminada contribui para a cicatriz. O Foco viral se recupera enquanto restarem células infectadas.</p>
+    <p>No mapa, os seis espaços porta ficam nas bordas. O sangue corre pelos canais até a veia central.</p>
    <div class="legend">
     <div><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><g stroke="#08605f" stroke-width="2" stroke-linecap="round"><path d="M15 1.5v3M15 25.5v3M1.5 15h3M25.5 15h3M5.5 5.5l2 2M22.5 22.5l2 2M24.5 5.5l-2 2M7.5 22.5l-2 2"/></g><circle cx="15" cy="15" r="10" fill="#c9f1ee" stroke="#0e8a8c" stroke-width="2"/><path d="M21 15l-3 5.2h-6L9 15l3-5.2h6z" fill="#0e8a8c"/></svg><span><b>Partícula de Dane</b>vírion com envelope e capsídeo</span></div>
     <div><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="10" cy="19" r="6.5" fill="#e6eff7" stroke="#8fa9c0" stroke-width="2"/><ellipse cx="20" cy="10" rx="7" ry="3.4" transform="rotate(-30 20 10)" fill="#e6eff7" stroke="#8fa9c0" stroke-width="2"/></svg><span><b>Partículas de HBsAg</b>esferas e filamentos não infecciosos</span></div>
@@ -105,7 +107,7 @@
         <h1 id="crewTitle">Base dos auxiliares</h1>
         <p id="crewLead">Escolha um mascote viral para acompanhar você no lóbulo ou sair em missões por moedas e experiência.</p>
       </div>
-      <img id="crewChart" width="270" height="110" src="./mapa.png" alt="" aria-hidden="true">
+      <canvas id="crewChart" width="420" height="254" aria-hidden="true"></canvas>
     </section>
     <nav class="crew-tabs" aria-label="Seções da base">
       <button type="button" data-view="team">Minha equipe <span id="crewSize">0</span></button>
@@ -119,6 +121,7 @@
 </section>
 
 </section>
+<script defer src="./arte-jogo.js"></script>
 <script defer src="./jogo.js"></script>
 </body>
 </html>

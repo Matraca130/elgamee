@@ -75,8 +75,8 @@ body #stage[data-phase="play"]{height:calc(100svh - 130px);min-height:280px}
 @media (min-width:700px){.ov{align-items:center}}
 /* A caderneta de campo usa a mesma ilustração de cada mascote no atlas e na arena. */
 #crewHub {
-  color-scheme:light; --paper:#f7f5ec; --panel:#fffef8; --moss:#173f36; --pine:#265447;
-  --ink2:#192e29; --sub:#53675d; --rule:#d6dace; --gold:#f7cf70; --tan:#786439;
+  color-scheme:light; --paper:#f7ece6; --panel:#fff9ef; --moss:#54334e; --pine:#6c3f58;
+  --ink2:#39253b; --sub:#6c505c; --rule:#dfc9c7; --gold:#f7cf70; --tan:#786439;
   position:relative; touch-action:pan-y;
   color:var(--ink2); background:var(--paper); font:16px/1.48 Nunito,ui-rounded,system-ui,sans-serif;
   scrollbar-gutter:stable;
@@ -109,16 +109,16 @@ body #stage[data-phase="play"]{height:calc(100svh - 130px);min-height:280px}
 #hud button:disabled{opacity:.5;cursor:default}
 .crew-body{padding-block:22px 56px}
 .crew-hero{display:grid;grid-template-columns:minmax(0,1.03fr) minmax(0,1fr);position:relative;overflow:hidden;
-  background:linear-gradient(110deg,#163c35 0%,#215346 72%,#285a49);border:1px solid #214c3f;border-radius:20px;min-height:196px;align-items:center}
+  background:radial-gradient(ellipse at 81% 54%,#91465b,#562b46 46%,#361f38 79%);border:1px solid #4b2b43;border-radius:20px;min-height:196px;align-items:center}
 .crew-hero-copy{padding:27px 0 27px 32px;z-index:1}
 #crewHub .crew-hero h1{font-size:clamp(34px,4.2vw,55px);letter-spacing:-.059em;line-height:1.02;color:#fff9e7;margin:0 0 12px;font-weight:900}
-.crew-hero p{max-width:415px;margin:0;color:#daebd9;line-height:1.5;font-size:15px}
-#crewChart{image-rendering:pixelated;width:100%;height:auto;max-height:222px;object-fit:contain;align-self:center}
+.crew-hero p{max-width:415px;margin:0;color:#ffe0d6;line-height:1.5;font-size:15px}
+#crewChart{width:100%;height:auto;max-height:222px;padding:8px;object-fit:contain;align-self:center}
 .crew-tabs{display:flex;gap:7px;border-bottom:1px solid var(--rule);margin:16px 0 21px}
 #crewHub .crew-tabs button{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:47px;
   background:transparent;border:0;border-radius:7px 7px 0 0;padding:10px 15px;color:var(--sub);font-size:15px;font-weight:850}
 #crewHub .crew-tabs button[aria-current=page]{color:var(--moss)}
-.crew-tabs button[aria-current=page]:after{content:"";height:3px;position:absolute;inset:auto 10px -1px;background:#358469;border-radius:4px 4px 0 0}
+.crew-tabs button[aria-current=page]:after{content:"";height:3px;position:absolute;inset:auto 10px -1px;background:#9d5075;border-radius:4px 4px 0 0}
 .crew-tabs button span{background:#e2e8d8;border-radius:6px;padding:1px 6px;color:#39533e;font:700 12px/1.5 ui-monospace,monospace}
 .crew-section-head{display:flex;align-items:end;justify-content:space-between;gap:10px;margin:0 0 14px}
 #crewHub h2,#crewHub h3{letter-spacing:-.035em;line-height:1.16;margin:0;font-weight:900}
@@ -138,7 +138,7 @@ body #stage[data-phase="play"]{height:calc(100svh - 130px);min-height:280px}
 .dex-art:before,.profile-art:before{content:"";position:absolute;border:1px solid color-mix(in srgb,var(--accent) 23%,transparent);width:72px;height:72px;border-radius:50%}
 .dex-art:after,.profile-art:after{content:"";position:absolute;bottom:16%;width:56px;height:8px;background:color-mix(in srgb,var(--accent) 30%,transparent);border-radius:50%;z-index:-1}
 .dex-code{position:absolute;left:10px;top:9px;font:800 10px/1.4 ui-monospace,monospace;color:color-mix(in srgb,var(--accent) 40%,#23392d);border:1px solid color-mix(in srgb,var(--accent) 27%,transparent);border-radius:4px;background:var(--tint);padding:1px 4px}
-.crew-sprite{image-rendering:pixelated;width:94px;height:auto;position:relative}
+.crew-sprite{display:block;width:94px;height:auto;aspect-ratio:1;position:relative}
 .dex-copy{padding:11px 13px 12px;display:flex;flex:1;flex-direction:column}
 .dex-name{font-size:21px;line-height:1.16;letter-spacing:-.035em;font-weight:900}
 .dex-virus{font-size:13px;line-height:1.25;color:var(--sub);margin-top:3px}
@@ -265,7 +265,7 @@ label.talent-item{cursor:pointer}
 /* Let the game follow the page height, including on narrow touchscreens. */
 #lobulo-game {
   --bg:#f6edf1;--ink:#2b1633;--card:#fffafc;--line:#e7d3de;--mut:#6e5676;
-  --good:#17784f;--bad:#b12a42;--atlas-image:url(./auxiliares.png);
+  --good:#17784f;--bad:#b12a42;
   position:relative;isolation:isolate;border-radius:14px;overflow:hidden;
   background:transparent;text-align:left;
 }
@@ -276,19 +276,21 @@ label.talent-item{cursor:pointer}
 #app{height:auto;display:block;background:var(--bg);color:var(--ink)}
 #hud{width:100%}
 #stage{min-height:0;overflow:visible}
-#stage[data-phase="play"]{height:clamp(320px,100vw,490px);overflow:hidden}
+#stage[data-phase="play"]{
+  height:clamp(320px,100vw,490px);overflow:hidden;
+  background:radial-gradient(ellipse at 50% 48%,#6f344e 0%,#432238 59%,#2d1c30 100%);
+}
 #stage:not([data-phase="play"]) #cv,#stage:not([data-phase="play"]) #toast{display:none}
 #stage[data-phase="play"] .ov{display:none}
-#stage .ov{position:relative;inset:auto;align-items:center;min-height:0;background:var(--bg)}
+#stage .ov{
+  position:relative;inset:auto;align-items:center;min-height:0;
+  background:linear-gradient(112deg,rgba(51,28,47,.89),rgba(81,44,62,.83)),
+    url(./terreno-lobulo.webp) center / cover no-repeat;
+}
 #stage .arena-card{max-height:none;overflow:visible}
 #stage .btns.stick{position:static;margin:4px 0 0;padding:0;background:none}
 #crewHub{scrollbar-gutter:auto}
 #crewChart{display:block}
-.crew-sprite{display:block;aspect-ratio:36 / 32}
-.crew-sprite,.job-row .crew-sprite{
-  background-image:var(--atlas-image);background-size:1200% 400%;
-  background-position:var(--sprite-x) var(--sprite-y);background-repeat:no-repeat
-}
 .pixel-icon{image-rendering:pixelated}
 #crewHub .crew-arena,#crewHub .crew-filter,#crewHub .c-secondary,#crewHub .c-primary,
 #crewHub .mission-tile .c-primary,#crewHub .mission-tile .c-secondary,
@@ -315,6 +317,14 @@ label.talent-item{cursor:pointer}
 #lobulo-game .arena-intro h1{font-size:clamp(1.45rem,5.5vw,2.125rem);margin-bottom:.3rem}
 .hero-name{margin:0 0 .2rem;color:var(--ink);font-weight:850}
 .arena-intro .lead{margin:0}
+@media(prefers-reduced-motion:no-preference){
+  .hero-portrait img,.profile-art .crew-sprite{animation:idle-portrait 3s ease-in-out infinite}
+  .dex-card:is(:hover,:focus-visible) .crew-sprite{animation:idle-portrait 1.9s ease-in-out infinite}
+}
+@keyframes idle-portrait{
+  0%,100%{transform:translateY(1px)}
+  50%{transform:translateY(-3px)}
+}
 .arm-heading{margin:16px 0 8px!important}
 .build-choices{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:9px 0 4px}
 .build-card{
