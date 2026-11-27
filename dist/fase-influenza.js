@@ -29,75 +29,94 @@ const respiratory = (() => {
    pressure:{duration:2.6,speedFactor:.74}}
  };
  const questions = [
-  {level:'Fácil', topic:'Mucosa', q:'Qual é a função do muco nas vias aéreas?',
-   answers:['Reter partículas e microrganismos.','Produzir linfócitos no interior da traqueia.','Fazer a troca de oxigênio no lugar dos alvéolos.'],
-   note:'O muco ajuda a reter partículas e microrganismos na superfície da via aérea.'},
-  {level:'Intermediária', topic:'Depuração mucociliar', q:'O que leva para a faringe o muco das vias aéreas ciliadas?',
-   answers:['O batimento coordenado dos cílios.','A contração dos glóbulos vermelhos.','O movimento de anticorpos no sangue.'],
-   note:'Os cílios batem em conjunto e transportam o muco ao longo do epitélio em direção à faringe.'},
-  {level:'Difícil', topic:'Defesas respiratórias', q:'Se o muco continuar retendo partículas, mas os cílios pararem de bater, o que ocorre com essa defesa?',
-   answers:['A retenção ainda pode ocorrer, mas a remoção fica prejudicada.','A remoção continua normalmente só pela presença de muco.','Os anticorpos passam a mover mecanicamente o muco.'],
-   note:'Reter e transportar são funções complementares. Sem o batimento ciliar, o transporte de muco pelo epitélio perde eficiência.'}
+  {level:'Intermediária', topic:'Barreira respiratória',
+   q:'Uma partícula fica presa na camada que recobre o epitélio e depois é levada à faringe. Que material a reteve e que estruturas moveram essa camada?',
+   fields:[{label:'Material que reteve a partícula',terms:['Muco','Mucus','Moco','Muco respiratório']},
+    {label:'Estruturas que fazem o transporte',terms:['Cílios','Cílios móveis','Cílios do epitélio','Cilios móviles']}],
+   note:'O muco retém as partículas. O batimento coordenado dos cílios desloca essa camada para a faringe.'},
+  {level:'Difícil',topic:'Defesas respiratórias',
+   q:'Uma amostra de epitélio ainda produz muco, mas o material retido deixou de avançar. Como se chama o mecanismo de limpeza comprometido?',
+   fields:[{label:'Nome do mecanismo',terms:['Depuração mucociliar','Transporte mucociliar','Clearance mucociliar','Limpeza mucociliar','Aclaramiento mucociliar','Depuración mucociliar']}],
+   note:'A depuração mucociliar depende tanto da retenção pelo muco quanto de seu transporte pelos cílios.'},
+  {level:'Difícil',topic:'Defesas respiratórias',
+   q:'Duas regiões retêm a mesma quantidade de partículas no muco. Em uma delas, os cílios batem com menos coordenação. Qual observação distingue melhor o efeito dessa diferença?',
+   answers:['O material retido demora mais a chegar à faringe.','Menos partículas aderem ao muco no instante do contato.','A velocidade de transporte se mantém porque a retenção inicial foi igual.'],
+   note:'A comparação mantém a retenção inicial constante. O que muda é o transporte do material já retido.'}
  ];
  const prophylaxis=[
-  {level:'Fácil',topic:'Calendário vacinal',q:'O que um calendário de vacinação orienta?',
-   answers:['Quais vacinas são indicadas em cada idade ou grupo, de acordo com a autoridade local.','Quais sintomas cada pessoa terá durante uma infecção.','Como identificar um vírus pela forma de seu capsídeo.'],
-   note:'Os calendários organizam as indicações por faixa etária, grupos e situações específicas. As recomendações variam entre países.'},
-  {level:'Intermediária',topic:'Tipos de vacina',q:'Qual a diferença entre uma vacina viva atenuada e uma inativada?',
-   answers:['Uma usa vírus vivo enfraquecido. A outra contém vírus inativado ou componentes dele.','As duas contêm vírus vivo. A diferença é só o lugar da aplicação.','O nome indica apenas a idade de quem recebe a vacina.'],
-   note:'Existem vacinas contra influenza inativadas, recombinantes e vivas atenuadas. A indicação depende da formulação e das orientações locais.'}
+  {level:'Difícil',topic:'Leitura de dados de vacinação',
+   q:'Em um exercício, o posto Norte vacinou 54 de 90 pessoas elegíveis e o Sul, 48 de 60. Qual posto teve maior cobertura e qual foi a cobertura dele?',
+   fields:[{label:'Posto',terms:['Sul','Posto Sul','Sur','Puesto Sur']},{label:'Cobertura (%)',percent:80}],
+   note:'O Norte alcançou 60% (54 ÷ 90) e o Sul, 80% (48 ÷ 60). O denominador é o número de pessoas elegíveis em cada posto.'},
+  {level:'Intermediária',topic:'Imunização',
+   q:'Um texto compara uma vacina viva atenuada com uma vacina de vírus inteiro inativado. Qual característica distingue o material das duas formulações?',
+   answers:['Capacidade de replicação do vírus vacinal.','Presença de antígenos que podem ser reconhecidos pelo sistema imune.','Possibilidade de induzir memória após a vacinação.'],
+   note:'Na formulação viva atenuada, o vírus vacinal pode se replicar de forma limitada. A formulação de vírus inteiro inativado apresenta antígenos sem replicação.'}
  ];
  const review = {
-  ha:{level:'Fácil',topic:'Hemaglutinina',q:'Qual proteína do envoltório ajuda o influenza a se ligar à célula?',
-   answers:['Hemaglutinina.','Neuraminidase.','Nucleoproteína.'],
-   note:'A hemaglutinina, ou HA, participa do reconhecimento e da ligação à célula.'},
-  na:{level:'Intermediária',topic:'Neuraminidase',q:'Qual é o principal papel da neuraminidase (NA) no ciclo do influenza?',
-   answers:['A liberação de novas partículas virais.','A leitura do RNA pelos ribossomos.','O transporte de muco pelos cílios.'],
-   note:'A NA é uma proteína do envoltório que facilita a liberação das novas partículas virais.'},
-  pathogenesis:{guide:7,level:'Intermediária',topic:'Patogenia e clínica',
-   q:'Se a infecção está nas vias aéreas, o que pode explicar o mal-estar no corpo todo durante a gripe?',
-   answers:['Sinais da resposta inflamatória do hospedeiro.','A perda de cílios explica sozinha todos os sintomas gerais.','O movimento do muco produz o mal-estar no corpo todo.'],
-   note:'A lesão do epitélio e a inflamação contribuem para a doença. Sinais da resposta do hospedeiro podem causar sintomas gerais, como mal-estar.'},
-  epidemiology:{level:'Fácil',topic:'Epidemiologia',q:'Quais tipos de influenza causam epidemias sazonais em humanos?',
-   answers:['Influenza A e B.','Influenza C e D.','Somente influenza D.'],
-   note:'Os vírus influenza A e B causam epidemias sazonais de gripe em humanos.'}
+  ha:{guide:4,level:'Intermediária',topic:'Leitura de boletim',
+   q:'Uma tabela passa de A(H1N1) para A(H3N2). Quais são, por extenso, os nomes das duas proteínas representadas por H e N?',
+   fields:[{label:'Proteína H',terms:['Hemaglutinina','Hemagglutinin','Hemaglutinina viral']},
+    {label:'Proteína N',terms:['Neuraminidase','Neuraminidasa','Neuraminidase viral']}],
+   note:'O H identifica a hemaglutinina e o N, a neuraminidase. Os números identificam seus subtipos.'},
+  na:{level:'Difícil',topic:'Nomenclatura',
+   q:'Um boletim compara A(H1N1) e A(H3N2). Em que nível de classificação esses registros coincidem e em que nível diferem?',
+   fields:[{label:'Classificação em comum',terms:['Tipo','Tipo A','Mesmo tipo','Influenza A','A']},
+    {label:'Classificação que difere',terms:['Subtipo','Subtipos','Subtipo de influenza A','Subtipos H e N']}],
+   note:'Os dois registros são do tipo A. As combinações H1N1 e H3N2 identificam subtipos diferentes.'},
+  pathogenesis:{guide:7,level:'Difícil',topic:'Patogenia e clínica',
+   q:'Uma pessoa com gripe apresenta dor muscular e mal-estar. O registro só documenta infecção das vias aéreas. Qual interpretação exige menos suposições?',
+   answers:['A resposta inflamatória do hospedeiro pode produzir sintomas gerais.','A dor muscular permite localizar o vírus nos músculos doloridos.','A intensidade do mal-estar permite identificar o subtipo que circula.'],
+   note:'Sintomas gerais podem acompanhar a resposta inflamatória a uma infecção respiratória. Sua presença isolada não determina o local do vírus nem o subtipo.'},
+  epidemiology:{level:'Difícil',topic:'Vigilância sazonal',
+   q:'Em um boletim fictício de influenza, a semana 1 teve 12 testes positivos em 60, e a semana 2 teve 18 em 120. Qual semana teve maior positividade? Calcule o valor.',
+   fields:[{label:'Semana de maior positividade',terms:['Semana 1','1','Primeira','Primeira semana','Semana um','Semana uno','Primera semana','1ª semana']},{label:'Positividade nessa semana (%)',percent:20}],
+   note:'Na primeira semana, 12 ÷ 60 = 20%. Na segunda, 18 ÷ 120 = 15%. O número absoluto de positivos subiu enquanto a proporção caiu.'}
  };
 
+ const testInterpretation={guide:41,level:'Difícil',topic:'Interpretação de testes',
+  q:'Um teste rápido de antígeno para influenza foi negativo e um teste molecular foi positivo. Que propriedade do primeiro teste, quando menor, torna mais prováveis os falsos negativos?',
+  fields:[{label:'Propriedade do teste',terms:['Sensibilidade','Sensibilidade diagnóstica','Sensibilidade clínica','Sensibilidad','Sensibilidad diagnóstica','Sensitivity']}],
+  note:'Sensibilidade é a proporção de resultados positivos entre as pessoas que têm a condição. Uma sensibilidade menor deixa escapar mais casos.'};
  const influenzaBank = [
-  {guide:1, level:'Fácil',topic:'Classificação',q:'A que família pertence o vírus influenza?',
-   answers:['Orthomyxoviridae.','Pneumoviridae.','Adenoviridae.'],
-   note:'Os vírus influenza pertencem à família Orthomyxoviridae.'},
-  {guide:2, level:'Intermediária',topic:'Morfologia',q:'O que os vírus influenza A e B têm em comum?',
-   answers:['Envoltório e oito segmentos de RNA de polaridade negativa.','Capsídeo nu e genoma de DNA circular.','Envoltório e uma molécula única de RNA de polaridade positiva.'],
-   note:'Influenza A e B são vírus envelopados com oito segmentos de RNA de fita simples e polaridade negativa.'},
-  {guide:3, level:'Intermediária',topic:'Variação viral',q:'Qual característica descreve a organização do genoma do influenza A?',
-   answers:['O genoma é segmentado.','O genoma é um cromossomo circular de DNA.','O vírus usa uma fita contínua de RNA de polaridade positiva.'],
-   note:'O RNA do influenza A está dividido em segmentos. A variação viral é acompanhada na vigilância da gripe.'},
-  {guide:4, level:'Fácil',topic:'Subtipos',q:'O que o H e o N identificam em um subtipo de influenza A?',
-   answers:['A hemaglutinina e a neuraminidase.','Duas proteínas do núcleo da célula humana.','Duas proteínas da matriz viral.'],
-   note:'Os subtipos de influenza A são nomeados pela hemaglutinina (H) e pela neuraminidase (N).'},
-  {guide:5, level:'Intermediária',topic:'Resposta imune',q:'Como anticorpos contra a hemaglutinina podem neutralizar o influenza?',
-   answers:['Podem impedir que o vírus se ligue à célula.','Transportam o muco mecanicamente para a faringe.','Produzem neuraminidase para a célula.'],
-   note:'A HA participa da ligação à célula. Anticorpos contra ela podem bloquear essa interação.'},
-  {guide:6, level:'Difícil',topic:'Variação antigênica',q:'Mudanças antigênicas graduais acumuladas ao longo do tempo correspondem a qual fenômeno?',
-   answers:['Deriva antigênica (drift).','Salto antigênico (shift).','Depuração mucociliar.'],
-   note:'O drift descreve mudanças graduais. O shift é uma mudança antigênica mais abrupta no influenza A.'},
-  {guide:7, level:'Difícil',topic:'Patogenia',q:'O que ajuda a explicar os sintomas quando o influenza envolve o epitélio respiratório?',
-   answers:['A lesão do epitélio e a resposta inflamatória do hospedeiro.','A troca de gases passa a acontecer no muco da garganta.','O vírus substitui os anticorpos por hemácias.'],
-   note:'A lesão local e os sinais da resposta imune ajudam a explicar manifestações respiratórias e gerais da gripe.'},
-  {guide:8, level:'Fácil',topic:'Epidemiologia',q:'Quem pode pegar influenza e quem tem maior risco de doença grave?',
-   answers:['Todas as idades podem ser afetadas. Crianças pequenas, idosos, gestantes e pessoas com certas doenças crônicas têm maior risco.','A influenza se limita a crianças em idade escolar.','Ter a mesma idade implica sempre o mesmo risco de complicações.'],
-   note:'Ocorrer em qualquer faixa etária é diferente de ter o mesmo risco de complicações em todas elas.'},
-  {guide:9, level:'Intermediária',topic:'Prevenção',q:'Por que a vacina contra a gripe é atualizada regularmente?',
-   answers:['Os vírus circulantes mudam e a formulação acompanha essa variação.','Cada dose precisa ensinar o epitélio a produzir muco.','A vacina passa a prevenir apenas resfriados comuns.'],
-   note:'A vigilância observa a evolução dos vírus circulantes e informa a composição das vacinas sazonais.'},
-  {guide:41, level:'Intermediária',topic:'Diagnóstico',q:'Qual método direto pode detectar material genético do influenza em uma amostra respiratória?',
-   answers:['Um teste molecular como RT-PCR.','Um hemograma comum.','A contagem de anticorpos totais.'],
-   note:'Os testes moleculares detectam material genético viral. A escolha clínica do teste depende do contexto.'},
-  {guide:42, level:'Fácil',topic:'Prevenção',q:'Qual conjunto inclui medidas de prevenção de viroses respiratórias?',
-   answers:['Vacinação quando indicada, higiene das mãos e ventilação dos espaços.','Uso rotineiro de antibióticos para prevenir vírus.','Evitar apenas alimentos frios.'],
-   note:'A vacinação quando indicada, a higiene e a ventilação ajudam a reduzir riscos relacionados a infecções respiratórias.'}
+  {guide:1,level:'Intermediária',topic:'Classificação',
+   q:'Uma ficha menciona o tipo A e o subtipo H3N2. Qual nome de família completa a classificação desse agente?',
+   fields:[{label:'Família',terms:['Orthomyxoviridae','Família Orthomyxoviridae','Familia Orthomyxoviridae']}],
+   note:'Influenza A pertence à família Orthomyxoviridae. Tipo, subtipo e família são níveis diferentes de descrição.'},
+  {guide:2,level:'Intermediária',topic:'Leitura de fichas',
+   q:'As fichas de influenza A e B mostram oito segmentos de RNA cada uma. Essa informação, sozinha, permite concluir o quê?',
+   answers:['A contagem é compatível com ambos os tipos e não os distingue.','A contagem basta para identificar o tipo A.','A contagem basta para identificar o tipo B.'],
+   note:'A e B compartilham essa contagem. É preciso outra informação para distinguir os dois.'},
+  {guide:3,level:'Intermediária',topic:'Comparação de genomas',
+   q:'Uma ficha de influenza A e outra de VSR dizem “RNA de fita simples negativa”. Qual característica da organização do RNA permite distinguir esses registros?',
+   fields:[{label:'Característica',terms:['Segmentação','Segmentação do genoma','Segmentação do RNA','Segmentación','Segmentación del genoma','Genoma segmentado','Número de segmentos']}],
+   note:'A ficha da influenza A descreve RNA dividido em segmentos. A do VSR descreve RNA não segmentado.'},
+  review.ha,
+  {guide:5,level:'Intermediária',topic:'Resposta imune',
+   q:'Um relatório separa anticorpos que reconhecem um antígeno daqueles capazes de bloquear a infecção. Como se denomina essa segunda função?',
+   fields:[{label:'Função dos anticorpos',terms:['Neutralização','Neutralização viral','Neutralización','Neutralización viral','Atividade neutralizante']}],
+   note:'Reconhecer um antígeno é ligação. A capacidade de bloquear a infecção caracteriza a atividade neutralizante.'},
+  {guide:6,level:'Intermediária',topic:'Leitura de séries históricas',
+   q:'Um boletim descreve pequenas mudanças antigênicas graduais entre temporadas de influenza. Qual termo epidemiológico resume esse padrão?',
+   fields:[{label:'Termo técnico',terms:['Deriva antigênica','Deriva antigénica','Deriva','Drift','Antigenic drift']}],
+   note:'Deriva antigênica é o nome dado ao padrão gradual observado ao longo do tempo.'},
+  review.pathogenesis,
+  {guide:8,level:'Difícil',topic:'Leitura de dados de risco',
+   q:'Em uma coorte fictícia com gripe, 6 de 30 participantes do grupo X foram internados, contra 10 de 100 do grupo Y. Em qual grupo a proporção de internações foi maior?',
+   fields:[{label:'Grupo',terms:['X','Grupo X']},{label:'Proporção nesse grupo (%)',percent:20}],
+   note:'O grupo X teve 20% de internações e o Y, 10%. A comparação vale para os grupos descritos no exercício.'},
+  {guide:9,level:'Intermediária',topic:'Prevenção',
+   q:'Dois boletins trazem composições vacinais sazonais diferentes para períodos distintos. Qual informação é relevante para interpretar a atualização?',
+   answers:['A caracterização dos vírus que circulavam e a projeção para a temporada.','A proporção de pessoas já vacinadas, por si só, identifica os antígenos necessários.','A quantidade total de internações identifica sozinha quais antígenos circulam.'],
+   note:'A vigilância acompanha os vírus circulantes para informar a composição das vacinas sazonais.'},
+  testInterpretation,
+  {guide:42,level:'Difícil',topic:'Prevenção e avaliação',
+   q:'Depois de uma campanha, houve menos casos notificados e também menos testes. Qual comparação ajuda a interpretar primeiro essa queda?',
+   answers:['A proporção de testes positivos antes e depois e quem foi testado em cada período.','A diferença entre contagens brutas, atribuindo toda a queda à campanha.','A população total como único denominador, supondo cobertura de testagem constante.'],
+   note:'Mudanças no número de testes e no perfil de quem foi testado alteram a leitura das notificações. A comparação isolada não mede o efeito causal da campanha.'}
  ];
+ const practice=[review.epidemiology,testInterpretation,prophylaxis[0],review.ha];
+ const mucusQuestions=[...questions,...influenzaBank,review.epidemiology];
 
  function confine(actor, room) {
   const rx=room.rx-actor.r, ry=room.ry-actor.r, dy=actor.y-size/2;
@@ -147,24 +166,5 @@ const respiratory = (() => {
   }
  }
 
- function marker(g, area, title, ready, clock, reduced) {
-  const pulse=reduced?0:Math.sin(clock*3.2)*4;
-  g.lineWidth=2;
-  g.beginPath();
-  g.ellipse(area.x,area.y,27+pulse,17+pulse*.45,0,0,Math.PI*2);
-  g.fillStyle='#4d254b';
-  g.fill();
-  g.strokeStyle=ready?'#fff3d2':area.tone;
-  g.stroke();
-  g.beginPath();
-  g.moveTo(area.x,area.y-15);g.lineTo(area.x+10,area.y);
-  g.lineTo(area.x,area.y+11);g.lineTo(area.x-10,area.y);g.closePath();
-  g.fillStyle=area.tone;g.fill();
-  g.textBaseline='middle';g.textAlign='center';
-  g.font='800 18px system-ui, sans-serif';g.lineWidth=5;
-  g.strokeStyle='#48243d';g.strokeText(title,area.x,area.y+33);
-  g.fillStyle='#fff7e7';g.fillText(title,area.x,area.y+33);
- }
-
- return {size,mapWidth,mapHeight,stages,bosses,questions,prophylaxis,review,influenzaBank,confine,mucusAt,paintRoom,drawMucus,marker};
+ return {size,mapWidth,mapHeight,stages,bosses,questions,prophylaxis,review,practice,mucusQuestions,confine,mucusAt,paintRoom,drawMucus};
 })();

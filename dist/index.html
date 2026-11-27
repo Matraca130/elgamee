@@ -57,7 +57,7 @@
    <div class="campaign-layout">
     <div class="campaign-copy">
      <div class="arena-intro">
-      <div class="hero-portrait"><canvas id="virusPortrait" width="112" height="112" aria-hidden="true"></canvas></div>
+      <div class="hero-portrait"><canvas id="virusPortrait" width="224" height="224" aria-hidden="true"></canvas></div>
       <div><p class="hero-name">Atlas Viral · Fase respiratória</p><h1 id="chapterTitle">Influenza</h1></div>
      </div>
      <p class="lead" id="chapterLead">Monte seu vírus e passe por quatro arenas do aparelho respiratório.</p>
@@ -74,7 +74,7 @@
      </fieldset>
      <p class="mut" id="controlsHelp">Arraste à esquerda para andar e à direita para mirar e atacar. No teclado, use WASD ou setas para andar e segure o mouse para atacar. Espaço ou Dash desvia.</p>
      <p class="areanotice" id="arenaNotice" role="status" hidden></p>
-     <div class="btns"><button class="arena-button" id="startBtn">Começar fase</button><button class="arena-button ghost" id="crewIntro">Base dos auxiliares</button></div>
+     <div class="btns"><button class="arena-button" id="startBtn">Começar fase</button><button class="arena-button ghost" id="practiceBtn" type="button">Treinar perguntas</button><button class="arena-button ghost" id="crewIntro">Base dos auxiliares</button></div>
      <ol class="campaign-route" id="campaignRoute" aria-label="Objetivos da fase"></ol>
     </div>
     <figure class="route-preview">
@@ -114,7 +114,7 @@
     <p>O vírus sincicial respiratório pertence ao gênero <i>Orthopneumovirus</i>, família <i>Pneumoviridae</i>. Tem envoltório e RNA de fita simples negativa, não segmentado. Pode apresentar partículas arredondadas e filamentosas.</p>
     <p>A proteína G participa da ligação à célula. A proteína F promove fusão de membranas e pode fazer células se fundirem, formando um sincício com vários núcleos.</p>
     <p>O VSR pode causar sintomas de resfriado e também bronquiolite. Lactentes e idosos estão entre os grupos com maior risco de doença grave. As fichas da fase trazem um caso de bronquiolite e uma situação de prevenção para a equipe de saúde.</p>
-    <p class="study-source"><a href="https://ictv.global/report/chapter/pneumoviridae/pneumoviridae" target="_blank" rel="noopener noreferrer">Família Pneumoviridae · ICTV</a> · <a href="https://www.who.int/news-room/fact-sheets/detail/respiratory-syncytial-virus-%28RSV%29" target="_blank" rel="noopener noreferrer">Quadro clínico do VSR · OMS</a></p>
+    <p class="study-source"><a href="https://ictv.global/report/chapter/pneumoviridae/pneumoviridae" target="_blank" rel="noopener noreferrer">Família Pneumoviridae · ICTV</a> · <a href="https://www.who.int/news-room/fact-sheets/detail/respiratory-syncytial-virus-%28RSV%29" target="_blank" rel="noopener noreferrer">Quadro clínico do VSR · OMS</a> · <a href="https://www.cdc.gov/clean-hands/hcp/clinical-safety/index.html" target="_blank" rel="noopener noreferrer">Higiene das mãos · CDC</a></p>
    </details>
    <details class="arena-help">
     <summary>Genoma, capsídeo e envoltório</summary>
@@ -126,9 +126,8 @@
    </details>
    <details class="arena-help">
     <summary>Revisão da fase</summary>
-    <p>As perguntas trazem o tema e a dificuldade. As fichas ensinam virologia. Os poderes e as fusões fazem parte da ficção do jogo.</p>
-    <button class="arena-button ghost" id="practiceBtn" type="button">Questão fácil de epidemiologia</button>
-    <p class="study-source" id="influenzaLink"><a href="https://www.cdc.gov/flu/php/viruses/antigenic.html" target="_blank" rel="noopener noreferrer">Antígenos da influenza · CDC</a></p>
+    <p>Nas respostas digitadas, escreva o termo ou a porcentagem pedida. Confira a explicação após cada tentativa. As fichas ensinam virologia. Os poderes e as fusões fazem parte da ficção do jogo.</p>
+    <p class="study-source" id="influenzaLink"><a href="https://www.cdc.gov/flu/php/viruses/antigenic.html" target="_blank" rel="noopener noreferrer">Antígenos da influenza · CDC</a> · <a href="https://www.cdc.gov/flu/hcp/testing-methods/index.html" target="_blank" rel="noopener noreferrer">Interpretação de testes · CDC</a></p>
    </details>
    <details class="arena-help study-guide">
     <summary>43 perguntas do Taller 14</summary>
@@ -145,12 +144,12 @@
    <p class="mut" id="draftHint" hidden></p>
    <div id="opts"></div><div class="fb" id="fb" role="status" hidden></div>
    <figure id="evolutionPreview" class="evolution-preview" hidden>
-    <canvas id="evolutionPortrait" width="116" height="116" aria-hidden="true"></canvas>
+    <canvas id="evolutionPortrait" width="232" height="232" aria-hidden="true"></canvas>
     <figcaption id="evolutionCaption"></figcaption>
    </figure>
    <div id="ups" class="build-choices" hidden></div>
    <button class="arena-button ghost arena-lesson" id="reviewBtn" type="button" hidden>Revisar esta característica</button>
-   <div class="btns stick"><button class="arena-button" id="contBtn" hidden>Continuar</button></div>
+   <div class="btns stick"><button class="arena-button" id="contBtn" hidden>Continuar</button><button class="arena-button ghost" id="leavePractice" type="button" hidden>Voltar ao curso</button></div>
   </div>
  </div>
  <div class="ov dim" id="pause" hidden>
@@ -205,11 +204,13 @@
 <script defer src="./morfologia.js"></script>
 <script defer src="./replicacao.js"></script>
 <script defer src="./nucleo-influenza.js"></script>
+<script defer src="./arte-defesas.js"></script>
 <script defer src="./arte-jogo.js"></script>
 <script defer src="./fase-influenza.js"></script>
 <script defer src="./capitulo-vsr.js"></script>
 <script defer src="./guia-respiratoria.js"></script>
 <script defer src="./progresso.js"></script>
+<script defer src="./perguntas.js"></script>
 <script defer src="./jogo.js"></script>
 </body>
 </html>

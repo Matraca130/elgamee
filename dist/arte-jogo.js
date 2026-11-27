@@ -77,11 +77,11 @@ const arenaArt = (() => {
   }
  }
 
- function creature(species, rank = 0, hostile = false) {
+ function creature(species, rank = 0) {
   const c = document.createElement('canvas');
-  c.width = c.height = 96;
+  c.width = c.height = 144;
   const g = c.getContext('2d');
-  g.scale(4 / 3, 4 / 3);
+  g.scale(2, 2);
   g.lineJoin = g.lineCap = 'round';
   const [base, shade, light] = species.colors;
   const {look} = species;
@@ -105,27 +105,24 @@ const arenaArt = (() => {
   oval(g, 54, 46, 6, 5, base, ink, 2);
   for (const x of [29, 44]) {
    oval(g, x, 39, 5.1, 6.4, '#fff5db', ink, 1.8);
-   oval(g, x + .8, 39.5, 2.4, 3.6, ink);
-  }
-  if (hostile) {
-   g.beginPath();
-   g.moveTo(23, 33); g.lineTo(33, 37);
-   g.moveTo(39, 37); g.lineTo(49, 33);
-   g.strokeStyle = ink; g.lineWidth = 2.5; g.stroke();
+   oval(g, x + .8, 39.5, 2.6, 3.6, ink);
+   oval(g, x, 38, 1, 1.1, '#fffbe6');
   }
   g.beginPath();
   g.moveTo(33, 46);
-  g.quadraticCurveTo(36.5, hostile ? 43 : 51, 40, 46);
+  g.quadraticCurveTo(36.5, 51, 40, 46);
   g.strokeStyle = ink; g.lineWidth = 1.6; g.stroke();
   costume(g, rank);
   return c;
  }
 
- function drawActor(g, image, x, y, radius, lift, flash = false) {
+ function drawActor(g, image, x, y, radius, lift, flash = false, anticipation = 0) {
   const size = radius * 3.15;
+  const width = size * (1 + .16 * anticipation);
+  const height = size * (1 - .18 * anticipation);
   oval(g, x, y + radius * .6, radius * 1.04, radius * .34,
    flash ? 'rgba(255,230,184,.50)' : 'rgba(66,24,51,.31)');
-  g.drawImage(image, x - size / 2, y - size * .58 - lift, size, size);
+  g.drawImage(image, x - width / 2, y + size * .42 - lift - height, width, height);
  }
 
  function drawFragment(g, orb, reducedMotion) {
@@ -136,16 +133,26 @@ const arenaArt = (() => {
   polygon(g, [[x,y-5],[x+1,y],[x-3,y]], '#f4d8ff');
  }
 
+ // Os perfis e as manchas usam a mesma silhueta em todos os tamanhos de desenho.
+ const shells = {
+  round: new Path2D('M-23 -4 C-24 -15 -16 -24 -4 -25 C6 -28 20 -19 23 -8 C28 3 19 17 8 20 C-5 25 -19 17 -22 8Z'),
+  facets: new Path2D('M-22 -9 L-15 -21 L3 -26 L19 -17 L24 -1 L17 16 L-3 21 L-20 12Z'),
+  filament: new Path2D('M-16 -5 C-19 -14 -14 -26 -4 -29 C4 -32 13 -27 17 -19 C22 -10 12 -6 18 4 C25 18 14 27 4 26 C-7 26 -16 18 -15 9Z')
+ };
+ const shellShadow = new Path2D('M-27 0 Q-15 15 1 13 Q17 12 19 -12 L30 -16 L33 32 L-30 33Z');
+ const shellLight = new Path2D('M-20 -7 Q-18 -22 0 -22 L5 -19 Q-10 -19 -16 -9Z');
+ const shellRim = new Path2D('M-15 11 Q-2 23 12 14 M14 12 L17 8');
+ const nucleusWindow = new Path2D('M-13 5 Q-10 0 -3 0 L6 1 Q13 1 14 7 Q13 13 5 15 L-4 14 Q-11 13 -13 9Z');
+
  function outlineBody(g, body, fill, rim) {
-  if(body==='facets') {
-   polygon(g, [[-15,-20],[4,-24],[19,-16],[23,0],[16,16],[-4,20],[-21,11],[-23,-7]],fill,rim,2.8);
-   return;
-  }
-  if(body==='filament'){
-   oval(g,0,-2,18,27,fill,rim,2.8);
-   return;
-  }
-  oval(g,0,-2,23,22,fill,rim,2.8);
+  const shell=shells[body];
+  g.fillStyle=fill;g.fill(shell);
+  g.save();g.clip(shell);
+  g.fillStyle='rgba(35,47,85,.31)';g.fill(shellShadow);
+  g.fillStyle='rgba(238,255,241,.75)';g.fill(shellLight);
+  g.strokeStyle='rgba(219,252,244,.76)';g.lineWidth=1.5;g.stroke(shellRim);
+  g.restore();
+  g.strokeStyle=rim;g.lineWidth=3.1;g.stroke(shell);
  }
 
  const fiberAngles=[.43,1.07,1.97,2.66,3.34,4.02,4.95,5.67];
@@ -203,7 +210,10 @@ const arenaArt = (() => {
 
  function nucleocapsid(g,genome,rank,clock) {
   if(rank)polygon(g,[[-10,2],[-5,-2],[5,-2],[10,3],[7,12],[-7,12]],'#454263','#222542',1.8);
-  else oval(g,0,5,12,7,'rgba(82,75,108,.67)','#807e9e',1.4);
+  else {
+   g.fillStyle='#44415e';g.fill(nucleusWindow);
+   g.strokeStyle='#b9d7db';g.lineWidth=1.5;g.stroke(nucleusWindow);
+  }
   for(let i=0;i<genome.strands;i++){
    const y=4+i*3;
    g.beginPath();g.moveTo(-7,y);
@@ -236,18 +246,20 @@ const arenaArt = (() => {
  }
 
  function expression(g,value,gaze) {
-  for(const x of [-7,7]){
-   oval(g,x,-7,4.8,value===2?4.9:5.8,'#fff0db',ink,1.75);
-   oval(g,x+gaze*1.15,-7,2.25,3.3,'#29203f');
-   oval(g,x+gaze*.9-.6,-8.1,.8,.8,'#fff8e9');
+  for(const side of [-1,1]){
+   const x=side*7.2;
+   g.save();g.translate(x,-9);g.rotate(side*(value===2?-.3:-.12));
+   oval(g,0,0,5.6,value===2?4.6:6.0,'#fff3c9',ink,1.65);
+   oval(g,gaze*1.3,.4,2.8,3.6,'#29304a');
+   oval(g,gaze*1.3-.7,-1.2,1,1.1,'#fff9df');
    if(value){
-    const lean=x<0?1:-1;
-    g.beginPath();g.moveTo(x-lean*5,-13-value);g.lineTo(x+lean*4,-12+value*1.7);
-    g.lineWidth=value===2?2.7:2.0;g.strokeStyle=ink;g.stroke();
+    g.beginPath();g.moveTo(side*5,-6.6);g.quadraticCurveTo(0,-5.8,-side*4.6,-4.6+value);
+    g.lineWidth=value===2?2.9:2.2;g.strokeStyle=ink;g.stroke();
    }
+   g.restore();
   }
-  g.beginPath();g.moveTo(-2.7,-1);g.quadraticCurveTo(0,value===2?-2.4:1.4,3.3,-1.4);
-  g.lineWidth=1.45;g.strokeStyle=ink;g.stroke();
+  g.beginPath();g.moveTo(-3.8,-1.8);g.quadraticCurveTo(0,value===2?-4:.8,3.6,-2.4);
+  g.lineWidth=1.65;g.strokeStyle=ink;g.stroke();
  }
 
  function drawVirus(g,x,y,r,appearance,pose={}) {
@@ -276,10 +288,12 @@ const arenaArt = (() => {
   coat.addColorStop(.47,vsr?'#6cc9b8':fused?'rgba(91,66,146,.88)':'rgba(100,202,230,.84)');
   coat.addColorStop(1,vsr?'#3b7985':fused?'#533f87':'#407ea7');
   outlineBody(g,morph.body,coat,fused?'#302044':'#232d4d');
-  oval(g,0,-1,morph.body==='filament'?14.5:18.6,16.4,fused?'rgba(52,36,95,.42)':'rgba(209,247,243,.28)',
-   defense?'#d9f6f9':'rgba(209,243,252,.68)',defense?2.5:1.55);
-  oval(g,-13,-14,4.4,2.2,'rgba(246,254,255,.83)',null,0,-.43);
-  oval(g,15,-8,2.7,1.7,'rgba(246,254,255,.61)',null,0,.7);
+  if(defense){
+   g.save();g.scale(.86,.86);g.lineWidth=2.4;g.strokeStyle='#e0fff2';g.stroke(shells[morph.body]);g.restore();
+  }
+  oval(g,-14,-12,3.2,1.5,'#effff8',null,0,-.62);
+  oval(g,14,2,2.8,1.6,'rgba(44,70,104,.38)',null,0,-.54);
+  oval(g,16,-1,1.1,1.2,'#d6faf0');
   if(variation?.attackOffset){
    for(const side of [-1,1]){
     polygon(g,[[side*17,-14],[side*22,-20],[side*24,-14],[side*20,-10]],variation.color,ink,1.4);
@@ -298,5 +312,49 @@ const arenaArt = (() => {
   g.restore();
  }
 
- return {creature, drawActor, drawFragment, drawVirus};
+ const landmarkArt={
+  base:new Path2D('M-22 1 L-11 -7 L12 -7 L22 0 L21 7 L9 13 L-12 11 L-22 6Z'),
+  baseTop:new Path2D('M-22 1 L-10 -7 L12 -7 L22 0 L9 6 L-10 6Z'),
+  crystal:new Path2D('M0 -30 L12 -16 L9 -4 L0 3 L-11 -5 L-13 -16Z'),
+  facet:new Path2D('M0 -28 L-2 -14 L-11 -15Z M-1 -12 L8 -5 L0 1Z'),
+  book:new Path2D('M-18 -22 Q-9 -24 0 -17 Q7 -24 18 -22 L19 -5 Q9 -7 0 0 Q-8 -7 -20 -4Z'),
+  page:new Path2D('M0 -17 L0 -2 M-14 -16 Q-8 -17 -4 -13 M4 -12 Q9 -17 15 -16'),
+  wind:new Path2D('M-19 -8 Q-13 -21 2 -17 Q14 -14 14 -22 Q14 -29 7 -26 M-10 -3 Q-2 -10 8 -7 Q19 -3 22 -11')
+ };
+ function landmarkLayer(g,path,fill,edge,width=2.4){
+  if(fill){g.fillStyle=fill;g.fill(path);}
+  if(edge){g.strokeStyle=edge;g.lineWidth=width;g.stroke(path);}
+ }
+ function marker(g,area,title,ready,clock,reduced,kind='checkpoint') {
+  const pulse=reduced?0:Math.sin(clock*3.2)*2;
+  const ink='#382a40';
+  g.save();g.translate(area.x,area.y);g.lineJoin=g.lineCap='round';
+  g.beginPath();g.ellipse(1,8,26,8,0,0,Math.PI*2);g.fillStyle='rgba(60,29,48,.35)';g.fill();
+  if(ready){
+   g.beginPath();g.ellipse(0,5,29+pulse,12+pulse*.45,0,0,Math.PI*2);
+   g.strokeStyle=area.tone;g.lineWidth=2.2;g.stroke();
+  }
+  landmarkLayer(g,landmarkArt.base,'#8e665d',ink);
+  landmarkLayer(g,landmarkArt.baseTop,'#b89a78',ink,1.6);
+  if(kind==='study'){
+   landmarkLayer(g,landmarkArt.book,'#ffdfa3',ink);
+   landmarkLayer(g,landmarkArt.page,null,'#876140',1.6);
+  }else if(kind==='wind'){
+   g.translate(0,pulse);
+   landmarkLayer(g,landmarkArt.wind,null,ink,7);
+   landmarkLayer(g,landmarkArt.wind,null,'#c1fff0',3.5);
+  }else{
+   g.translate(0,ready?pulse-2:0);
+   landmarkLayer(g,landmarkArt.crystal,ready?area.tone:'#a97d7d',ink);
+   landmarkLayer(g,landmarkArt.facet,ready?'#fff3cc':'#d0aaa0');
+  }
+  g.restore();
+  g.save();
+  g.textBaseline='middle';g.textAlign='center';g.lineJoin='round';
+  g.font='800 16px system-ui, sans-serif';g.lineWidth=4;
+  g.strokeStyle=ink;g.strokeText(title,area.x,area.y+28);
+  g.fillStyle='#fff4d9';g.fillText(title,area.x,area.y+28);g.restore();
+ }
+
+ return {creature, drawActor, drawFragment, drawVirus, marker};
 })();

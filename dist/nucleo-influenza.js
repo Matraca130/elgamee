@@ -1,53 +1,53 @@
 const influenzaCore=(()=>{
  const layouts={
   8:{name:'8 segmentos',profiles:['a','b'],color:'#e5f3ff',patrolRange:170,chance:32,bonusShare:50,
-   question:{level:'Fácil',topic:'Morfologia da influenza',
-    q:'Entre A, B e C, quais tipos de influenza têm oito segmentos de RNA?',
-    answers:['Influenza A e B.','Influenza A e C.','Influenza B e C.'],
+   question:{level:'Intermediária',topic:'Comparação de fichas',
+    q:'O número de segmentos de uma ficha é compatível com influenza A e também com outro tipo humano. Entre B e C, qual tem a mesma contagem de A?',
+    fields:[{label:'Outro tipo de influenza',terms:['Influenza B','Tipo B','B','Gripe B']}],
     note:'Influenza A e B têm oito segmentos de RNA de fita simples negativa. Influenza C tem sete.'}},
   7:{name:'7 segmentos',profiles:['c'],color:'#e5f3ff',patrolRange:135,chance:23,bonusShare:50,attackOffset:-2,
-   question:{level:'Fácil',topic:'Morfologia da influenza',
+   question:{level:'Intermediária',topic:'Comparação de fichas',
     q:'Entre A, B e C, qual tipo de influenza tem sete segmentos de RNA?',
-    answers:['Influenza C.','Influenza A.','Influenza B.'],
+    fields:[{label:'Tipo de influenza',terms:['Influenza C','Tipo C','C','Gripe C']}],
     note:'Entre esses três tipos, C tem sete segmentos. A e B têm oito.'}}
  };
 
  const profiles={
   a:{name:'Influenza A',color:'#ffd185',patrolRange:205,chance:56,bonusShare:70,signatures:['drift','shift'],
    question:{level:'Intermediária',topic:'Epidemiologia',
-    q:'Qual dos tipos de influenza é conhecido por já ter causado pandemias?',
-    answers:['Influenza A.','Influenza B.','Influenza C.'],
+    q:'Um boletim cita A(H3N2) e influenza B na mesma temporada. A qual dos dois tipos pertenciam os agentes das pandemias de gripe documentadas?',
+    fields:[{label:'Tipo relacionado às pandemias',terms:['Influenza A','Tipo A','A','Gripe A']}],
     note:'A e B causam epidemias sazonais. Entre os tipos de influenza, só o A é conhecido por ter causado pandemias.'}},
   b:{name:'Influenza B',color:'#a1f2ed',patrolRange:165,chance:40,bonusShare:60,signatures:['drift'],
    question:{level:'Intermediária',topic:'Epidemiologia',
-    q:'O que os tipos A e B têm em comum na epidemiologia da gripe?',
-    answers:['Ambos causam epidemias sazonais em humanos.','Ambos são conhecidos por causar pandemias.','Ambos costumam circular apenas em bovinos.'],
+    q:'O boletim de uma mesma temporada registra casos por A e por B. Qual afirmação se sustenta para os dois tipos?',
+    answers:['Participam das epidemias sazonais humanas.','Já foram responsáveis por pandemias documentadas.','Recebem subtipos designados pela combinação H e N.'],
     note:'A e B circulam em humanos e causam epidemias sazonais. As pandemias conhecidas de influenza foram causadas pelo tipo A.'}},
   c:{name:'Influenza C',color:'#e6c1ff',patrolRange:125,chance:26,bonusShare:50,attackOffset:-2,signatures:['quiet'],
    question:{level:'Intermediária',topic:'Epidemiologia',
-    q:'Como costuma ser a doença causada pelo influenza C em humanos?',
-    answers:['Geralmente leve.','Tipicamente associada a pandemias.','Sempre grave.'],
+    q:'Uma ficha descreve influenza C em humanos. Ao comparar com A e B, qual conclusão é sustentada pelos registros epidemiológicos?',
+    answers:['C costuma causar doença leve e seu papel nas epidemias humanas difere do observado para A e B.','C participa das epidemias sazonais com o mesmo papel estabelecido para A e B.','C compartilha com A o histórico de pandemias humanas documentadas.'],
     note:'As infecções pelo tipo C geralmente são leves. A gravidade também depende da pessoa e do contexto da infecção.'}}
  };
 
  const signatures={
   drift:{name:'Deriva',icon:'≋',color:'#9cece6',chanceOffset:15,
    desc:'Aumenta em 15 pontos percentuais a chance de uma forma extra a cada nova arena.',
-   question:{guide:6,level:'Intermediária',topic:'Deriva antigênica',
+   question:{guide:6,level:'Intermediária',topic:'Vigilância antigênica',
     q:'Qual fenômeno descreve mudanças antigênicas graduais na influenza?',
-    answers:['Deriva antigênica (drift).','Salto antigênico (shift).','Depuração mucociliar.'],
+    fields:[{label:'Nome do fenômeno',terms:['Deriva antigênica','Deriva','Drift','Antigenic drift']}],
     note:'Deriva antigênica é a mudança gradual em antígenos do vírus ao longo do tempo.'}},
   shift:{name:'Salto',icon:'✦',color:'#ffcf9d',intensity:1.5,
    desc:'As formas extras, favoráveis ou desfavoráveis, têm efeito 50% mais forte na arena.',
-   question:{level:'Difícil',topic:'Salto antigênico',
-    q:'O que o termo salto antigênico (shift) descreve na influenza?',
-    answers:['Uma mudança antigênica grande e abrupta no tipo A.','Um acúmulo gradual de pequenas mudanças antigênicas.','Uma mudança nas células ciliadas da traqueia.'],
+   question:{level:'Difícil',topic:'Vigilância antigênica',
+    q:'Um texto descreve uma mudança antigênica grande e abrupta no influenza A. Como se chama esse padrão na vigilância?',
+    fields:[{label:'Nome do fenômeno',terms:['Salto antigênico','Salto','Shift','Antigenic shift','Cambio antigénico mayor']}],
     note:'Salto antigênico descreve uma mudança grande e abrupta na influenza A. Deriva descreve mudanças graduais.'}},
   quiet:{name:'Passo discreto',icon:'›',color:'#e6c1ff',patrolOffset:-15,
    desc:'As patrulhas da arena percebem o personagem 15 unidades de distância mais perto.',
    question:{level:'Intermediária',topic:'Genoma da influenza C',
     q:'Que tipo de material genético compõe os sete segmentos do influenza C?',
-    answers:['RNA de fita simples de polaridade negativa.','RNA de fita simples de polaridade positiva.','DNA de fita dupla.'],
+    fields:[{label:'Ácido nucleico (sigla)',terms:['RNA','ARN']},{label:'Polaridade',terms:['Negativa','Sentido negativo','Polaridade negativa','Polaridad negativa','Negativo','−','-']}],
     note:'O influenza C tem RNA de fita simples negativa, dividido em sete segmentos.'}}
  };
 

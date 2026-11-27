@@ -21,7 +21,13 @@
     "tema": "combate",
     "busca": ["mira", "ataque", "dash", "super", "raridade", "patogenia", "eco inflamatório", "replicação", "replicación", "ecos", "aliados"],
     "resumo": "Disparos, defesas, fusões e aliados temporários.",
-    "arquivos": ["AGENTS.md", "dist/jogo.js", "dist/replicacao.js", "dist/arte-jogo.js"]
+    "arquivos": ["AGENTS.md", "dist/jogo.js", "dist/replicacao.js", "dist/arte-jogo.js", "dist/arte-defesas.js"]
+  },
+  {
+    "tema": "perguntas",
+    "busca": ["pergunta", "preguntas", "treino", "resposta digitada", "respuesta escrita", "correção", "corrección", "positividade", "quiz"],
+    "resumo": "Treino por capítulo, perguntas das arenas e bônus das missões com correção local.",
+    "arquivos": ["docs/decisoes/respostas-curtas.md", "dist/perguntas.js", "dist/fase-influenza.js", "dist/capitulo-vsr.js", "dist/nucleo-influenza.js", "dist/jogo.js", "tests/perguntas.test.mjs"]
   },
   {
     "tema": "progresso",
