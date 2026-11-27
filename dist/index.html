@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lóbulo hepático · Base dos auxiliares</title>
+
+<link rel="stylesheet" href="./jogo.css">
+</head>
+<body>
+<div id="app" hidden inert>
+<header id="hud">
+ <div class="day" id="day">Semana 1<small>de 10</small></div>
+ <div class="bars">
+  <div class="row"><span>Vigor do linfócito</span><span id="hpt">100/100</span></div>
+  <div class="bar"><i id="hpb"></i></div>
+  <div class="row"><span id="lvt">Nível 1</span><span id="fbt">Infectados 3 · Fibrose 0%</span></div>
+  <div class="bar"><i id="xpb"></i></div>
+ </div>
+ <div class="arena-tools"><button class="arena-base-button" id="crewHud">Base <i class="base-ready" id="crewHudReady" hidden></i></button><button class="icon" id="pauseBtn" aria-label="Pausar">II</button></div>
+</header>
+<main id="stage">
+ <canvas id="cv" width="1" height="1" role="img" aria-label="Lóbulo hepático: um linfócito T entre hepatócitos, com vírions do HBV chegando pelos espaços porta"></canvas>
+ <div id="toast" role="status" aria-live="polite"></div>
+ <div class="ov" id="intro">
+  <div class="card">
+   <h1>Lóbulo hepático</h1>
+   <p class="lead">Você é um linfócito T CD8+ no fígado. O vírus da hepatite B (HBV) entrou pelo sangue: controle a infecção ao longo de dez semanas de jogo.</p>
+   <p class="mut">Arraste pra andar (ou use as setas/WASD); o ataque é automático. Chegue perto de um hepatócito infectado pra eliminá-lo, mas cada um que morre deixa cicatriz. A cada nível, escolha um tema sobre o vírus: acertou a pergunta, ganhou a contramedida.</p>
+   <div class="legend">
+    <div><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><g stroke="#08605f" stroke-width="2" stroke-linecap="round"><path d="M15 1.5v3M15 25.5v3M1.5 15h3M25.5 15h3M5.5 5.5l2 2M22.5 22.5l2 2M24.5 5.5l-2 2M7.5 22.5l-2 2"/></g><circle cx="15" cy="15" r="10" fill="#c9f1ee" stroke="#0e8a8c" stroke-width="2"/><path d="M21 15l-3 5.2h-6L9 15l3-5.2h6z" fill="#0e8a8c"/></svg><span><b>Vírion de Dane</b>infecta hepatócitos</span></div>
+    <div><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="10" cy="19" r="6.5" fill="#e6eff7" stroke="#8fa9c0" stroke-width="2"/><ellipse cx="20" cy="10" rx="7" ry="3.4" transform="rotate(-30 20 10)" fill="#e6eff7" stroke="#8fa9c0" stroke-width="2"/></svg><span><b>Esfera de HBsAg</b>isca, não infecta</span></div>
+    <div><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="12" fill="#a77acb"/><circle cx="15" cy="15" r="4.4" fill="#3e2463"/><circle cx="21.5" cy="11" r="1.9" fill="#8fe0dc"/><circle cx="8.5" cy="19.5" r="1.9" fill="#8fe0dc"/></svg><span><b>Hepatócito infectado</b>fábrica de vírions</span></div>
+    <div><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path d="M15 3c6 0 11 4 11 10s-3 12-10 13S3 22 4 15 9 3 15 3z" fill="#e0965a"/><ellipse cx="13" cy="15" rx="5" ry="3.5" fill="#7a3b1a"/></svg><span><b>Célula de Kupffer</b>aliada, fagocita</span></div>
+   </div>
+   <div class="btns"><button class="btn" id="startBtn">Começar na arena</button><button class="btn ghost" id="crewIntro">Base dos auxiliares</button><span class="mut" id="bestT"></span></div>
+  </div>
+ </div>
+ <div class="ov dim" id="lv" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="qText">
+   <p class="mut" id="lvTag">Subiu de nível</p>
+   <h2 id="qText"></h2>
+   <div id="opts"></div>
+   <div class="fb" id="fb" hidden></div>
+   <div id="ups" hidden></div>
+   <div class="btns stick"><button class="btn" id="contBtn" hidden>Continuar</button></div>
+  </div>
+ </div>
+ <div class="ov dim" id="pause" hidden>
+  <div class="card"><h2>Pausado</h2><p class="mut">Suas contramedidas até agora:</p><ul class="codex" id="ctr"></ul><div class="btns"><button class="btn" id="resumeBtn">Continuar</button><button class="btn ghost" id="crewPause">Base dos auxiliares</button><button class="btn ghost" id="restartBtn">Recomeçar</button></div></div>
+ </div>
+ <div class="ov dim" id="end" hidden>
+  <div class="card">
+   <h2 id="endH"></h2>
+   <p class="lead" id="endP"></p>
+   <div class="stats"><div><b id="sInf">0</b>infectados no fim</div><div><b id="sQ">0/0</b>perguntas</div><div><b id="sF">0%</b>fibrose</div></div>
+   <p class="mut">O que caiu nesta run, com a resposta completa:</p>
+   <ul class="codex" id="codex"></ul>
+   <div class="btns"><button class="btn" id="againBtn">Jogar de novo</button><button class="btn ghost" id="crewEnd">Base dos auxiliares</button><span class="mut" id="bestE"></span></div>
+  </div>
+ </div>
+</main>
+</div>
+<section id="crewHub" role="dialog" aria-modal="true" aria-labelledby="crewTitle">
+  <img id="crewSheet" hidden alt="" width="432" height="128" src="./auxiliares.png">
+  <header class="crew-top">
+    <div class="crew-frame crew-top-inner">
+      <div class="crew-brand"><span class="brand-stamp" aria-hidden="true"><i></i></span><span>Lóbulo hepático</span></div>
+      <div class="crew-nav-actions">
+        <span class="crew-wallet" title="Moedas da equipe"><span class="coin-mark" aria-hidden="true"></span><strong id="crewCoins">20</strong><span class="wallet-word">moedas</span></span>
+        <button type="button" class="crew-arena" id="crewReturn"><span id="crewReturnLabel">Ir para a arena</span><span class="crew-arena-short" id="crewReturnShort" aria-hidden="true">Arena</span><span class="arena-caret" aria-hidden="true"></span></button>
+      </div>
+    </div>
+  </header>
+  <div class="crew-frame crew-body">
+    <section class="crew-hero" id="crewHero">
+      <div class="crew-hero-copy">
+        <h1 id="crewTitle">Base dos auxiliares</h1>
+        <p id="crewLead">Escolha um mascote viral para acompanhar você no lóbulo ou sair em missões por moedas e experiência.</p>
+      </div>
+      <img id="crewChart" src="./mapa.webp" width="270" height="110" alt="">
+    </section>
+    <nav class="crew-tabs" aria-label="Seções da base">
+      <button type="button" data-view="team">Minha equipe <span id="crewSize">0</span></button>
+      <button type="button" data-view="missions">Missões <span id="crewJobs" hidden>0</span></button>
+      <button type="button" data-view="catalog">Recrutar</button>
+    </nav>
+    <p id="crewSaveNote" class="crew-saving" hidden>O navegador bloqueou o salvamento. O progresso da equipe dura enquanto esta página ficar aberta.</p>
+    <div id="crewFlash" role="status" aria-live="polite" hidden></div>
+    <div id="crewBody"><noscript><p>Para jogar, abra a página em um navegador com JavaScript ativado.</p></noscript></div>
+  </div>
+</section>
+
+<script src="./jogo.js" defer></script>
+</body>
+</html>
