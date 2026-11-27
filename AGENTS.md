@@ -29,6 +29,7 @@
 - Registre decisões que mudem as regras do jogo, os cursos, o armazenamento ou a publicação junto com a alteração que as aplica. Anote o contexto, o que foi decidido e as consequências.
 - Identifique ideias em discussão como propostas. Quando uma decisão mudar, vincule a anterior à nova e atualize as instruções vigentes aqui.
 - Atualize o [estado do projeto](docs/contexto/estado.md) quando a entrega ou a pendência principal mudar.
+- A prévia jogável usa a branch `gh-pages`. Atualize-a com uma revisão escolhida do código e registre o commit de origem conforme a [decisão de publicação](docs/decisoes/previa-github-pages.md).
 
 ## Onde acrescentar conteúdo
 
