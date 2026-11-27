@@ -1,6 +1,6 @@
 # Atlas Viral
 
-- O jogador é sempre um vírus. Ele atravessa regiões do corpo, enfrenta defesas do hospedeiro e evolui com habilidades inspiradas nos vírus estudados. O linfócito é uma defesa do hospedeiro.
+- Nos cursos respiratórios o jogador controla um vírus e enfrenta defesas do hospedeiro. No rancho de Chagasico, o personagem é inspirado no parasita Trypanosoma cruzi. O linfócito é uma defesa do hospedeiro.
 - Use a fluidez de Vampire Survivors como referência de jogabilidade: movimento direto com teclado ou toque, ataques em tempo real e um dash. Use Kingdom Rush como referência visual para arte cartunesca original, silhuetas legíveis, contorno forte, cenário ilustrado e golpes com antecipação e impacto. Use Hades como referência para escolhas e sinergias. Crie personagens, mapas, animações e efeitos próprios.
 - Use Comum, Super-rara, Épica, Lendária e Especial. A raridade das habilidades regulares acompanha o nível. Reserve roxo para Especial, incluindo fusões e poderes desbloqueados por desafios. Na fase da influenza, garanta hemaglutinina e neuraminidase durante a progressão, com melhorias nas ofertas seguintes.
 - O envoltório tem até quatro espaços funcionais: ataque, pulso, defesa e apoio. Nucleocapsídeo, movimento e status têm um espaço cada. Cada espaço aceita uma habilidade por partida, com melhorias de nível. Uma fusão pode acrescentar um terceiro poder sem ocupar o espaço de suas duas habilidades de origem. Mostre as escolhas no visual do vírus.
@@ -15,6 +15,7 @@
 - Mantenha as escolhas de habilidades e fusões ligadas às arenas. Use a base dos auxiliares para missões que rendem moedas em paralelo à partida.
 - Represente a replicação com ecos temporários que acompanham os disparos. Cada perfil de jogo define um limite e uma duração. Os fragmentos alimentam os ecos, então o Anel coletor melhora a coleta para essa habilidade. Os aliados de estudo ocupam o mesmo limite.
 - Dê às defesas padrões visíveis e efeitos de combate distintos, como um pulso que causa dano e um campo que retarda o deslocamento. Use o posto de profilaxia para perguntas sobre vacinas com recompensa de estudo. Quando incluir calendários concretos, associe cada recomendação a país, público, ano e fonte oficial. Registre as funções de HA e NA nas fichas de biologia.
+- Articule as peças 2D no Blender para animar repouso, deslocamento, esquiva, ataque e reação ao dano. Exporte os quadros com fundo transparente. Use a marca de soltura da animação do ataque para acionar o projétil no jogo. O rancho tem um [rig de referência](art/rancho/rancho-animacoes.blend).
 - O curso de VSR passa por vias superiores e bronquíolos. A ficha apresenta RNA de fita simples negativa não segmentado, família Pneumoviridae, gênero Orthopneumovirus, F na fusão e G na ligação. Estude lactentes e equipe de saúde em casos opcionais. O desafio do sincício libera Confluência, um pulso de jogo ligado aos ecos.
 - Em Meus cursos, registre a melhor quantidade de arenas superadas e de acertos por capítulo. Vincule os registros da conta à identidade autenticada pelo site. Mostre quando o progresso está salvo apenas neste navegador.
 - Diferencie as fichas de biologia das metáforas do combate. Revise a parte científica em fontes confiáveis. Dê às perguntas um tema e uma dificuldade. Relacione as revisões de cada recompensa à característica recebida e inclua epidemiologia no banco de perguntas. Use o Taller 14 do Tutor de Integração como matriz do conteúdo respiratório. Na traqueia, varie tema e dificuldade. Mantenha os 43 enunciados nesse caderno e acrescente desafios jogáveis conforme cada vírus ganha sua fase. As fusões, os atributos e os efeitos dos golpes pertencem à ficção; mantenha a mecânica abstrata e preserve os conceitos científicos nas fichas.
@@ -32,6 +33,7 @@
 ## Onde acrescentar conteúdo
 
 - Defina as arenas, os pontos de saída, os chefes e as perguntas em `dist/fase-influenza.js`.
+- Ajuste o rancho de Chagasico em `dist/rancho-modelo.js` e `dist/rancho-chagasico.js`. As poses vêm de `art/rancho/montar-rig.py`.
 - Defina as arenas e os casos do VSR em `dist/capitulo-vsr.js`. Registre novos capítulos no seletor em `dist/jogo.js` e na validação de progresso em `worker/index.js`.
 - Configure perfis e atributos em `dist/morfologia.js` e as camadas visuais em `dist/arte-jogo.js`.
 - Configure segmentos, perfis, poderes, perguntas do núcleo e chances das formas em `dist/nucleo-influenza.js`.
