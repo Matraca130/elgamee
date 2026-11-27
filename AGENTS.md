@@ -42,6 +42,7 @@
 - Defina as arenas, os pontos de saída, os chefes e as perguntas em `dist/fase-influenza.js`.
 - Defina as arenas e os casos do VSR em `dist/capitulo-vsr.js`. Registre novos capítulos no seletor em `dist/jogo.js` e na validação de progresso em `worker/index.js`.
 - Defina a rota zoonótica em `dist/toxocara.js` e as formas articuladas em `dist/arte-toxocara.js`. Use o motor compartilhado em `dist/jogo.js`.
+- Consulte a [decisão dos caminhos de morfologia](docs/decisoes/caminhos-da-morfologia.md) ao editar a evolução de oocisto. Use `dist/morfologia-oocisto.js` para a sequência e as perguntas e `dist/arte-oocisto.js` para as peças do caminho A.
 - Configure perfis e atributos em `dist/morfologia.js`, as camadas e poses da influenza em `dist/influenza-2d.js` e a arte dos outros personagens em `dist/arte-jogo.js`.
 - Configure segmentos, perfis, poderes, perguntas do núcleo e chances das formas em `dist/nucleo-influenza.js`.
 - Configure perfis, limite e duração de ecos em `dist/replicacao.js`.

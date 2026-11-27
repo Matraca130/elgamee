@@ -23,6 +23,7 @@ export const rotaToxocara = [
     targets: [[-143,281],[152,329],[-108,436],[122,458]],
     mucus: [{x:-118,y:343,rx:68,ry:37},{x:133,y:412,rx:56,ry:32}],
     surface: { speedFactor:.62, label:'Lama · movimento mais lento' },
+    postoCrescente: {x:109,y:225, label:'Crescente dourado', hint:'Marco de ataque · à direita da entrada'},
     question: {
       topic: 'Transmissão',
       title: 'Nesta rota, como a infecção pelo Toxocara chega ao ser humano?',

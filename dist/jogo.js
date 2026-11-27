@@ -1,7 +1,9 @@
 import { carregarInfluenza, poseInfluenza } from './influenza-2d.js';
 import { Personagem2D } from './personagem-2d.js';
-import { toxocaraChapter, evolucoesToxocara } from './toxocara.js?v=rotas';
-import { modeloToxocara, desenharCompanheiro } from './arte-toxocara.js?v=rotas';
+import { toxocaraChapter, evolucoesToxocara } from './toxocara.js?v=oocisto';
+import { modeloToxocara, desenharCompanheiro } from './arte-toxocara.js?v=oocisto';
+import { oocistoAtlas, desenharCrescente } from './arte-oocisto.js';
+import { formasOocisto, proximaFormaOocisto, perguntasCrescente, sortearPergunta } from './morfologia-oocisto.js';
 
 {
 const root=document.getElementById('lobulo-game');
@@ -53,6 +55,8 @@ const TRAITS={
  ha:{slot:'ataque',name:'Hemaglutinina',icon:'✺',color:'#a45826',rarity:'common',
   desc:'Fortalece os disparos. No nível 2, o golpe alcança até dois alvos.',
   study:'A hemaglutinina (HA) é uma proteína do envoltório. Ela ajuda o influenza a se ligar à célula. Anticorpos contra HA podem neutralizar o vírus.'},
+ crescente:{slot:'ataque',name:'Crescente dourado',icon:'☾',color:'#a57831',rarity:'rare',kicker:'Ataque',
+  desc:'Equipa uma peça dourada e acrescenta 4 pontos de dano ao disparo.'},
  na:{slot:'pulso',name:'Neuraminidase',icon:'◎',color:'#26797b',rarity:'common',
   desc:'Desenha ramos na membrana e solta um pulso em área a cada três ataques.',
   study:'A neuraminidase (NA) também fica no envoltório. Ela ajuda a liberar as novas partículas virais. Anticorpos contra NA podem contribuir para a proteção e reduzir a gravidade.'},
@@ -203,7 +207,10 @@ function createState() {
   p:{...first.spawn,r:15,hp:stats.hp,max:stats.hp,fx:0,fy:1,facing:1,walk:0,stride:0,dash:0,dashAt:-1,
    cooldown:0,hitAt:-2,castAt:-1,shot:null},
   slots:{movimento:{id:'dash',rank:1}},fusions:new Set(),enemies:[],orbs:[],effects:[],
-  parasite:chapter===toxocaraChapter?{adaptacao:null,companheiro:null,shield:false,casts:0}:null,
+  parasite:chapter===toxocaraChapter?{
+   adaptacao:null,companheiro:null,shield:false,casts:0,
+   oocisto:$('parasiteEvolution').value==='oocisto',morfologia:null
+  }:null,
   segmented:null,variation:null,pathogenesisOffered:false,superState:'empty',
   replication:arenaReplication.create(morph.replication),pressure:null,studySeen:false,
   nextAttack:stats.delay,casts:0,assistedCasts:0,nextPatrol:5.5,encounter:null,round:null,history:[],
@@ -279,7 +286,8 @@ function harm(amount) {
   announce('Broto do jardim absorveu o impacto.');
   return;
  }
- p.hp=Math.max(0,p.hp-amount*S.stats.damageTaken*(1-traitRank('shell')*.14));
+ const forma=formasOocisto[S.parasite?.morfologia];
+ p.hp=Math.max(0,p.hp-amount*S.stats.damageTaken*(forma?.defense??1)*(1-traitRank('shell')*.14));
  p.hitAt=S.clock;
 }
 
@@ -373,10 +381,11 @@ function releaseAttack(shot,releasePose,nearby=attackTargets(S.p,shot.reach)) {
  S.casts++;
  p.castAt=S.clock;
  if(p.walk<.18)p.facing=shot.side;
+ const crescent=traitRank('crescente');
  const color=ha||S.parasite?'#ffe5a5':'#b8f8fd';
- const effectType=releasePose?'pellet':'strike';
+ const effectType=crescent?'crescent':releasePose?'pellet':'strike';
  const shapeDamage=influenzaCore.stats(S.segmented).attackOffset+(S.variation?.attackOffset??0);
- const damage=S.stats.attack+ha*4+core*4+shapeDamage;
+ const damage=S.stats.attack+ha*4+core*4+crescent*4+shapeDamage;
  if(S.superState==='armed'){
   fireEcho(p,ray,nearby,reach,damage,origin);
  }else{
@@ -566,7 +575,7 @@ function arenaReward() {
  const note=reward?TRAITS[reward].study:'As habilidades evoluem no próprio espaço.';
  const draft={cards,title,label:area.name+' · arena concluída',note,topic:reward};
  if(S.step===0&&S.chapter.id==='influenza')showLayoutChoices(draft);
- else if(area.unlock)showFusionChallenge(fusionCard(area.unlock),'Desafio do sincício',
+ else if(area.unlock)showChallenge(fusionCard(area.unlock),'Desafio do sincício',
   'Associe a proteína do VSR ao efeito observado nas células.',()=>resumeDraft(draft));
  else resumeDraft(draft);
 }
@@ -636,10 +645,22 @@ function mucusCheck(dt) {
  return true;
 }
 
+function studyPost() {
+ const area=room();
+ return (S.parasite?.oocisto?area.postoCrescente:null)??area.study;
+}
+
 function studyCheckpoint() {
- const post=room().study;
+ const post=studyPost();
  if(!post||S.studySeen||distance(post,S.p)>34)return false;
  S.studySeen=true;
+ if(post===room().postoCrescente){
+  showChallenge(traitCard('crescente'),'Crescente dourado',
+   'Acerte para equipar o crescente na vaga de ataque.',resumeAfterChallenge,{
+    question:sortearPergunta(perguntasCrescente,S.history),unlock:()=>equip('crescente')
+   });
+  return true;
+ }
  const pool=post.questions??respiratory.prophylaxis;
  const question=pool[Math.floor(Math.random()*pool.length)];
  openQuiz(question,'study',correct=>{
@@ -768,6 +789,7 @@ function renderChapter(){
  $('chapterGroup').textContent=parasite?'Atlas Viral · Toxocara canis':'Atlas Viral · Fase respiratória';
  $('integrityLabel').textContent=parasite?'Integridade':'Integridade viral';
  $('genomeOption').hidden=parasite||Boolean(chapter.fixedGenome);
+ $('parasiteEvolutionOption').hidden=!parasite;
  for(const id of ['bodySelect','faceSelect','surfaceSelect','replicationSelect'])$(id).closest('label').hidden=parasite;
  for(const id of ['virusSlots','virusFusions','virusGenome','virusGuide','arenaTerrain'])$(id).hidden=parasite;
  $('parasiteHelp').hidden=!parasite;
@@ -940,25 +962,30 @@ function showSignatureChoices(draft) {
   cards,skip:'Manter o perfil sem poder',hint:'Se errar, você segue com seu perfil de núcleo.'},draft,resumeDraft);
 }
 
-function showPathogenesis() {
- S.pathogenesisOffered=true;
- showFusionChallenge(fusionCard('eco'),'Patogenia respiratória',
-  'Membrana firme e Impulso nível 2 abriram um desafio de patogenia.',()=>{
-   S.round=null;
-   continueRun();
-  });
+function resumeAfterChallenge() {
+ S.round=null;
+ continueRun();
 }
 
-function showFusionChallenge(card,title,note,onContinue) {
+function showPathogenesis() {
+ S.pathogenesisOffered=true;
+ showChallenge(fusionCard('eco'),'Patogenia respiratória',
+  'Membrana firme e Impulso nível 2 abriram um desafio de patogenia.',resumeAfterChallenge);
+}
+
+function showChallenge(card,title,note,onContinue,{
+ question=S.chapter.review[card.quiz],unlock=()=>equipFusion(card.id)
+}={}) {
  const round={kind:'pathogenesis',returnTo:onContinue};
  S.round=round;
- setupChoice(title,room().name+' · recompensa Especial',note);
+ const label=card.rarity==='special'?'recompensa Especial':card.kicker;
+ setupChoice(title,room().name+' · '+label,note);
  $('evolutionPreview').hidden=false;
  previewEvolution(card);
  const choice=buttonCard(card,()=>{
   if(S?.phase!=='level'||S.round!==round)return;
-  openQuiz(S.chapter.review[card.quiz],'pathogenesis',correct=>{
-   if(correct)equipFusion(card.id);
+  openQuiz(question,'pathogenesis',correct=>{
+   if(correct)unlock();
    onContinue();
   },'Acerte para equipar esta evolução.');
  });
@@ -1039,6 +1066,15 @@ function continueRun() {
   showDraft(destination.cards,destination.title,destination.label,destination.note);
   return;
  }
+ if(round?.kind==='draft'&&S.roomCleared&&S.parasite?.oocisto){
+  const form=proximaFormaOocisto(S.parasite.morfologia);
+  if(form){
+   showChallenge(form,form.name,'Acerte para equipar a próxima forma da casca.',resumeAfterChallenge,{
+    question:sortearPergunta(form.questions,S.history),unlock:()=>{S.parasite.morfologia=form.id;}
+   });
+   return;
+  }
+ }
  if(round?.kind==='draft'&&S.step>0&&room().exit&&!S.pathogenesisOffered&&canFuse('eco')){
   showPathogenesis();
   return;
@@ -1050,10 +1086,15 @@ function continueRun() {
  if(S.roomCleared)announce(S.parasite?'Chegue à passagem para avançar.':'Chegue à corrente de ar para avançar.');
 }
 
+function parasiteFormName() {
+ return S.parasite.oocisto?(formasOocisto[S.parasite.morfologia]?.name??'Corpo-base'):room().form;
+}
+
 function describeBuild(list) {
  list.replaceChildren();
  if(S.parasite){
-  const notes=[room().form,'Impulso 1',...['adaptacao','companheiro'].map(slot=>evolucoesToxocara[S.parasite[slot]]?.name).filter(Boolean)];
+  const skills=['adaptacao','companheiro'].map(slot=>evolucoesToxocara[S.parasite[slot]]?.name);
+  const notes=[parasiteFormName(),traitRank('crescente')?TRAITS.crescente.name:null,'Impulso 1',...skills].filter(Boolean);
   for(const note of notes){
    const item=document.createElement('li');item.textContent=note;list.append(item);
   }
@@ -1131,12 +1172,12 @@ function hud() {
  const hp=Math.ceil(p.hp),dashSeconds=Math.ceil(p.cooldown);
  const key=[hp,p.max,S.step,S.level,S.xp,S.impact,S.mucus,boss?.type,boss?.hp,dashSeconds,
   S.roomCleared,S.phase,S.control,touchLayout,S.segmented?.segments,S.segmented?.profile,S.segmented?.signature,
-  S.fusions.has('eco'),S.superState,charge,allies.length,underPressure,S.studySeen,S.parasite?.shield].join('|');
+  S.fusions.has('eco'),S.superState,charge,allies.length,underPressure,S.studySeen,S.parasite?.shield,S.parasite?.morfologia].join('|');
  if(key===lastHud)return;
  lastHud=key;
  $('regionNow').textContent=area.name;$('hpt').textContent=hp+'/'+p.max;
  $('hpb').style.width=100*p.hp/p.max+'%';
- $('lvt').textContent='Nível '+S.level;$('fbt').textContent=S.parasite?area.form:'Mal-estar '+S.impact+'%';
+ $('lvt').textContent='Nível '+S.level;$('fbt').textContent=S.parasite?parasiteFormName():'Mal-estar '+S.impact+'%';
  $('xpb').style.width=Math.min(100,100*S.xp/(4+S.level*2))+'%';
  const guide=$('arenaTissue');
  guide.textContent=S.roomCleared?(S.parasite?'Arena concluída · siga até a passagem.':'Arena concluída · siga até a corrente de ar.'):
@@ -1153,8 +1194,9 @@ function hud() {
  $('echoStatus').hidden=Boolean(S.parasite&&!companion);
  $('echoStatus').textContent=companion?companion.name+(S.parasite.shield?' · proteção pronta':''):
   'Ecos '+allies.length+'/'+profile.capacity+' · '+charge+'/'+arenaReplication.cost+' fragmentos';
- $('studyHint').hidden=!area.study||S.studySeen||S.roomCleared;
- if(area.study)$('studyHint').textContent=area.study.hint??'Posto de profilaxia · à direita da entrada';
+ const post=studyPost();
+ $('studyHint').hidden=!post||S.studySeen||S.roomCleared;
+ if(post)$('studyHint').textContent=post.hint??'Posto de profilaxia · à direita da entrada';
  $('coreHud').hidden=!S.segmented;
  if(S.segmented){
   const {segments,profile}=S.segmented, {chance,patrolRange}=influenzaCore.stats(S.segmented);
@@ -1272,7 +1314,11 @@ function drawDefense(e) {
 }
 
 function appearance(card=null) {
- if(S.parasite)return {parasite:true,fase:S.step,...S.parasite,...(card?.kind==='parasite'?{[card.slot]:card.id}:{})};
+ if(S.parasite){
+  const form=card?.kind==='parasite-form'?card:formasOocisto[S.parasite.morfologia];
+  return {parasite:true,fase:S.step,...S.parasite,...(card?.kind==='parasite'?{[card.slot]:card.id}:{}),
+   nivelMorfologia:form?.level??0,crescente:card?.id==='crescente'||Boolean(traitRank('crescente'))};
+ }
  const rank=id=>card?.kind==='trait'&&card.id===id?card.level:traitRank(id);
  return {
   morph:S.morph,ha:rank('ha'),na:rank('na'),core:rank('core'),
@@ -1421,16 +1467,18 @@ function drawEffects() {
    ctx.lineCap='round';ctx.lineWidth=echo?9:15;ctx.strokeStyle=echo?'#843857':'#702899';ctx.stroke();
    ctx.lineWidth=echo?4:7;ctx.strokeStyle=effect.color;ctx.stroke();
    ctx.lineWidth=echo?1.7:2.6;ctx.strokeStyle=echo?'#ffe8d4':'#fff0ff';ctx.stroke();
-  }else if(effect.type==='pellet'){
+  }else if(effect.type==='pellet'||effect.type==='crescent'){
    const dx=effect.x2-effect.x,dy=effect.y2-effect.y;
    const progress=reduce?.94:t;
    if(!reduce&&t<.45)oval(ctx,effect.x,effect.y,6+t*6,5+t*5,'rgba(255,236,183,.68)');
    ctx.save();
    ctx.translate(effect.x+dx*progress,effect.y+dy*progress);
    ctx.rotate(Math.atan2(dy,dx));
-   oval(ctx,-3,0,9.2,3.5,'rgba(231,249,230,.45)');
-   oval(ctx,0,0,5.9,3.8,'#42596b');
-   oval(ctx,1,-.2,4.2,2.7,effect.color);
+   if(effect.type!=='crescent'||!desenharCrescente(ctx,23)){
+    oval(ctx,-3,0,9.2,3.5,'rgba(231,249,230,.45)');
+    oval(ctx,0,0,5.9,3.8,'#42596b');
+    oval(ctx,1,-.2,4.2,2.7,effect.color);
+   }
    ctx.restore();
   }else{
    const dx=effect.x2-effect.x,dy=effect.y2-effect.y;
@@ -1499,8 +1547,9 @@ function draw() {
  }else if(!S.roomCleared&&!currentBoss()){
   respiratory.marker(ctx,area,area.label,S.enemies.every(e=>!e.required),S.clock,reduce);
  }
- if(area.study&&!S.studySeen&&!S.roomCleared){
-  respiratory.marker(ctx,area.study,area.study.label,true,S.clock,reduce);
+ const post=studyPost();
+ if(post&&!S.studySeen&&!S.roomCleared){
+  respiratory.marker(ctx,{...post,tone:post.tone??'#f8d68d'},post.label,true,S.clock,reduce);
  }
  for(const orb of S.orbs)arenaArt.drawFragment(ctx,orb,reduce);
  for(const enemy of S.enemies)drawDefense(enemy);
@@ -2291,18 +2340,20 @@ function fillSelect(select,choices) {
 
 function updateKit() {
  const morph=chapterMorph(),stats=chapterStats(selectedChapter,morph),parasite=selectedChapter===toxocaraChapter;
+ const oocisto=parasite&&$('parasiteEvolution').value==='oocisto';
  const armor=stats.damageTaken<1?' · recebe 6% menos dano':'';
  $('morphStats').textContent=(stats.note?stats.note+' ':'')+stats.hp+' de integridade · '+stats.attack+
   ' de dano · velocidade '+stats.speed+' · recarga do dash '+stats.cooldown.toLocaleString('pt-BR')+' s'+armor;
  const profile=arenaReplication.profiles[startingMorph.replication];
  const count=profile.capacity===1?'1 eco por '+profile.duration+' s':
   'Até '+profile.capacity+' ecos por '+profile.duration+' s cada';
- $('replicationNote').textContent=parasite?'Ovo no ambiente · evolua ao concluir cada arena.':
-  count+'. Um aliado a cada '+arenaReplication.cost+' fragmentos.';
+ const parasiteHint=oocisto?'Acerte as perguntas de morfologia após as duas arenas de solo.':
+  'Ovo no ambiente · evolua ao concluir cada arena.';
+ $('replicationNote').textContent=parasite?parasiteHint:count+'. Um aliado a cada '+arenaReplication.cost+' fragmentos.';
  $('controlsHelp').textContent=startingMorph.control==='manual'?
   'Arraste à esquerda para andar e à direita para mirar e atacar. No computador, use WASD ou setas e segure o mouse ou J para atacar. Espaço ou Dash desvia.':
   'Arraste ou use WASD e setas para andar. O ataque mira no alvo mais próximo. Use Espaço ou Dash para desviar.';
- paintPortrait($('virusPortrait'),parasite?{parasite:true,fase:0}:{morph,vsr:selectedChapter.id==='vsr'});
+ paintPortrait($('virusPortrait'),parasite?{parasite:true,fase:0,oocisto}:{morph,vsr:selectedChapter.id==='vsr'});
 }
 
 const MORPH_SAVE='atlas-viral-morfologia-v1';
@@ -2319,6 +2370,7 @@ function setupMorphology() {
   ['replication','replicationSelect',arenaReplication.profiles],
   ['control','controlSelect',viralMorphology.controls]
  ];
+ $('parasiteEvolution').addEventListener('change',updateKit);
  for(const [key,id,choices] of fields){
   const control=$(id);fillSelect(control,choices);
   if(saved&&Object.hasOwn(choices,saved[key]))startingMorph[key]=saved[key];
@@ -2340,6 +2392,7 @@ setupMorphology();
 setupGuide();
 setupCourses();
 showIntro();
+oocistoAtlas.addEventListener('load',()=>{if(!S)updateKit();});
 carregarInfluenza().then(modelo=>{
  influenzaRig=new Personagem2D(modelo);
  for(const [canvas,look] of pendingPortraits)paintPortrait(canvas,look);
