@@ -14,4 +14,8 @@ Manter as instruções vigentes em `AGENTS.md` e registrar o motivo das decisõe
 
 O contexto acompanha o código e pode ser revisado no Git. Uma conversa nova começa pelas instruções e pelas decisões relacionadas à área que vai mudar.
 
+## Consultas
+
+O estado atual dá o ponto de partida. A busca textual encontra trechos em decisões e código e o histórico mostra as mudanças do tema. Para buscar pelo sentido, cada pessoa pode gerar um índice MemPalace local com os documentos versionados.
+
 Arquivos relacionados. [Instruções do projeto](../../AGENTS.md) · [Importação para Claude Code](../../CLAUDE.md) · [Como colaborar](../../README.md)
