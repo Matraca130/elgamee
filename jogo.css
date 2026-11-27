@@ -406,14 +406,13 @@ label.talent-item{cursor:pointer}
 .courses-head p,.courses-head a{margin:0;font-size:.79rem;color:var(--mut)}
 .courses-head a{color:var(--ink);font-weight:800}
 .course-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
-.course-choices :is(button,a){
+.course-choices button{
  display:grid;gap:1px;min-height:54px;align-content:center;padding:8px 10px;text-align:left;
  color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:9px;font:inherit;cursor:pointer;text-decoration:none
 }
 .course-choices strong{font-size:.87rem;line-height:1.25}
 .course-choices span{font-size:.74rem;color:var(--mut)}
-.course-choices a:hover{border-color:var(--teal)}
-@media(max-width:32rem){.course-choices{grid-template-columns:repeat(2,minmax(0,1fr))}.course-choices a{grid-column:1/-1}}
+@media(max-width:32rem){.course-choices{grid-template-columns:repeat(2,minmax(0,1fr))}.course-choices [data-course=toxocara]{grid-column:1/-1}}
 .course-choices button[aria-pressed=true]{
  border-color:var(--teal);background:color-mix(in srgb,var(--teal) 11%,var(--card))
 }
@@ -427,7 +426,7 @@ label.talent-item{cursor:pointer}
 .campaign-route li:nth-child(3){border-color:#9560af}
 .campaign-route span{font-size:.89rem;color:var(--mut)}
 .route-preview{display:grid;align-content:center;justify-items:center;margin:0;padding:10px;border-radius:13px;background:#421435}
-.route-preview img{width:100%;height:clamp(180px,35vw,400px);object-fit:contain;border-radius:8px}
+.route-preview :is(img,canvas){width:100%;height:clamp(180px,35vw,400px);object-fit:contain;border-radius:8px}
 .route-preview figcaption{margin-top:.3rem;color:#f7d9e9;font-size:.86rem}
 .study-source{margin-top:.7rem!important}
 .study-source a{color:var(--ink)}
@@ -464,7 +463,7 @@ label.talent-item{cursor:pointer}
 #stage[data-phase=play]{height:calc(100svh - 130px);min-height:275px;background:#421735}
 @media(max-width:640px){
  .campaign-layout{grid-template-columns:1fr;gap:16px}
- .route-preview img{height:185px}
+ .route-preview :is(img,canvas){height:185px}
  #hud{padding:6px 8px;gap:5px 8px}
  #hud .day{font-size:.95rem}
  #hud small,#hud .row{font-size:.76rem}
