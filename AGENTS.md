@@ -20,6 +20,7 @@
 - Em Meus cursos, registre a melhor quantidade de arenas superadas e de acertos por capítulo. Vincule os registros da conta à identidade autenticada pelo site. Mostre quando o progresso está salvo apenas neste navegador.
 - Diferencie as fichas de biologia das metáforas do combate. Revise a parte científica em fontes confiáveis. Dê às perguntas um tema e uma dificuldade. Relacione as revisões de cada recompensa à característica recebida e inclua epidemiologia no banco de perguntas. Use o Taller 14 do Tutor de Integração como matriz do conteúdo respiratório. Na traqueia, varie tema e dificuldade. Mantenha os 43 enunciados nesse caderno e acrescente desafios jogáveis conforme cada vírus ganha sua fase. As fusões, os atributos e os efeitos dos golpes pertencem à ficção; mantenha a mecânica abstrata e preserve os conceitos científicos nas fichas.
 - Mantenha o jogo acessível no celular e com teclado. Preserve a base dos auxiliares e seus dados salvos. Audite controles, objetivos e progressão ao mexer na arena.
+- Disponibilize mudanças de cenário, combate e animação em uma versão jogável do Atlas para avaliação. Confira a entrada pelo menu e envie o link direto da arena para o usuário experimentar.
 - Quando o usuário firmar uma nova regra permanente de jogabilidade, arte ou conteúdo, atualize este arquivo junto com a mudança. Use a instrução mais recente do usuário para resolver divergências.
 
 ## Continuidade do projeto
