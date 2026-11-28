@@ -9,3 +9,7 @@ Use este índice para saber por que o Atlas Viral funciona do jeito atual. As re
 | [Versionar a memória com o código](memoria-no-repositorio.md) | Aceita | Colaboração |
 
 Para registrar uma escolha importante, crie um arquivo com título curto, data e estado. Descreva o contexto, a decisão, suas consequências e os arquivos envolvidos. Acrescente o link ao índice junto com a mudança. Use **Proposta**, **Aceita** ou **Substituída**. Uma decisão substituída aponta para a que passou a valer.
+
+## Propostas em discussão
+
+- [Evoluções, arenas internas e progressão roguelike dos parasitos](evolucoes-parasitos.md). Personagens, combate e progressão entre arenas.

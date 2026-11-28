@@ -1,10 +1,10 @@
 # Versionar a memória com o código
 
-**Aceita · 26 de novembro de 2026**
+**Aceita · 26 de novembro de 2026 · atualizada em 28 de novembro de 2026**
 
 ## Contexto
 
-As duas pessoas precisam conseguir abrir o projeto em suas contas e entender as escolhas anteriores. Chats diferentes podem ter partes diferentes da conversa.
+Os desenvolvedores precisam conseguir abrir o projeto em suas contas e entender as escolhas anteriores. Chats diferentes podem ter partes diferentes da conversa.
 
 ## Decisão
 
@@ -14,7 +14,7 @@ Manter as instruções vigentes em `AGENTS.md` e registrar o motivo das decisõe
 
 O contexto acompanha o código e pode ser revisado no Git. Uma conversa nova começa pelas instruções e pelas decisões relacionadas à área que vai mudar.
 
-O [Matraca130/elgamee](https://github.com/Matraca130/elgamee) é o repositório público de colaboração. As propostas de mudança podem ser revisadas por pull request. A versão online do jogo é publicada no Site com as mudanças aprovadas.
+O [Matraca130/elgamee](https://github.com/Matraca130/elgamee) é o repositório público de colaboração. Registre as propostas de design, as mudanças no jogo e os materiais de cada entrega em uma branch do projeto, com um pull request para revisão da equipe. Registre no mesmo PR as decisões confirmadas e os pontos que ainda dependem de alinhamento. A versão online do jogo é publicada no Site com as mudanças aprovadas.
 
 ## Consultas
 
