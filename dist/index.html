@@ -70,6 +70,12 @@
       <label>Superfície<select id="surfaceSelect"></select></label>
       <label>Replicação<select id="replicationSelect" aria-describedby="replicationNote"></select></label>
       <label>Controle de ataque<select id="controlSelect"></select></label>
+      <label id="parasiteEvolutionOption" hidden>Caminho de evolução
+       <select id="parasiteEvolution" aria-describedby="replicationNote">
+        <option value="curso">Forma do curso</option>
+        <option value="oocisto">Caminho A · Oocisto</option>
+       </select>
+      </label>
       <p id="morphStats" aria-live="polite"></p>
       <p id="replicationNote" aria-live="polite"></p>
      </fieldset>
@@ -130,7 +136,8 @@
     <summary>Ciclo de <i>Toxocara canis</i></summary>
     <p>O cão é hospedeiro definitivo. Nesta rota, o humano é hospedeiro acidental e ingere um ovo infectante. As larvas podem migrar para diferentes tecidos e ficam na fase larval. O ciclo dispensa vetor.</p>
     <p>As arenas comprimem o tempo do ciclo. O mascote, os disparos e as adaptações são recursos de jogo.</p>
-    <p class="study-source"><a href="https://www.cdc.gov/dpdx/toxocariasis/index.html" target="_blank" rel="noopener noreferrer">Ficha e ciclo · CDC</a></p>
+    <p>O <strong>Caminho A · Oocisto</strong> oferece duas evoluções da casca nos fins das arenas de solo. A forma é inspirada no oocisto de <i>Toxoplasma gondii</i> e é uma adaptação ficcional do personagem. Na segunda arena, o marco do Crescente dourado oferece uma pergunta para equipar um ataque à parte.</p>
+    <p class="study-source"><a href="https://www.cdc.gov/dpdx/toxocariasis/index.html" target="_blank" rel="noopener noreferrer">Ciclo de Toxocara · CDC</a> · <a href="https://www.cdc.gov/dpdx/toxoplasmosis/" target="_blank" rel="noopener noreferrer">Ciclo do oocisto · CDC</a></p>
    </details>
    <details class="arena-help">
     <summary>Revisão da fase</summary>
@@ -218,6 +225,6 @@
 <script defer src="./capitulo-vsr.js"></script>
 <script defer src="./guia-respiratoria.js"></script>
 <script defer src="./progresso.js?v=rotas"></script>
-<script type="module" src="./jogo.js?v=rotas"></script>
+<script type="module" src="./jogo.js?v=oocisto-animacao"></script>
 </body>
 </html>

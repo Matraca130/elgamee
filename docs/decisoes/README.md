@@ -11,5 +11,6 @@ Use este índice para saber por que o Atlas Viral funciona do jeito atual. As re
 | [Manter um endereço fixo para a prévia jogável](previa-github-pages.md) | Aceita | Publicação |
 | [Criar rotas de parasitos a partir do ciclo de cada espécie](rotas-de-parasitos.md) | Aceita | Jogo e conteúdo |
 | [Criar personagens no mesmo motor e com o mesmo controlador](criacao-de-personagens.md) | Aceita | Arte e jogo |
+| [Desenvolver primeiro o oocisto](caminhos-da-morfologia.md) | Aceita | Personagens e progressão |
 
 Para registrar uma escolha importante, crie um arquivo com título curto, data e estado. Descreva o contexto, a decisão, suas consequências e os arquivos envolvidos. Acrescente o link ao índice junto com a mudança. Use **Proposta**, **Aceita** ou **Substituída**. Uma decisão substituída aponta para a que passou a valer.

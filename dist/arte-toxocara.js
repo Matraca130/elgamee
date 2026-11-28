@@ -89,7 +89,7 @@ function desenharLarva(ctx, pose) {
   olhos(ctx, 23, -6, pose.olhos);
 }
 
-function adornar(ctx, adaptacao, larva) {
+export function desenharAdaptacao(ctx, adaptacao, larva = false) {
   if (!adaptacao) return;
   ctx.save();
   ctx.translate(larva ? 3 : -3, larva ? 10 : 13);
@@ -108,7 +108,7 @@ export const modeloToxocara = {
     const larva = fase === 2;
     if (larva) desenharLarva(ctx, pose);
     else desenharOvo(ctx, pose, fase === 1);
-    adornar(ctx, adaptacao, larva);
+    desenharAdaptacao(ctx, adaptacao, larva);
   }
 };
 
