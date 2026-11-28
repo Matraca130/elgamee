@@ -21,7 +21,7 @@ Receba a descrição por voz ou por escrito e converta em uma ficha curta. Regis
 1. **Desenhe a silhueta.** Trabalhe na escala da arena, cerca de 50 pixels. Use um contorno legível, luz no alto à esquerda e uma paleta que distinga o personagem. Separe corpo e peças que se mexem. Defina o centro do corpo e o ponto de rotação de cada peça.
 2. **Anime as peças.** Use os clipes `idle`, `move`, `dash`, `shoot` e `hurt`. Repita a primeira pose no fim dos ciclos contínuos. No ataque, mostre preparação, soltura e recuo. Use o evento `disparo` no quadro de soltura e o ponto de saída de mesmo nome para alinhar o efeito com a peça animada.
 3. **Use a arte na partida.** Ligue as formas e evoluções aos dados do capítulo. A arena, o retrato e a evolução devem mostrar a forma correspondente. Reaproveite a mira manual e automática, a esquiva e a transição entre arenas. Quando criar um curso, registre o limite de arenas no progresso do navegador e do servidor.
-4. **Valide no jogo.** Confira a leitura no tamanho da arena, o disparo único por ação, o espelhamento da mira e a resposta ao impacto. Teste teclado e mouse, movimento e mira com dois toques e as transições de forma e evolução. Rode `npm run build` e percorra a rota pela entrada de **Meus cursos**.
+4. **Valide no jogo.** Confira a leitura no tamanho da arena, o disparo único por ação, o espelhamento da mira e a resposta ao impacto. Teste teclado e mouse, movimento e mira com dois toques e as transições de forma e evolução. Rode `npm run build` e jogue da entrada de **Meus cursos** até a tela de conclusão com as habilidades equipadas. Registre a partida e os controles validados.
 
 | Referência | Onde conferir |
 | --- | --- |

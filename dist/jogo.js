@@ -1,8 +1,10 @@
 import { carregarInfluenza, poseInfluenza } from './influenza-2d.js';
 import { Personagem2D } from './personagem-2d.js';
 import { toxocaraChapter, evolucoesToxocara } from './toxocara.js?v=oocisto';
-import { modeloToxocara, desenharCompanheiro } from './arte-toxocara.js?v=oocisto';
-import { oocistoAtlas, desenharCrescente } from './arte-oocisto.js';
+import { modeloToxocara, desenharCompanheiro } from './arte-toxocara.js?v=oocisto-animacao';
+import { oocistoAtlas, modeloOocisto, poseSolturaOocisto, duracaoMutacao, desenharMudaOocisto,
+ desenharTrilhaOocisto, desenharDisparoOocisto, desenharImpactoOocisto } from './arte-oocisto.js?v=animacao';
+import { criarDisparoOocisto, avancarDisparoOocisto } from './combate-oocisto.js';
 import { formasOocisto, proximaFormaOocisto, perguntasCrescente, sortearPergunta } from './morfologia-oocisto.js';
 
 {
@@ -27,6 +29,7 @@ const courseButtons=new Map();
 const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TAU=Math.PI*2, FRAME_MS=1000/30;
 const SHOT_ANIMATION_SPEED=1.4;
+const SHOT_REACH=175;
 const keys=new Set();
 const moveStick={id:null,ox:0,oy:0,x:0,y:0};
 const aimStick={id:null,ox:0,oy:0,x:0,y:0,mouse:false};
@@ -100,6 +103,7 @@ mapCache.width=mapCache.height=respiratory.size;
 let S=null, ctx=null, frameId=null, observer=null;
 let influenzaRig=null;
 const toxocaraRig=new Personagem2D(modeloToxocara);
+const oocistoRig=new Personagem2D(modeloOocisto);
 const pendingPortraits=new Map();
 let W=1,H=1,dpr=1,scale=1,ox=0,oy=0,lastFrame=0,lastHud='';
 let toastUntil=0;
@@ -206,10 +210,10 @@ function createState() {
   phase:'play',clock:0,step:0,regions:0,impact:0,cells:0,level:1,xp:0,chapter,morph,stats,control:morph.control,
   p:{...first.spawn,r:15,hp:stats.hp,max:stats.hp,fx:0,fy:1,facing:1,walk:0,stride:0,dash:0,dashAt:-1,
    cooldown:0,hitAt:-2,castAt:-1,shot:null},
-  slots:{movimento:{id:'dash',rank:1}},fusions:new Set(),enemies:[],orbs:[],effects:[],
+  slots:{movimento:{id:'dash',rank:1}},fusions:new Set(),enemies:[],orbs:[],effects:[],projectiles:[],
   parasite:chapter===toxocaraChapter?{
    adaptacao:null,companheiro:null,shield:false,casts:0,
-   oocisto:$('parasiteEvolution').value==='oocisto',morfologia:null
+   oocisto:$('parasiteEvolution').value==='oocisto',morfologia:null,mudanca:null,crescenteAt:-1
   }:null,
   segmented:null,variation:null,pathogenesisOffered:false,superState:'empty',
   replication:arenaReplication.create(morph.replication),pressure:null,studySeen:false,
@@ -238,6 +242,7 @@ function dash() {
  if(S?.phase!=='play'||S.p.cooldown>0)return;
  S.p.dash=S.stats.dash;
  S.p.dashAt=S.clock;
+ if(S.parasite?.oocisto)S.p.shot=null;
  const recharge=S.stats.cooldown-(traitRank('dash')-1)*.42;
  S.p.cooldown=recharge*(S.variation?.cooldownFactor??1);
 }
@@ -280,6 +285,7 @@ function move(dt) {
 function harm(amount) {
  const p=S.p;
  if(S.clock-p.hitAt<.78||p.dash>0)return;
+ if(S.parasite?.oocisto)p.shot=null;
  if(S.parasite?.shield){
   S.parasite.shield=false;
   p.hitAt=S.clock;lastHud='';
@@ -368,6 +374,12 @@ function attackTargets(p,reach) {
   .sort((a,b)=>distance(p,a)-distance(p,b));
 }
 
+function oocistoAimPoint(p,ray,reach) {
+ const length=aimStick.id!==null&&aimStick.mouse?
+  Math.max(40,Math.hypot(aimStick.x-(ox+p.x*scale),aimStick.y-(oy+p.y*scale))/scale):reach;
+ return {x:p.x+ray.x*length,y:p.y+ray.y*length};
+}
+
 function releaseAttack(shot,releasePose,nearby=attackTargets(S.p,shot.reach)) {
  const p=S.p,{reach,ha,na,core}=shot;
  const aim=shot.manual?(aimDirection()??shot.ray):null;
@@ -383,10 +395,13 @@ function releaseAttack(shot,releasePose,nearby=attackTargets(S.p,shot.reach)) {
  if(p.walk<.18)p.facing=shot.side;
  const crescent=traitRank('crescente');
  const color=ha||S.parasite?'#ffe5a5':'#b8f8fd';
- const effectType=crescent?'crescent':releasePose?'pellet':'strike';
+ const effectType=releasePose?'pellet':'strike';
  const shapeDamage=influenzaCore.stats(S.segmented).attackOffset+(S.variation?.attackOffset??0);
  const damage=S.stats.attack+ha*4+core*4+crescent*4+shapeDamage;
- if(S.superState==='armed'){
+ if(rig===oocistoRig){
+  const target=shot.manual?oocistoAimPoint(p,ray,reach):primary??oocistoAimPoint(p,ray,reach);
+  S.projectiles.push(criarDisparoOocisto(origin,p,target,ray,{alcance:reach,dano:damage,dourado:Boolean(crescent)}));
+ }else if(S.superState==='armed'){
   fireEcho(p,ray,nearby,reach,damage,origin);
  }else{
   if(aim||!primary)fireLine(p,ray,reach,color,effectType,.18,origin);
@@ -419,15 +434,18 @@ function attack(dt) {
  if(S.roomCleared)return;
  if(p.shot){
   const shot=p.shot;
-  if(shot.animation.avancar(dt*SHOT_ANIMATION_SPEED,(event,pose)=>{
+  const speed=shot.rig===oocistoRig?1:SHOT_ANIMATION_SPEED;
+  if(shot.animation.avancar(dt*speed,(event,pose)=>{
    if(event==='disparo')releaseAttack(shot,pose);
   }))p.shot=null;
  }
  if(S.nextAttack>0||p.shot)return;
+ const rig=activePlayerRig();
+ if(rig===oocistoRig&&(p.dash>0||S.clock-p.hitAt<rig.modelo.clipes.hurt.duracao))return;
  const aim=S.control==='manual'?aimDirection():null;
  const auto=S.control==='auto'||keys.has('j')||S.tapUntil>=S.clock;
  if(!aim&&!auto)return;
- const ha=traitRank('ha'),reach=175+ha*14;
+ const ha=traitRank('ha'),reach=SHOT_REACH+ha*14;
  const nearby=attackTargets(p,reach);
  const primary=nearby[0];
  if(!aim&&!primary)return;
@@ -436,7 +454,6 @@ function attack(dt) {
   reach,ha,na:traitRank('na'),core:traitRank('core')};
  S.nextAttack=S.stats.interval-ha*.025;
  S.tapUntil=-1;
- const rig=S.parasite?toxocaraRig:S.chapter.id==='influenza'?influenzaRig:null;
  if(rig){
   shot.rig=rig;
   shot.animation=new Personagem2D(rig.modelo);
@@ -544,7 +561,7 @@ function arenaReward() {
  S.roomCleared=true;
  S.regions=S.step+1;
  saveCourseProgress();
- S.enemies.length=0;S.effects.length=0;
+ S.enemies.length=0;S.effects.length=0;S.projectiles.length=0;
  S.mucus=-1;S.p.dash=0;S.pressure=null;
  S.impact=Math.min(96,S.impact+12);
  S.p.hp=Math.min(S.p.max,S.p.hp+14);
@@ -591,7 +608,7 @@ function leaveArena() {
 
 function enterArena(step) {
  S.step=step;S.roomCleared=false;S.encounter=null;
- S.enemies.length=0;S.orbs.length=0;S.effects.length=0;
+ S.enemies.length=0;S.orbs.length=0;S.effects.length=0;S.projectiles.length=0;
  S.variation=influenzaCore.roll(S.segmented);
  Object.assign(S.p,{...room().spawn,walk:0,dash:0,dashAt:-1,castAt:-1,shot:null});
  S.pressure=null;S.studySeen=false;
@@ -657,7 +674,9 @@ function studyCheckpoint() {
  if(post===room().postoCrescente){
   showChallenge(traitCard('crescente'),'Crescente dourado',
    'Acerte para equipar o crescente na vaga de ataque.',resumeAfterChallenge,{
-    question:sortearPergunta(perguntasCrescente,S.history),unlock:()=>equip('crescente')
+    question:sortearPergunta(perguntasCrescente,S.history),unlock:()=>{
+     if(equip('crescente'))S.parasite.crescenteAt=S.clock;
+    }
    });
   return true;
  }
@@ -684,6 +703,12 @@ function update(dt) {
  if(mucusCheck(dt)||studyCheckpoint())return;
  attack(dt);
  moveDefenses(dt);
+ if(S.projectiles.length){
+  S.projectiles=S.projectiles.filter(shot=>avancarDisparoOocisto(shot,dt,S.enemies,(enemy,impact)=>{
+   hit(enemy,impact.dano);
+   addEffect({...impact,type:'oocisto-impact',life:impact.dourado?.3:.22});
+  }));
+ }
  const regeneration=traitRank('reserve')*.76;
  S.p.hp=Math.min(S.p.max,S.p.hp+dt*regeneration);
  S.effects=S.effects.filter(effect=>S.clock-effect.born<effect.life);
@@ -1070,7 +1095,11 @@ function continueRun() {
   const form=proximaFormaOocisto(S.parasite.morfologia);
   if(form){
    showChallenge(form,form.name,'Acerte para equipar a próxima forma da casca.',resumeAfterChallenge,{
-    question:sortearPergunta(form.questions,S.history),unlock:()=>{S.parasite.morfologia=form.id;}
+    question:sortearPergunta(form.questions,S.history),unlock:()=>{
+     const previous=formasOocisto[S.parasite.morfologia]?.level??0;
+     S.parasite.mudanca={de:previous,at:S.clock};
+     S.parasite.morfologia=form.id;
+    }
    });
    return;
   }
@@ -1148,9 +1177,11 @@ function finish(won) {
  S.phase='end';clearInput();
  if(won){S.impact=100;S.regions=S.chapter.stages.length;crew.rewardCoins(25);saveCourseProgress();}
  setPanel('end');syncArena();
- $('endH').textContent=won?S.chapter.short+' · capítulo concluído':
+ const oocisto=S.parasite?.oocisto;
+ $('endH').textContent=won?(oocisto?'Oocisto · caminho concluído':S.chapter.short+' · capítulo concluído'):
   S.parasite?'A rota foi interrompida':'A defesa respiratória conteve o vírus';
- $('endP').textContent=won?S.chapter.win:'Tente outra combinação e use o dash para sair dos anéis de defesa.';
+ $('endP').textContent=won?(oocisto?'Você chegou ao marco da migração com o Oocisto. +25 moedas.':S.chapter.win):
+  'Tente outra combinação e use o dash para sair dos anéis de defesa.';
  $('sInf').textContent=S.cells;$('sBoss').textContent=S.regions+'/'+S.chapter.stages.length;
  $('sDefensesLabel').textContent=S.parasite?'defesas superadas':'células enfrentadas';
  $('sResultLabel').textContent=S.parasite?'respostas certas':'mal-estar no jogo';
@@ -1180,7 +1211,9 @@ function hud() {
  $('lvt').textContent='Nível '+S.level;$('fbt').textContent=S.parasite?parasiteFormName():'Mal-estar '+S.impact+'%';
  $('xpb').style.width=Math.min(100,100*S.xp/(4+S.level*2))+'%';
  const guide=$('arenaTissue');
- guide.textContent=S.roomCleared?(S.parasite?'Arena concluída · siga até a passagem.':'Arena concluída · siga até a corrente de ar.'):
+ const exitGuide=area.exit?(S.parasite?'Arena concluída · siga até a passagem.':'Arena concluída · siga até a corrente de ar.'):
+  'Arena final concluída.';
+ guide.textContent=S.roomCleared?exitGuide:
   boss?'Defesa ativa · '+S.chapter.bosses[boss.type].name:area.task;
  for(const [index,el] of [...$('regionTrack').children].entries()){
   if(index===S.step)el.setAttribute('aria-current','step');
@@ -1315,8 +1348,9 @@ function drawDefense(e) {
 
 function appearance(card=null) {
  if(S.parasite){
+  const {adaptacao,companheiro,oocisto}=S.parasite;
   const form=card?.kind==='parasite-form'?card:formasOocisto[S.parasite.morfologia];
-  return {parasite:true,fase:S.step,...S.parasite,...(card?.kind==='parasite'?{[card.slot]:card.id}:{}),
+  return {parasite:true,fase:S.step,adaptacao,companheiro,oocisto,...(card?.kind==='parasite'?{[card.slot]:card.id}:{}),
    nivelMorfologia:form?.level??0,crescente:card?.id==='crescente'||Boolean(traitRank('crescente'))};
  }
  const rank=id=>card?.kind==='trait'&&card.id===id?card.level:traitRank(id);
@@ -1338,19 +1372,28 @@ function influenzaModelPose(pose,body) {
  return poseInfluenza(reduce?influenzaRig.modelo.neutra:pose,body);
 }
 
+function parasiteRig(oocisto) {
+ return oocisto?oocistoRig:toxocaraRig;
+}
+
+function activePlayerRig() {
+ return S.parasite?parasiteRig(S.parasite.oocisto):S.chapter.id==='influenza'?influenzaRig:null;
+}
+
 function playerPosition(rig,x,y,r,side) {
- return rig===toxocaraRig?{x,y:y-3,escala:r/27,lado:side}:influenzaPosition(x,y,r,side);
+ return rig===influenzaRig?influenzaPosition(x,y,r,side):{x,y:y-3,escala:r/27,lado:side};
 }
 
 function playerPose(rig,pose,body) {
- return rig===toxocaraRig?(reduce?rig.modelo.neutra:pose):influenzaModelPose(pose,body);
+ return rig===influenzaRig?influenzaModelPose(pose,body):(reduce?rig.modelo.neutra:pose);
 }
 
-function drawToxocara(g,local,look,pose) {
+function drawParasite(g,local,look,pose,rig) {
  const {x,y,escala,lado}=local;
- oval(g,x,y+escala*23,escala*21,escala*5.5,'rgba(37,29,53,.34)');
+ const spread=rig===oocistoRig&&!reduce?pose.sx:1;
+ oval(g,x,y+escala*23,escala*21*spread,escala*5.5/spread,'rgba(37,29,53,.34)');
  if(look.companheiro)desenharCompanheiro(g,look.companheiro,x-lado*34*escala,y+9*escala);
- toxocaraRig.desenhar(g,local,playerPose(toxocaraRig,pose),look);
+ rig.desenhar(g,local,playerPose(rig,pose),look);
 }
 
 function influenzaLook(look) {
@@ -1370,8 +1413,8 @@ function paintPortrait(canvas,look) {
  g.clearRect(0,0,canvas.width,canvas.height);
  if(look.parasite){
   pendingPortraits.delete(canvas);
-  drawToxocara(g,playerPosition(toxocaraRig,canvas.width/2,canvas.height*.52,canvas.width*.25,1),look,
-   toxocaraRig.pose(0,'idle'));
+  const rig=parasiteRig(look.oocisto);
+  drawParasite(g,playerPosition(rig,canvas.width/2,canvas.height*.52,canvas.width*.25,1),look,rig.modelo.neutra,rig);
   return;
  }
  if(!look.vsr){
@@ -1392,14 +1435,25 @@ function previewEvolution(card=null) {
 
 function drawAnimatedPlayer(p,look,rig) {
  const shot=p.shot;
- const dashTime=(S.clock-p.dashAt)*1.5;
+ const oocisto=rig===oocistoRig;
+ const dashTime=(S.clock-p.dashAt)*(oocisto?1:1.5);
  const dashing=S.phase==='travel'||dashTime<rig.modelo.clipes.dash.duracao;
  const hurtTime=S.clock-p.hitAt;
- const shooting=shot&&(!dashing&&hurtTime>=rig.modelo.clipes.hurt.duracao||shot.animation.tempo<.29);
+ const shooting=shot&&(oocisto||!dashing&&hurtTime>=rig.modelo.clipes.hurt.duracao||shot.animation.tempo<.29);
  const local=playerPosition(rig,p.x,p.y,24,shooting?shot.side:p.facing);
  const dashPose=dashing?rig.pose(S.phase==='travel'?.18:dashTime,'dash'):null;
- const detail=look.parasite?look:{...look,temper:Math.min(2,viralMorphology.faces[S.morph.face].intensity+Number(S.cells>=5)),
+ const detail=look.parasite?{...look,flash:oocisto?Math.max(0,1-hurtTime/.13):0}:
+  {...look,temper:Math.min(2,viralMorphology.faces[S.morph.face].intensity+Number(S.cells>=5)),
   flash:hurtTime<.18,antennaLit:S.superState!=='empty'};
+ if(oocisto&&!reduce){
+  const change=S.parasite.mudanca;
+  if(change){
+   const t=(S.clock-change.at)/duracaoMutacao;
+   if(t<1)detail.mudanca={de:change.de,t};
+  }
+  detail.encaixe=Math.max(0,1-(S.clock-S.parasite.crescenteAt)/.42);
+  if(dashPose)desenharTrilhaOocisto(ctx,p.x,p.y,p.fx,p.fy);
+ }
  if(dashPose&&!reduce){
   ctx.save();
   ctx.globalAlpha=.26;
@@ -1408,15 +1462,17 @@ function drawAnimatedPlayer(p,look,rig) {
   ctx.restore();
  }
  const action=p.walk>.1?'move':'idle';
+ const actionTime=oocisto&&action==='move'?p.stride/16*(1-look.nivelMorfologia*.12):S.clock;
  const pose=shooting?shot.animation.pose():dashPose??(hurtTime<rig.modelo.clipes.hurt.duracao?
-  rig.pose(hurtTime,'hurt'):rig.pose(S.clock,action));
- if(look.parasite)drawToxocara(ctx,local,detail,pose);
+  rig.pose(hurtTime,'hurt'):rig.pose(actionTime,action));
+ if(look.parasite)drawParasite(ctx,local,detail,pose,rig);
  else drawInfluenza(ctx,local,detail,pose);
+ if(detail.mudanca)desenharMudaOocisto(ctx,p.x,p.y-3,detail.mudanca.t);
 }
 
 function drawPlayer() {
  const p=S.p,look=appearance();
- const rig=look.parasite?toxocaraRig:!look.vsr?influenzaRig:null;
+ const rig=activePlayerRig();
  if(rig){
   drawAnimatedPlayer(p,look,rig);
   return;
@@ -1457,7 +1513,9 @@ function drawEffects() {
  for(const effect of S.effects) {
   const t=(S.clock-effect.born)/effect.life;
   ctx.globalAlpha=1-t;
-  if(effect.type==='pulse') {
+  if(effect.type==='oocisto-impact'){
+   desenharImpactoOocisto(ctx,effect,t,reduce);
+  }else if(effect.type==='pulse') {
    const r=Math.max(1,effect.r*(reduce?1:.44+.56*t));
    oval(ctx,effect.x,effect.y,r,r,null,effect.color);
    if(effect.antibody)drawAntibodies(effect.x,effect.y,r);
@@ -1467,18 +1525,16 @@ function drawEffects() {
    ctx.lineCap='round';ctx.lineWidth=echo?9:15;ctx.strokeStyle=echo?'#843857':'#702899';ctx.stroke();
    ctx.lineWidth=echo?4:7;ctx.strokeStyle=effect.color;ctx.stroke();
    ctx.lineWidth=echo?1.7:2.6;ctx.strokeStyle=echo?'#ffe8d4':'#fff0ff';ctx.stroke();
-  }else if(effect.type==='pellet'||effect.type==='crescent'){
+  }else if(effect.type==='pellet'){
    const dx=effect.x2-effect.x,dy=effect.y2-effect.y;
    const progress=reduce?.94:t;
    if(!reduce&&t<.45)oval(ctx,effect.x,effect.y,6+t*6,5+t*5,'rgba(255,236,183,.68)');
    ctx.save();
    ctx.translate(effect.x+dx*progress,effect.y+dy*progress);
    ctx.rotate(Math.atan2(dy,dx));
-   if(effect.type!=='crescent'||!desenharCrescente(ctx,23)){
-    oval(ctx,-3,0,9.2,3.5,'rgba(231,249,230,.45)');
-    oval(ctx,0,0,5.9,3.8,'#42596b');
-    oval(ctx,1,-.2,4.2,2.7,effect.color);
-   }
+   oval(ctx,-3,0,9.2,3.5,'rgba(231,249,230,.45)');
+   oval(ctx,0,0,5.9,3.8,'#42596b');
+   oval(ctx,1,-.2,4.2,2.7,effect.color);
    ctx.restore();
   }else{
    const dx=effect.x2-effect.x,dy=effect.y2-effect.y;
@@ -1557,11 +1613,23 @@ function draw() {
  drawReplicas();
  const aim=S.control==='manual'&&S.phase==='play'&&!S.roomCleared?aimDirection():null;
  if(aim){
-  ctx.beginPath();ctx.moveTo(S.p.x+aim.x*24,S.p.y+aim.y*24);
-  ctx.lineTo(S.p.x+aim.x*154,S.p.y+aim.y*154);
+  const p=S.p;
+  let x=p.x+aim.x*24,y=p.y+aim.y*24,dx=aim.x,dy=aim.y;
+  if(S.parasite?.oocisto){
+   const side=Math.abs(dx)>.08?Math.sign(dx):p.facing;
+   const pose=playerPose(oocistoRig,poseSolturaOocisto);
+   const origin=oocistoRig.ponto('disparo',playerPosition(oocistoRig,p.x,p.y,24,side),pose);
+   const target=oocistoAimPoint(p,aim,SHOT_REACH);
+   const ray=unit(target.x-origin.x,target.y-origin.y)??aim;
+   x=origin.x;y=origin.y;dx=ray.x;dy=ray.y;
+  }
+  ctx.beginPath();ctx.moveTo(x,y);
+  ctx.lineTo(x+dx*130,y+dy*130);
   ctx.setLineDash([7,5]);ctx.strokeStyle='rgba(255,249,215,.79)';ctx.lineWidth=2.1;ctx.stroke();ctx.setLineDash([]);
  }
- drawEffects();drawPlayer();
+ drawEffects();
+ for(const shot of S.projectiles)desenharDisparoOocisto(ctx,shot,reduce);
+ drawPlayer();
  drawWind();drawControls();
 }
 

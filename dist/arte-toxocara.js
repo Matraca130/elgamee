@@ -1,5 +1,3 @@
-import { desenharCrescente, desenharOocisto } from './arte-oocisto.js';
-
 const ink = '#352230';
 const neutra = { x: 0, y: 0, giro: 0, sx: 1, sy: 1, curva: 0, olhos: 0 };
 const q = (tempo, ajustes = {}) => ({ ...neutra, ...ajustes, tempo });
@@ -91,7 +89,7 @@ function desenharLarva(ctx, pose) {
   olhos(ctx, 23, -6, pose.olhos);
 }
 
-function adornar(ctx, adaptacao, larva) {
+export function desenharAdaptacao(ctx, adaptacao, larva = false) {
   if (!adaptacao) return;
   ctx.save();
   ctx.translate(larva ? 3 : -3, larva ? 10 : 13);
@@ -106,21 +104,11 @@ function adornar(ctx, adaptacao, larva) {
 
 export const modeloToxocara = {
   neutra, clipes, pontos: { disparo: [18, -2] },
-  desenharCamadas(ctx, pose, { fase, adaptacao, oocisto, nivelMorfologia = 0, crescente }) {
+  desenharCamadas(ctx, pose, { fase, adaptacao }) {
     const larva = fase === 2;
-    const desenhouOocisto = oocisto && desenharOocisto(ctx, nivelMorfologia);
-    if (!desenhouOocisto) {
-      if (larva) desenharLarva(ctx, pose);
-      else desenharOvo(ctx, pose, fase === 1);
-    }
-    adornar(ctx, adaptacao, larva && !desenhouOocisto);
-    if (crescente) {
-      ctx.save();
-      ctx.translate(21, -2);
-      ctx.rotate(pose.curva * .19);
-      desenharCrescente(ctx, 20);
-      ctx.restore();
-    }
+    if (larva) desenharLarva(ctx, pose);
+    else desenharOvo(ctx, pose, fase === 1);
+    desenharAdaptacao(ctx, adaptacao, larva);
   }
 };
 
