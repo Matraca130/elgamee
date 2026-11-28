@@ -24,14 +24,12 @@
       <div class="visits"><span>Casas</span> <strong id="houses">0 / 2</strong></div>
     </section>
     <div class="arena">
-      <canvas id="field" width="1200" height="800" tabindex="0" aria-label="Arena. Use WASD ou as setas para andar, Espaço para desviar e K para atacar."></canvas>
+      <canvas id="field" width="1200" height="800" tabindex="0" aria-label="Arena de Chagasico" aria-describedby="controls-help"></canvas>
       <p id="notice" class="notice" role="status" hidden></p>
     </div>
     <div class="controls">
-      <p class="keyboard"><kbd>W A S D</kbd> Mover <kbd>Espaço</kbd> Dash <kbd>K</kbd> ou clique para atacar</p>
-      <p class="touch">Arraste no terreno para mover.</p>
+      <p id="controls-help"></p>
       <div class="actions" aria-label="Controles de combate">
-        <button type="button" id="attack" class="quiet" disabled>Ataque</button>
         <button type="button" id="dash" class="primary" disabled>Dash <span id="charge"></span></button>
       </div>
     </div>
@@ -43,6 +41,7 @@
       <p id="loading" role="status">Carregando o rancho…</p>
     </div>
   </dialog>
+  <script defer src="./controles-arena.js"></script>
   <script type="module" src="./rancho-chagasico.js"></script>
 </body>
 </html>

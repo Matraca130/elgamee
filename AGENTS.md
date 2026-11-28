@@ -11,7 +11,7 @@
 - Os perfis fictícios de genoma mudam o ritmo dos ataques, a integridade e a movimentação. Use um traço para RNA de fita simples, dois traços de outra cor para DNA de fita dupla e um sinal para a polaridade de RNA. Na ficha científica, influenza A tem RNA segmentado de fita simples negativa. Os atributos de jogo pertencem à ficção.
 - Ofereça a morfologia interna da influenza na Área do núcleo, depois da orofaringe. Uma pergunta libera sete ou oito segmentos. Uma pergunta bônus permite escolher C com sete ou A/B com oito. Conserve a morfologia anterior se o jogador errar. Mostre na arte o número de segmentos e diferencie os perfis por cor.
 - A morfologia interna pode liberar um poder exclusivo por partida. A tem as opções Deriva e Salto, B tem Deriva e C tem Passo discreto. Detectabilidade é o alcance da visão das patrulhas da arena. Variabilidade é a chance de sortear uma forma temporária ao entrar em outra arena. A forma admite bônus ou penalidade e modifica visualmente o personagem. Os números são atributos do jogo.
-- Ofereça mira manual com dois toques independentes. O lado esquerdo move, o direito mira e dispara. Suporte teclado e mouse no computador e deixe ataque automático disponível como opção.
+- Reutilize [os controles de arena](dist/controles-arena.js) em capítulos e protótipos. No celular e no tablet, o toque esquerdo move e o direito mira e dispara, com dois toques independentes. No computador, WASD ou setas movem, o mouse pressionado mira e dispara e J pressionado aciona o ataque assistido. Espaço ou o botão Dash desvia. Mantenha o ataque automático disponível como opção.
 - Mantenha as escolhas de habilidades e fusões ligadas às arenas. Use a base dos auxiliares para missões que rendem moedas em paralelo à partida.
 - Represente a replicação com ecos temporários que acompanham os disparos. Cada perfil de jogo define um limite e uma duração. Os fragmentos alimentam os ecos, então o Anel coletor melhora a coleta para essa habilidade. Os aliados de estudo ocupam o mesmo limite.
 - Dê às defesas padrões visíveis e efeitos de combate distintos, como um pulso que causa dano e um campo que retarda o deslocamento. Use o posto de profilaxia para perguntas sobre vacinas com recompensa de estudo. Quando incluir calendários concretos, associe cada recomendação a país, público, ano e fonte oficial. Registre as funções de HA e NA nas fichas de biologia.
@@ -21,12 +21,15 @@
 - Diferencie as fichas de biologia das metáforas do combate. Revise a parte científica em fontes confiáveis. Dê às perguntas um tema e uma dificuldade. Relacione as revisões de cada recompensa à característica recebida e inclua epidemiologia no banco de perguntas. Use o Taller 14 do Tutor de Integração como matriz do conteúdo respiratório. Na traqueia, varie tema e dificuldade. Mantenha os 43 enunciados nesse caderno e acrescente desafios jogáveis conforme cada vírus ganha sua fase. As fusões, os atributos e os efeitos dos golpes pertencem à ficção; mantenha a mecânica abstrata e preserve os conceitos científicos nas fichas.
 - Mantenha o jogo acessível no celular e com teclado. Preserve a base dos auxiliares e seus dados salvos. Audite controles, objetivos e progressão ao mexer na arena.
 - Disponibilize mudanças de cenário, combate e animação em uma versão jogável do Atlas para avaliação. Confira a entrada pelo menu e envie o link direto da arena para o usuário experimentar.
-- Quando o usuário firmar uma nova regra permanente de jogabilidade, arte ou conteúdo, atualize este arquivo junto com a mudança. Use a instrução mais recente do usuário para resolver divergências.
+- Quando o criador firmar uma nova regra permanente de jogabilidade, arte ou conteúdo, atualize este arquivo junto com a mudança.
 
 ## Continuidade do projeto
 
 - Use o [README](README.md) para retomar o projeto e consulte o [registro de decisões](docs/decisoes/README.md) antes de mudar uma área já documentada.
 - Em uma nova sessão, use `npm run contexto` para ler o estado atual. Quando já souber o assunto, use `npm run contexto -- retomar "tema"` para recuperar as decisões, os arquivos e os commits recentes. Se estiver procurando pelo sentido da pergunta, use `npm run contexto -- semantica "pergunta"` e confira a decisão original.
+- Antes de desenvolver uma arena ou um protótipo, consulte as decisões no MemPalace e confira a versão jogável e o código da revisão correspondente no GitHub. Veja quais módulos, artes e regras atendem à mudança e indique onde cada adaptação entra.
+- Identifique a versão jogável como protótipo enquanto estiver em avaliação. No registro versionado, mostre como o jogo funciona hoje, aponte os arquivos que serão reutilizados e diga onde adaptar a arena. Identifique cada imagem pelo nome exato ou link do original e pelo caminho da arte carregada pelo jogo. Use o [rancho de Chagasico](docs/decisoes/arena-rancho-chagasico.md) como referência.
+- Se houver divergência importante entre a proposta, uma regra vigente e a versão jogável, mostre ao criador o conflito, as fontes e os efeitos das opções. Confirme a escolha com ele antes de aplicar a mudança em conflito.
 - Registre decisões que mudem as regras do jogo, os cursos, o armazenamento ou a publicação junto com a alteração que as aplica. Anote o contexto, o que foi decidido e as consequências.
 - Identifique ideias em discussão como propostas. Quando uma decisão mudar, vincule a anterior à nova e atualize as instruções vigentes aqui.
 - Atualize o [estado do projeto](docs/contexto/estado.md) quando a entrega ou a pendência principal mudar.
@@ -35,6 +38,7 @@
 
 - Defina as arenas, os pontos de saída, os chefes e as perguntas em `dist/fase-influenza.js`.
 - Ajuste o rancho de Chagasico em `dist/rancho-modelo.js` e `dist/rancho-chagasico.js`. As poses vêm de `art/rancho/montar-rig.py`.
+- Ajuste entradas compartilhadas de movimento, mira e dash em `dist/controles-arena.js` e confira o comportamento nas duas arenas com `tests/controles-arena.test.mjs`.
 - Defina as arenas e os casos do VSR em `dist/capitulo-vsr.js`. Registre novos capítulos no seletor em `dist/jogo.js` e na validação de progresso em `worker/index.js`.
 - Configure perfis e atributos em `dist/morfologia.js` e as camadas visuais em `dist/arte-jogo.js`.
 - Configure segmentos, perfis, poderes, perguntas do núcleo e chances das formas em `dist/nucleo-influenza.js`.

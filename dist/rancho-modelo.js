@@ -26,6 +26,15 @@ const OBSTACLES = [
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const duration = clip => CLIPS[clip].count / CLIPS[clip].fps;
+const PULSE_SPEED = 580;
+const PULSE_LIFE = .47;
+const targetable = trap => trap.phase === 'armed' || (trap.phase === 'spring' && !trap.struck);
+
+export function closestAttackTarget(run) {
+  return run.traps
+    .filter(trap => targetable(trap) && distance(trap, run.hero) < PULSE_SPEED * PULSE_LIFE)
+    .sort((a, b) => distance(a, run.hero) - distance(b, run.hero))[0] ?? null;
+}
 
 export function newRun(quizCorrect, random = Math.random) {
   return {
@@ -190,7 +199,7 @@ function updateAttack(run, dt) {
     attack.released = true;
     run.projectiles.push({
       kind: 'pulse', x: p.x + attack.dx * 15, y: p.y + attack.dy * 15, age: 0,
-      dx: attack.dx, dy: attack.dy, ttl: .47
+      dx: attack.dx, dy: attack.dy, ttl: PULSE_LIFE
     });
   }
   if (attack.age >= duration('playerAttack')) p.attack = null;
@@ -226,10 +235,10 @@ function updateProjectiles(run, dt) {
   for (const projectile of run.projectiles) {
     projectile.age += dt;
     if (projectile.kind === 'pulse') {
-      projectile.x += projectile.dx * 580 * dt;
-      projectile.y += projectile.dy * 580 * dt;
+      projectile.x += projectile.dx * PULSE_SPEED * dt;
+      projectile.y += projectile.dy * PULSE_SPEED * dt;
       for (const trap of run.traps) {
-        if (trap.phase === 'armed' || (trap.phase === 'spring' && !trap.struck)) {
+        if (targetable(trap)) {
           if (distance(projectile, trap) <= 30) {
             trap.phase = 'spent';
             trap.age = 0;

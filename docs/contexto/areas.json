@@ -1,5 +1,11 @@
 [
   {
+    "tema": "chagasico",
+    "busca": ["chagas", "rancho", "chinelo", "chancleta", "protótipo", "prototipo", "dois toques", "dos toques"],
+    "resumo": "Protótipo jogável do rancho, imagens de referência, controles compartilhados e adaptação da arena.",
+    "arquivos": ["docs/decisoes/arena-rancho-chagasico.md", "dist/rancho-modelo.js", "dist/rancho-chagasico.js", "dist/controles-arena.js", "tests/controles-arena.test.mjs"]
+  },
+  {
     "tema": "influenza",
     "busca": ["gripe", "traqueia", "tráquea", "hemaglutinina", "neuraminidase", "neuraminidasa", "deriva", "salto", "drift", "shift"],
     "resumo": "Quatro arenas, evolução do núcleo e recompensas HA e NA.",
@@ -19,9 +25,9 @@
   },
   {
     "tema": "combate",
-    "busca": ["mira", "ataque", "dash", "super", "raridade", "patogenia", "eco inflamatório", "replicação", "replicación", "ecos", "aliados"],
+    "busca": ["controles", "mira", "ataque", "dash", "super", "raridade", "patogenia", "eco inflamatório", "replicação", "replicación", "ecos", "aliados"],
     "resumo": "Disparos, defesas, fusões e aliados temporários.",
-    "arquivos": ["AGENTS.md", "dist/jogo.js", "dist/replicacao.js", "dist/arte-jogo.js"]
+    "arquivos": ["AGENTS.md", "dist/controles-arena.js", "dist/jogo.js", "dist/replicacao.js", "dist/arte-jogo.js"]
   },
   {
     "tema": "progresso",

@@ -1,7 +1,7 @@
 import { CELL, COLUMNS, CLIPS } from './rancho-quadros.js';
 import {
   WIDTH, HEIGHT, EXIT, EVOLUTIONS, newRun, nightBonus,
-  beginDash, beginAttack, chooseEvolution, lampBeam, stepRun
+  beginDash, beginAttack, closestAttackTarget, chooseEvolution, lampBeam, stepRun
 } from './rancho-modelo.js';
 
 const byId = id => document.getElementById(id);
@@ -10,21 +10,37 @@ const ctx = field.getContext('2d');
 const dialog = byId('screen');
 const panel = byId('panel');
 const ui = Object.fromEntries(
-  ['pause', 'health', 'health-text', 'objective', 'houses', 'attack', 'dash', 'charge', 'notice']
+  ['pause', 'health', 'health-text', 'objective', 'houses', 'controls-help', 'dash', 'charge', 'notice']
     .map(id => [id, byId(id)])
 );
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const keys = new Set();
-const directionKeys = {
-  KeyA: [-1, 0], ArrowLeft: [-1, 0], KeyD: [1, 0], ArrowRight: [1, 0],
-  KeyW: [0, -1], ArrowUp: [0, -1], KeyS: [0, 1], ArrowDown: [0, 1]
-};
 const preview = newRun(false);
 let run = null;
 let mode = 'loading';
-let stick = null;
 let art = null;
 let noticeUntil = 0;
+let tapUntil = -1;
+let controlMode = 'manual';
+try {
+  if (JSON.parse(localStorage.getItem(atlasControls.MORPH_SAVE))?.control === 'auto') controlMode = 'auto';
+} catch {}
+const controls = atlasControls.create(field, {
+  isActive: () => mode === 'play' && run?.phase === 'play',
+  controlMode: () => controlMode,
+  screenPosition: () => {
+    const box = field.getBoundingClientRect();
+    return { x: run.hero.x * box.width / WIDTH, y: run.hero.y * box.height / HEIGHT };
+  },
+  onDash: dashNow,
+  onPause: () => {
+    if (mode === 'play') pause();
+    else if (mode === 'pause') resume();
+    else return false;
+    return true;
+  },
+  onAimTap: () => { tapUntil = run.time + atlasControls.TAP_SECONDS; },
+  onClear: () => { tapUntil = -1; }
+});
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -57,8 +73,7 @@ function backLink() {
 
 function openPanel(nextMode, label, title, description) {
   mode = nextMode;
-  keys.clear();
-  stick = null;
+  controls.clear();
   const heading = make(nextMode === 'intro' ? 'h1' : 'h2', '', title);
   heading.id = 'panel-title';
   panel.replaceChildren(make('p', 'eyebrow', label), heading);
@@ -69,7 +84,7 @@ function openPanel(nextMode, label, title, description) {
 
 function startScreen() {
   openPanel(
-    'intro', 'Chagasico', 'Rancho ao entardecer',
+    'intro', 'Chagasico · Protótipo jogável', 'Rancho ao entardecer',
     'Entre nas duas casas para recuperar vida e evoluir. Use o dash para escapar do chinelo da senhora.'
   );
   const footer = make('div', 'screen-footer');
@@ -156,31 +171,33 @@ function finishScreen() {
 function pause() {
   if (mode !== 'play' || run?.phase !== 'play') return;
   openPanel('pause', 'Rancho ao entardecer', 'Partida pausada');
+  const label = make('label', '', 'Controle de ataque ');
+  const select = document.createElement('select');
+  for (const [value, name] of [['manual', 'Mira manual'], ['auto', 'Ataque automático']]) {
+    const option = make('option', '', name);
+    option.value = value;
+    select.append(option);
+  }
+  select.value = controlMode;
+  select.addEventListener('change', () => {
+    controlMode = select.value;
+    try {
+      const saved = JSON.parse(localStorage.getItem(atlasControls.MORPH_SAVE));
+      localStorage.setItem(atlasControls.MORPH_SAVE, JSON.stringify({ ...saved, control: controlMode }));
+    } catch {}
+    controls.clear();
+    syncHud();
+  });
+  label.append(select);
   const footer = make('div', 'screen-footer');
   footer.append(button('Continuar', resume, 'primary'), backLink());
-  panel.append(footer);
+  panel.append(label, footer);
   footer.firstChild.focus();
-}
-
-function currentInput() {
-  if (stick) {
-    const dx = stick.x - stick.startX;
-    const dy = stick.y - stick.startY;
-    const length = Math.max(24, Math.hypot(dx, dy));
-    return { x: dx / length, y: dy / length };
-  }
-  const vector = { x: 0, y: 0 };
-  for (const code of keys) {
-    const [x, y] = directionKeys[code];
-    vector.x += x;
-    vector.y += y;
-  }
-  return vector;
 }
 
 function dashNow() {
   if (mode !== 'play') return;
-  const input = currentInput();
+  const input = controls.movement();
   const length = Math.hypot(input.x, input.y);
   if (!beginDash(run)) return;
   if (length > .05) {
@@ -190,61 +207,22 @@ function dashNow() {
   }
 }
 
-function attackNow(target = null) {
-  if (mode === 'play') beginAttack(run, target);
+function attackFromControls() {
+  const aim = controls.aim();
+  const assisted = controlMode === 'auto' || controls.isAttackHeld() || tapUntil >= run.time;
+  const target = aim ? { x: run.hero.x + aim.x, y: run.hero.y + aim.y } : assisted ? closestAttackTarget(run) : null;
+  if (target && beginAttack(run, target)) tapUntil = -1;
 }
 
-function pointer(event) {
-  const box = field.getBoundingClientRect();
-  return { x: event.clientX - box.left, y: event.clientY - box.top, width: box.width, height: box.height };
-}
-
-field.addEventListener('pointerdown', event => {
-  if (mode !== 'play' || !event.isPrimary && event.pointerType === 'mouse') return;
-  const p = pointer(event);
-  if (event.pointerType === 'mouse') {
-    if (event.button === 0) attackNow({ x: p.x / p.width * WIDTH, y: p.y / p.height * HEIGHT });
-  } else if (!stick) {
-    event.preventDefault();
-    field.setPointerCapture(event.pointerId);
-    stick = { id: event.pointerId, x: p.x, y: p.y, startX: p.x, startY: p.y };
-  }
-});
-field.addEventListener('pointermove', event => {
-  if (stick?.id !== event.pointerId) return;
-  const p = pointer(event);
-  stick.x = p.x;
-  stick.y = p.y;
-});
-for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
-  field.addEventListener(type, event => {
-    if (stick?.id === event.pointerId) stick = null;
-  });
-}
-
-window.addEventListener('keydown', event => {
-  if (mode !== 'play') return;
-  if (Object.hasOwn(directionKeys, event.code)) {
-    keys.add(event.code);
-    event.preventDefault();
-  } else if (event.code === 'Space' && event.target.tagName !== 'BUTTON') {
-    event.preventDefault();
-    if (!event.repeat) dashNow();
-  } else if (event.code === 'KeyK' && !event.repeat) {
-    attackNow();
-  } else if (event.code === 'Escape') pause();
-});
-window.addEventListener('keyup', event => keys.delete(event.code));
-window.addEventListener('blur', () => {
-  keys.clear();
-  stick = null;
-});
+document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
 dialog.addEventListener('cancel', event => {
   event.preventDefault();
   if (mode === 'pause') resume();
 });
-ui.dash.addEventListener('click', dashNow);
-ui.attack.addEventListener('click', () => attackNow());
+ui.dash.addEventListener('click', () => {
+  dashNow();
+  if (mode === 'play') field.focus({ preventScroll: true });
+});
 ui.pause.addEventListener('click', pause);
 
 function setText(node, value) {
@@ -262,10 +240,10 @@ function syncHud() {
   setText(ui['health-text'], `${hero.hp} / ${hero.maxHp}`);
   setText(ui.houses, `${visited} / 2`);
   setText(ui.objective, state.rewards.size === 2 ? 'Siga para a saída ao norte' : 'Visite as duas casas');
+  setText(ui['controls-help'], atlasControls.instructions(controlMode));
   setText(ui.charge, charge ? `${charge.toFixed(1)}s` : '');
   ui.pause.disabled = !playing;
   ui.dash.disabled = !playing || charge > 0;
-  ui.attack.disabled = !playing || state.time < hero.attackReady;
 }
 
 function sprite(name, age, x, y, size, { side = 1, spin = 0, anchor = .5, loop = true } = {}) {
@@ -429,13 +407,12 @@ function draw(state) {
   ctx.setTransform(field.width / WIDTH, 0, 0, field.height / HEIGHT, 0, 0);
   drawGround(state);
   drawActors(state);
+  if (mode === 'play') atlasControls.drawAim(ctx, state.hero, controls.aim());
   drawEffects(state);
-  if (stick) {
+  if (controls.hasTouch()) {
     const bounds = field.getBoundingClientRect();
     ctx.setTransform(field.width / bounds.width, 0, 0, field.height / bounds.height, 0, 0);
-    const input = currentInput();
-    ellipse(stick.startX, stick.startY, 33, 33, '#26192d66', '#ffe5b4ad', 2);
-    ellipse(stick.startX + input.x * 22, stick.startY + input.y * 22, 13, 13, '#ffe5b4c8');
+    atlasControls.drawSticks(ctx, controls, bounds.width, bounds.height);
   }
 }
 
@@ -458,7 +435,8 @@ function frame(now) {
   if (mode === 'play') {
     accumulator += elapsed;
     while (accumulator >= 1 / 60) {
-      stepRun(run, currentInput(), 1 / 60);
+      if (run.phase === 'play') attackFromControls();
+      stepRun(run, controls.movement(), 1 / 60);
       accumulator -= 1 / 60;
     }
     if (run.notices.length) {
