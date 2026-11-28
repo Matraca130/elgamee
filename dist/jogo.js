@@ -17,10 +17,6 @@ let selectedChapter=chapters.influenza;
 const courseButtons=new Map();
 const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TAU=Math.PI*2, FRAME_MS=1000/30;
-const keys=new Set();
-const moveStick={id:null,ox:0,oy:0,x:0,y:0};
-const aimStick={id:null,ox:0,oy:0,x:0,y:0,mouse:false};
-let touchLayout=window.matchMedia('(pointer: coarse)').matches||(window.navigator?.maxTouchPoints??0)>0;
 const startingMorph={...viralMorphology.defaults};
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
@@ -88,6 +84,21 @@ mapCache.width=mapCache.height=respiratory.size;
 let S=null, ctx=null, frameId=null, observer=null;
 let W=1,H=1,dpr=1,scale=1,ox=0,oy=0,lastFrame=0,lastHud='';
 let toastUntil=0;
+const controls=atlasControls.create(cv,{
+ isActive:()=>S?.phase==='play'&&!crew.isOpen(),
+ controlMode:()=>S?.control??startingMorph.control,
+ screenPosition:()=>({x:ox+S.p.x*scale,y:oy+S.p.y*scale}),
+ onDash:dash,
+ onPause:()=>{
+  if(crew.isOpen())return false;
+  if(S?.phase==='play')pauseGame();
+  else if(S?.phase==='pause')resume();
+  else return false;
+  return true;
+ },
+ onAimTap:()=>{S.tapUntil=S.clock+atlasControls.TAP_SECONDS;},
+ onClear:()=>{if(S)S.tapUntil=-1;}
+});
 
 function sprite(type,rank=0) {
  const key=type+'-'+rank;
@@ -206,8 +217,7 @@ function announce(message) {
 }
 
 function clearInput() {
- moveStick.id=null;aimStick.id=null;aimStick.mouse=false;keys.clear();
- if(S)S.tapUntil=-1;
+ controls.clear();
 }
 
 function dash() {
@@ -230,14 +240,7 @@ function pressureAtPlayer() {
 
 function move(dt) {
  const p=S.p;
- let x=0,y=0;
- if(moveStick.id!==null) {
-  const dx=moveStick.x-moveStick.ox,dy=moveStick.y-moveStick.oy,length=Math.hypot(dx,dy);
-  if(length>5){const power=Math.min(1,length/38);x=dx/length*power;y=dy/length*power;}
- }
- x+=Number(keys.has('arrowright')||keys.has('d'))-Number(keys.has('arrowleft')||keys.has('a'));
- y+=Number(keys.has('arrowdown')||keys.has('s'))-Number(keys.has('arrowup')||keys.has('w'));
- const length=Math.max(1,Math.hypot(x,y));x/=length;y/=length;
+ const {x,y}=controls.movement();
  p.walk=Math.hypot(x,y);
  if(p.walk>.1){p.fx=x/p.walk;p.fy=y/p.walk;}
  if(Math.abs(x)>.08)p.facing=Math.sign(x);
@@ -280,15 +283,6 @@ function unit(x,y,min=0) {
  const length=Math.hypot(x,y);
  if(length<=min)return null;
  return {x:x/length,y:y/length};
-}
-
-function aimDirection() {
- if(aimStick.id===null)return null;
- if(aimStick.mouse){
-  const p=S.p;
-  return unit(aimStick.x-(ox+p.x*scale),aimStick.y-(oy+p.y*scale),2);
- }
- return unit(aimStick.x-aimStick.ox,aimStick.y-aimStick.oy,7);
 }
 
 function aimedAt(enemy,p,aim,reach,width) {
@@ -336,8 +330,8 @@ function attack(dt) {
  if(S.nextAttack>0||S.roomCleared)return;
  const p=S.p,ha=traitRank('ha'),na=traitRank('na'),core=traitRank('core');
  const reach=175+ha*14;
- const aim=S.control==='manual'?aimDirection():null;
- const auto=S.control==='auto'||keys.has('j')||S.tapUntil>=S.clock;
+ const aim=controls.aim();
+ const auto=S.control==='auto'||controls.isAttackHeld()||S.tapUntil>=S.clock;
  if(!aim&&!auto)return;
  const nearby=S.enemies.filter(enemy=>enemy.hp>0&&distance(p,enemy)<reach+enemy.r)
   .sort((a,b)=>distance(p,a)-distance(p,b));
@@ -622,7 +616,7 @@ function setPanel(phase) {
  $('hud').hidden=phase==='intro';
  $('arenaActions').hidden=phase!=='play';
  $('travelNote').hidden=phase!=='travel';
- $('touchLegend').hidden=phase!=='play'||!touchLayout;
+ $('touchLegend').hidden=phase!=='play'||!controls.hasTouch();
  $('bossBar').hidden=true;
  $('crewHud').disabled=phase==='level'||phase==='travel';
  $('pauseBtn').disabled=phase!=='play'&&phase!=='pause';
@@ -1022,7 +1016,7 @@ function hud() {
  const underPressure=Boolean(pressureAtPlayer());
  const hp=Math.ceil(p.hp),dashSeconds=Math.ceil(p.cooldown);
  const key=[hp,p.max,S.step,S.level,S.xp,S.impact,S.mucus,boss?.type,boss?.hp,dashSeconds,
-  S.roomCleared,S.phase,S.control,touchLayout,S.segmented?.segments,S.segmented?.profile,S.segmented?.signature,
+  S.roomCleared,S.phase,S.control,controls.hasTouch(),S.segmented?.segments,S.segmented?.profile,S.segmented?.signature,
   S.fusions.has('eco'),S.superState,charge,allies.length,underPressure,S.studySeen].join('|');
  if(key===lastHud)return;
  lastHud=key;
@@ -1061,7 +1055,7 @@ function hud() {
  superButton.disabled=S.superState!=='ready';
  superButton.dataset.state=S.superState;
  $('superStatus').textContent=SUPER_STATES[S.superState];
- $('touchLegend').hidden=S.phase!=='play'||!touchLayout;
+ $('touchLegend').hidden=S.phase!=='play'||!controls.hasTouch();
  $('aimLegend').textContent=S.control==='auto'?'Ataque automático':'Mirar e atacar';
  const bossBar=$('bossBar');bossBar.hidden=!boss||S.phase!=='play';
  if(boss){
@@ -1229,21 +1223,11 @@ function drawEffects() {
  ctx.globalAlpha=1;
 }
 
-function paintStick(stick,x,y,color) {
- if(stick.id!==null){
-  x=stick.ox;y=stick.oy;
- }
- const vector=stick.id===null?null:unit(stick.x-x,stick.y-y,1);
- const radius=Math.min(33,Math.hypot(stick.x-x,stick.y-y));
- oval(ctx,x,y,35,35,'rgba(51,32,57,.39)',color);
- oval(ctx,x+(vector?.x??0)*radius,y+(vector?.y??0)*radius,13,13,color,null);
-}
-
 function drawControls() {
- if(!touchLayout||S.phase!=='play')return;
+ ctx.save();
  ctx.setTransform(dpr,0,0,dpr,0,0);
- paintStick(moveStick,clamp(W*.2,44,116),H-72,'rgba(213,237,243,.77)');
- if(S.control==='manual'&&!aimStick.mouse)paintStick(aimStick,W-clamp(W*.2,44,116),H-72,'rgba(255,210,211,.79)');
+ atlasControls.drawSticks(ctx,controls,W,H);
+ ctx.restore();
 }
 
 function drawWind() {
@@ -1290,12 +1274,7 @@ function draw() {
  for(const enemy of S.enemies)drawDefense(enemy);
  crew.drawEscort();
  drawReplicas();
- const aim=S.control==='manual'&&S.phase==='play'&&!S.roomCleared?aimDirection():null;
- if(aim){
-  ctx.beginPath();ctx.moveTo(S.p.x+aim.x*24,S.p.y+aim.y*24);
-  ctx.lineTo(S.p.x+aim.x*154,S.p.y+aim.y*154);
-  ctx.setLineDash([7,5]);ctx.strokeStyle='rgba(255,249,215,.79)';ctx.lineWidth=2.1;ctx.stroke();ctx.setLineDash([]);
- }
+ if(S.phase==='play'&&!S.roomCleared)atlasControls.drawAim(ctx,S.p,controls.aim());
  drawEffects();drawPlayer();
  drawWind();drawControls();
 }
@@ -1782,7 +1761,7 @@ function close(){
   if(hub.hidden)return;
   hub.hidden=true;$('app').hidden=false;
   if(S?.phase==='base')S.phase='play';
-  keys.clear();syncArena();
+  clearInput();syncArena();
   if(origin==='intro')renderIntroduction();
   const target=origin==='intro'?$('startBtn'):(earlierFocus?.isConnected?earlierFocus:$('crewHud'));
   target?.focus();
@@ -1933,58 +1912,11 @@ return {open,isOpen:()=>!hub.hidden,drawEscort,extraReach:()=>{const a=escort();
   rewardCoins:amount=>transact(data=>{data.coins+=amount;})};
 })();
 
-function relative(event) {
- const rect=cv.getBoundingClientRect();
- return [event.clientX-rect.left,event.clientY-rect.top];
-}
-cv.addEventListener('pointerdown',event=>{
- if(S?.phase!=='play')return;
- const [x,y]=relative(event), mouse=event.pointerType==='mouse';
- if(mouse&&event.button!==0)return;
- if(!mouse)touchLayout=true;
- const useAim=S.control==='manual'&&(mouse||x>=W/2);
- if(mouse&&!useAim)return;
- const stick=useAim?aimStick:moveStick;
- if(stick.id!==null)return;
- Object.assign(stick,{id:event.pointerId,ox:x,oy:y,x,y,mouse});
- try{cv.setPointerCapture(event.pointerId);}catch{}
- cv.focus({preventScroll:true});
- event.preventDefault();
-});
-cv.addEventListener('pointermove',event=>{
- for(const stick of [moveStick,aimStick]){
-  if(event.pointerId===stick.id)[stick.x,stick.y]=relative(event);
- }
-});
-for(const name of ['pointerup','pointercancel','lostpointercapture']){
- cv.addEventListener(name,event=>{
-  if(event.pointerId===moveStick.id)moveStick.id=null;
-  if(event.pointerId!==aimStick.id)return;
-  if(name==='pointerup'&&!aimStick.mouse&&S?.phase==='play'&&!aimDirection())S.tapUntil=S.clock+.34;
-  aimStick.id=null;aimStick.mouse=false;
- });
-}
-
-const directionKeys=['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d'];
 window.addEventListener('keydown',event=>{
- if(crew.isOpen())return;
- const key=event.key?.toLowerCase();
- if(S?.phase==='play'&&(directionKeys.includes(key)||key==='j')){
-  keys.add(key);event.preventDefault();
- }
- if(S?.phase==='play'&&event.code==='Space'&&document.activeElement?.tagName!=='BUTTON'){
-  event.preventDefault();if(!event.repeat)dash();
- }
- if(S?.phase==='play'&&key==='e'&&S.fusions.has('eco')){
+ if(!crew.isOpen()&&S?.phase==='play'&&event.key?.toLowerCase()==='e'&&S.fusions.has('eco')){
   event.preventDefault();if(!event.repeat)armSuper();
  }
- if(key==='escape'||key==='p'){
-  if(S?.phase==='play')pauseGame();
-  else if(S?.phase==='pause')resume();
- }
 });
-window.addEventListener('keyup',event=>keys.delete(event.key?.toLowerCase()));
-window.addEventListener('blur',clearInput);
 document.addEventListener('visibilitychange',()=>{
  if(document.hidden){if(S?.phase==='travel')stopFrames();else pauseGame();}
  else if(S?.phase==='travel')syncArena();
@@ -2078,13 +2010,11 @@ function updateKit() {
  const count=profile.capacity===1?'1 eco por '+profile.duration+' s':
   'Até '+profile.capacity+' ecos por '+profile.duration+' s cada';
  $('replicationNote').textContent=count+'. Um aliado a cada '+arenaReplication.cost+' fragmentos.';
- $('controlsHelp').textContent=startingMorph.control==='manual'?
-  'Arraste à esquerda para andar e à direita para mirar e atacar. No computador, use WASD ou setas e segure o mouse ou J para atacar. Espaço ou Dash desvia.':
-  'Arraste ou use WASD e setas para andar. O ataque mira no alvo mais próximo. Use Espaço ou Dash para desviar.';
+ $('controlsHelp').textContent=atlasControls.instructions(startingMorph.control);
  paintPortrait($('virusPortrait'),{morph,vsr:selectedChapter.id==='vsr'});
 }
 
-const MORPH_SAVE='atlas-viral-morfologia-v1';
+const MORPH_SAVE=atlasControls.MORPH_SAVE;
 function saveMorphology() {
  try{localStorage.setItem(MORPH_SAVE,JSON.stringify(startingMorph));}catch{}
 }

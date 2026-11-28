@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Explore o rancho de Chagasico no Atlas Viral.">
+  <title>Chagasico · Rancho ao entardecer</title>
+  <link rel="stylesheet" href="./rancho-chagasico.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="./index.html">Atlas Viral</a>
+    <strong class="mark">Chagasico</strong>
+    <button type="button" id="pause" class="quiet" disabled>Pausa</button>
+  </header>
+  <main class="game">
+    <section class="hud" aria-label="Estado da partida">
+      <div class="status">
+        <span>Vida</span>
+        <meter id="health" min="0" max="100" value="100" aria-label="Vida"></meter>
+        <strong id="health-text">100 / 100</strong>
+      </div>
+      <div class="objective" id="objective">Visite as duas casas</div>
+      <div class="visits"><span>Casas</span> <strong id="houses">0 / 2</strong></div>
+    </section>
+    <div class="arena">
+      <canvas id="field" width="1200" height="800" tabindex="0" aria-label="Arena de Chagasico" aria-describedby="controls-help"></canvas>
+      <p id="notice" class="notice" role="status" hidden></p>
+    </div>
+    <div class="controls">
+      <p id="controls-help"></p>
+      <div class="actions" aria-label="Controles de combate">
+        <button type="button" id="dash" class="primary" disabled>Dash <span id="charge"></span></button>
+      </div>
+    </div>
+  </main>
+  <dialog id="screen" aria-labelledby="panel-title">
+    <div class="screen-body" id="panel">
+      <p class="eyebrow">Chagasico</p>
+      <h1 id="panel-title">Rancho ao entardecer</h1>
+      <p id="loading" role="status">Carregando o rancho…</p>
+    </div>
+  </dialog>
+  <script defer src="./controles-arena.js"></script>
+  <script type="module" src="./rancho-chagasico.js"></script>
+</body>
+</html>

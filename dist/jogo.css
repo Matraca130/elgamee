@@ -39,6 +39,8 @@ body #stage[data-phase="play"]{height:calc(100svh - 130px);min-height:280px}
 .legend b{display:block}
 .arena-button{min-height:48px;padding:10px 20px;border-radius:12px;border:0;background:var(--teal);color:#fff;font:inherit;font-weight:800;font-size:17px;cursor:pointer}
 .arena-button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.ranch-entry{display:inline-flex;align-items:center;margin-top:10px;text-decoration:none}
+#lobulo-game .ranch-entry:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 .btns{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-top:12px}
 .btns.stick{position:sticky;bottom:-18px;margin:4px -18px -18px;padding:22px 18px 18px;background:linear-gradient(to bottom,color-mix(in srgb,var(--card) 0%,transparent),var(--card) 18px)}
 .btns.stick:has(#contBtn[hidden]){display:none}
